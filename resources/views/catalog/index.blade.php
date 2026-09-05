@@ -7,7 +7,7 @@
                     Satu rak untuk setiap cerita.
                 </h1>
                 <p class="mt-7 max-w-xl text-base leading-8 text-ink-950/65 sm:text-lg">
-                    Jelajahi buku, komik Barat, manga, dan light novel tanpa berpindah platform.
+                    Jelajahi buku, novel, komik Barat, manga, manhwa, dan light novel tanpa berpindah platform.
                     Metadata disiapkan dalam satu bentuk yang konsisten dan mudah dipahami.
                 </p>
                 <div class="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
@@ -70,9 +70,9 @@
             </div>
             <div class="mt-9 grid gap-px bg-ink-950/10 md:grid-cols-3">
                 @foreach ([
-                    ['Google Books', 'Buku dan novel umum', 'GB', 'Terhubung / API key server'],
+                    ['Google Books', 'Buku umum dan novel', 'GB', 'Terhubung / API key server'],
                     ['Comic Vine', 'Komik Barat', 'CV', filled(config('services.comic_vine.key')) ? 'Terhubung / API key server' : 'Menunggu API key'],
-                    ['AniList', 'Manga dan light novel', 'AL', 'Terhubung / data publik'],
+                    ['AniList', 'Manga, manhwa, dan light novel', 'AL', 'Terhubung / data publik'],
                 ] as [$source, $scope, $code, $status])
                     <article class="bg-brand-cream/85 p-6 sm:p-8">
                         <span class="grid size-12 place-items-center bg-brand-sky font-bold text-ink-950">{{ $code }}</span>

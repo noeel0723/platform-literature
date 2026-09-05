@@ -8,16 +8,21 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 final class GoogleBooksAdapter
 {
     /** @return Collection<int, NormalizedLiterature> */
-    public function search(string $query, int $limit = 6): Collection
+    public function search(string $query, int $limit = 6, string $requestedType = 'all'): Collection
     {
         $query = trim($query);
 
         if ($query === '') {
             return collect();
+        }
+
+        if (! in_array($requestedType, ['all', 'book', 'novel'], true)) {
+            throw new InvalidArgumentException('Google Books only supports all, book, and novel catalog types.');
         }
 
         $apiKey = trim((string) config('services.google_books.key'));
@@ -35,7 +40,7 @@ final class GoogleBooksAdapter
                 ->connectTimeout((int) config('services.google_books.connect_timeout', 3))
                 ->timeout((int) config('services.google_books.timeout', 8))
                 ->get('/volumes', [
-                    'q' => $query,
+                    'q' => $requestedType === 'novel' ? "{$query} subject:fiction" : $query,
                     'maxResults' => max(1, min($limit, 40)),
                     'printType' => 'books',
                     'projection' => 'full',
@@ -70,12 +75,12 @@ final class GoogleBooksAdapter
         }
 
         return collect($items)
-            ->map(fn (mixed $item): ?NormalizedLiterature => $this->normalize($item))
+            ->map(fn (mixed $item): ?NormalizedLiterature => $this->normalize($item, $requestedType))
             ->filter()
             ->values();
     }
 
-    private function normalize(mixed $item): ?NormalizedLiterature
+    private function normalize(mixed $item, string $requestedType = 'all'): ?NormalizedLiterature
     {
         if (! is_array($item)) {
             return null;
@@ -95,29 +100,24 @@ final class GoogleBooksAdapter
             $publicationYear = (int) $matches[0];
         }
 
-        $coverUrl = $this->cleanText(
-            Arr::get($item, 'volumeInfo.imageLinks.thumbnail')
-                ?? Arr::get($item, 'volumeInfo.imageLinks.smallThumbnail'),
-        );
-
-        if ($coverUrl !== null) {
-            $coverUrl = preg_replace('#^http://#', 'https://', $coverUrl) ?? $coverUrl;
-        }
+        $categories = $this->stringList(Arr::get($item, 'volumeInfo.categories'));
+        $synopsis = $this->cleanText(Arr::get($item, 'volumeInfo.description'));
+        $literatureType = $this->literatureType($title, $categories, $synopsis, $requestedType);
 
         return new NormalizedLiterature(
             externalId: $externalId,
             title: $title,
-            type: 'book',
+            type: $literatureType,
             authors: $this->stringList(Arr::get($item, 'volumeInfo.authors')),
-            categories: $this->stringList(Arr::get($item, 'volumeInfo.categories')),
+            categories: $categories,
             publicationYear: $publicationYear,
             tagline: $this->cleanText(Arr::get($item, 'volumeInfo.subtitle')),
-            synopsis: $this->cleanText(Arr::get($item, 'volumeInfo.description')),
+            synopsis: $synopsis,
             publisher: $this->cleanText(Arr::get($item, 'volumeInfo.publisher')),
             language: $this->cleanText(Arr::get($item, 'volumeInfo.language')),
-            format: $this->format(Arr::get($item, 'volumeInfo.printType')),
+            format: $this->format(Arr::get($item, 'volumeInfo.printType'), $literatureType),
             identifier: $this->identifier(Arr::get($item, 'volumeInfo.industryIdentifiers')),
-            coverUrl: $coverUrl,
+            coverUrl: $this->coverUrl(Arr::get($item, 'volumeInfo.imageLinks')),
         );
     }
 
@@ -159,11 +159,58 @@ final class GoogleBooksAdapter
         return null;
     }
 
-    private function format(mixed $printType): string
+    private function coverUrl(mixed $imageLinks): ?string
+    {
+        if (! is_array($imageLinks)) {
+            return null;
+        }
+
+        foreach (['extraLarge', 'large', 'medium', 'small', 'thumbnail', 'smallThumbnail'] as $size) {
+            $coverUrl = $this->cleanText(Arr::get($imageLinks, $size));
+
+            if ($coverUrl !== null) {
+                return preg_replace('#^http://#', 'https://', $coverUrl) ?? $coverUrl;
+            }
+        }
+
+        return null;
+    }
+
+    /** @param list<string> $categories */
+    private function literatureType(string $title, array $categories, ?string $synopsis, string $requestedType = 'all'): string
+    {
+        $normalizedTitle = Str::lower($title);
+        $normalizedCategories = Str::lower(implode(' | ', $categories));
+        $normalizedSynopsis = Str::lower($synopsis ?? '');
+
+        if (preg_match('/\((?:light )?novel\)/u', $normalizedTitle) === 1) {
+            return 'novel';
+        }
+
+        if (preg_match('/\b(?:non[- ]?fiction|nonfiksi|comics?|graphic novels?|literary criticism|literary collections)\b/u', $normalizedCategories) === 1) {
+            return 'book';
+        }
+
+        if (preg_match('/\b(?:fiction|fiksi|novels?|romance|romansa|fantasy|fantasi)\b/u', $normalizedCategories) === 1) {
+            return 'novel';
+        }
+
+        if (preg_match('/\b(?:adventure|children(?:\x{2019}|\x{0027})?s|young adult) stories\b/u', $normalizedCategories) === 1) {
+            return 'novel';
+        }
+
+        if (preg_match('/\b(?:a novel|the novel|novel ini|sebuah novel)\b/u', $normalizedSynopsis) === 1) {
+            return 'novel';
+        }
+
+        return $requestedType === 'novel' ? 'novel' : 'book';
+    }
+
+    private function format(mixed $printType, string $literatureType): string
     {
         return match (Str::upper((string) $printType)) {
             'MAGAZINE' => 'Majalah',
-            default => 'Buku',
+            default => $literatureType === 'novel' ? 'Novel' : 'Buku',
         };
     }
 

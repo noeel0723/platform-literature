@@ -37,6 +37,7 @@ class CatalogSyncServiceTest extends TestCase
         $this->assertDatabaseHas('literatures', [
             'external_id' => 'google-volume-1',
             'title' => 'Dune',
+            'type' => 'novel',
             'publication_year' => 1965,
             'identifier' => '9780441172719',
         ]);
@@ -204,6 +205,7 @@ class CatalogSyncServiceTest extends TestCase
             'description' => 'A story about two brothers.',
             'startDate' => ['year' => 2001],
             'genres' => ['Action'],
+            'countryOfOrigin' => 'JP',
             'coverImage' => ['large' => 'https://s4.anilist.co/cover.jpg'],
             'format' => 'MANGA',
             'staff' => [

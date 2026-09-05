@@ -32,18 +32,68 @@ class GoogleBooksAdapterTest extends TestCase
         $this->assertInstanceOf(NormalizedLiterature::class, $book);
         $this->assertSame('google-volume-1', $book->externalId);
         $this->assertSame('Dune', $book->title);
+        $this->assertSame('novel', $book->type);
         $this->assertSame(['Frank Herbert'], $book->authors);
         $this->assertSame(['Science Fiction', 'Classics'], $book->categories);
         $this->assertSame(1965, $book->publicationYear);
         $this->assertSame('9780441172719', $book->identifier);
-        $this->assertSame('https://books.google.com/cover.jpg', $book->coverUrl);
+        $this->assertSame('https://books.google.com/large-cover.jpg', $book->coverUrl);
         $this->assertSame('A science fiction classic.', $book->synopsis);
+        $this->assertSame('Novel', $book->format);
 
         Http::assertSent(fn (Request $request): bool => $request->method() === 'GET'
             && $request['q'] === 'Dune'
             && $request['maxResults'] === 4
             && $request['printType'] === 'books'
             && $request['key'] === 'test-google-books-key');
+    }
+
+    public function test_search_keeps_non_fiction_as_a_general_book(): void
+    {
+        $this->configureGoogleBooks();
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://www.googleapis.com/books/v1/volumes*' => Http::response([
+                'items' => [[
+                    'id' => 'google-non-fiction',
+                    'volumeInfo' => [
+                        'title' => 'The Science of Dune',
+                        'categories' => ['Social Science'],
+                        'imageLinks' => ['thumbnail' => 'http://books.google.com/thumbnail.jpg'],
+                        'printType' => 'BOOK',
+                    ],
+                ]],
+            ]),
+        ]);
+
+        $book = app(GoogleBooksAdapter::class)->search('The Science of Dune')->first();
+
+        $this->assertSame('book', $book->type);
+        $this->assertSame('Buku', $book->format);
+        $this->assertSame('https://books.google.com/thumbnail.jpg', $book->coverUrl);
+    }
+
+    public function test_novel_search_uses_a_fiction_subject_and_classifies_ambiguous_results_as_novels(): void
+    {
+        $this->configureGoogleBooks();
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://www.googleapis.com/books/v1/volumes*' => Http::response([
+                'items' => [[
+                    'id' => 'google-novel',
+                    'volumeInfo' => [
+                        'title' => 'A Story Without Categories',
+                        'printType' => 'BOOK',
+                    ],
+                ]],
+            ]),
+        ]);
+
+        $novel = app(GoogleBooksAdapter::class)->search('A Story', 6, 'novel')->first();
+
+        $this->assertSame('novel', $novel->type);
+        $this->assertSame('Novel', $novel->format);
+        Http::assertSent(fn (Request $request): bool => $request['q'] === 'A Story subject:fiction');
     }
 
     public function test_search_returns_an_empty_collection_for_an_incomplete_response(): void
@@ -141,7 +191,10 @@ class GoogleBooksAdapterTest extends TestCase
                     ['type' => 'ISBN_13', 'identifier' => '9780441172719'],
                 ],
                 'categories' => ['Science Fiction', 'Classics'],
-                'imageLinks' => ['thumbnail' => 'http://books.google.com/cover.jpg'],
+                'imageLinks' => [
+                    'extraLarge' => 'http://books.google.com/large-cover.jpg',
+                    'thumbnail' => 'http://books.google.com/thumbnail.jpg',
+                ],
                 'language' => 'en',
                 'printType' => 'BOOK',
             ],

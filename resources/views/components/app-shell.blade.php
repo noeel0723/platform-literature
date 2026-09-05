@@ -5,7 +5,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Temukan buku, komik Barat, manga, dan light novel dalam satu katalog.">
+    <meta name="description" content="Temukan buku, novel, komik Barat, manga, manhwa, dan light novel dalam satu katalog.">
     <title>{{ $title ? $title.' - ' : '' }}{{ config('app.name') }}</title>
     @fonts
     @vite(['resources/css/app.css', 'resources/js/app.js'])

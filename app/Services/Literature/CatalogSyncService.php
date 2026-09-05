@@ -19,26 +19,27 @@ final class CatalogSyncService
         private ComicVineAdapter $comicVine,
     ) {}
 
-    public function syncGoogleBooks(string $query): int
+    public function syncGoogleBooks(string $query, string $literatureType = 'all'): int
     {
         $items = $this->googleBooks->search(
             $query,
             (int) config('services.google_books.max_results', 6),
+            $literatureType,
         );
 
         return $this->sync(
             sourceKey: 'google-books',
             sourceName: 'Google Books',
             baseUrl: (string) config('services.google_books.base_url'),
-            supportedTypes: ['book'],
+            supportedTypes: ['book', 'novel'],
             items: $items,
         );
     }
 
     public function syncAniList(string $query, string $literatureType): int
     {
-        if (! in_array($literatureType, ['all', 'manga', 'light-novel'], true)) {
-            throw new InvalidArgumentException('AniList sync only supports all, manga, and light-novel types.');
+        if (! in_array($literatureType, ['all', 'manga', 'manhwa', 'light-novel'], true)) {
+            throw new InvalidArgumentException('AniList sync only supports all, manga, manhwa, and light-novel types.');
         }
 
         $items = $this->aniList->search(
@@ -51,7 +52,7 @@ final class CatalogSyncService
             sourceKey: 'anilist',
             sourceName: 'AniList',
             baseUrl: (string) config('services.anilist.base_url'),
-            supportedTypes: ['manga', 'light-novel'],
+            supportedTypes: ['manga', 'manhwa', 'light-novel'],
             items: $items,
         );
     }

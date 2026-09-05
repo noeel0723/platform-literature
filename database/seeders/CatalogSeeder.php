@@ -81,7 +81,7 @@ class CatalogSeeder extends Seeder
             'google-books' => [
                 'name' => 'Google Books',
                 'base_url' => 'https://www.googleapis.com/books/v1',
-                'supported_types' => ['book'],
+                'supported_types' => ['book', 'novel'],
                 'is_active' => true,
             ],
             'comic-vine' => [
@@ -93,7 +93,7 @@ class CatalogSeeder extends Seeder
             'anilist' => [
                 'name' => 'AniList',
                 'base_url' => 'https://graphql.anilist.co',
-                'supported_types' => ['manga', 'light-novel'],
+                'supported_types' => ['manga', 'manhwa', 'light-novel'],
                 'is_active' => true,
             ],
         ];
@@ -110,7 +110,7 @@ class CatalogSeeder extends Seeder
                 'external_id' => 'isbn-9789799731234',
                 'slug' => 'bumi-manusia',
                 'title' => 'Bumi Manusia',
-                'type' => 'book',
+                'type' => 'novel',
                 'publication_year' => 1980,
                 'tagline' => 'Sebuah kisah tentang martabat, pendidikan, dan keberanian untuk bersuara.',
                 'synopsis' => 'Minke, seorang pelajar pribumi di masa kolonial, berhadapan dengan ketidakadilan yang membentuk pandangannya tentang manusia, pengetahuan, dan kebebasan.',
@@ -188,7 +188,7 @@ class CatalogSeeder extends Seeder
                 'external_id' => 'isbn-9780261102217',
                 'slug' => 'the-hobbit',
                 'title' => 'The Hobbit',
-                'type' => 'book',
+                'type' => 'novel',
                 'publication_year' => 1937,
                 'tagline' => 'Petualangan besar dapat dimulai dari pintu rumah yang paling sederhana.',
                 'synopsis' => 'Bilbo Baggins meninggalkan kehidupannya yang tenang untuk membantu sekelompok kurcaci merebut kembali rumah mereka dari seekor naga.',

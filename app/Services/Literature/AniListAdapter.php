@@ -23,10 +23,14 @@ final class AniListAdapter
 
         $formats = match ($literatureType) {
             'manga' => ['MANGA', 'ONE_SHOT'],
+            'manhwa' => ['MANGA', 'ONE_SHOT'],
             'light-novel' => ['NOVEL'],
             'all' => ['MANGA', 'ONE_SHOT', 'NOVEL'],
-            default => throw new InvalidArgumentException('AniList only supports all, manga, and light-novel catalog types.'),
+            default => throw new InvalidArgumentException('AniList only supports all, manga, manhwa, and light-novel catalog types.'),
         };
+
+        $countryOfOrigin = $literatureType === 'manhwa' ? 'KR' : null;
+        $excludedCountries = $literatureType === 'manga' ? ['KR'] : null;
 
         try {
             $response = Http::acceptJson()
@@ -38,6 +42,8 @@ final class AniListAdapter
                         'search' => $query,
                         'perPage' => max(1, min($limit, 50)),
                         'formats' => $formats,
+                        'countryOfOrigin' => $countryOfOrigin,
+                        'excludedCountries' => $excludedCountries,
                     ],
                 ]);
         } catch (ConnectionException $exception) {
@@ -104,10 +110,12 @@ final class AniListAdapter
                 ?? Arr::get($item, 'coverImage.medium'),
         );
 
+        $countryOfOrigin = $this->cleanText(Arr::get($item, 'countryOfOrigin'));
+
         return new NormalizedLiterature(
             externalId: $externalId,
             title: $title,
-            type: $this->literatureType(Arr::get($item, 'format'), $literatureType),
+            type: $this->literatureType(Arr::get($item, 'format'), $countryOfOrigin, $literatureType),
             authors: $this->authors(Arr::get($item, 'staff.edges')),
             categories: $this->stringList(Arr::get($item, 'genres')),
             publicationYear: $this->publicationYear(Arr::get($item, 'startDate.year')),
@@ -115,7 +123,7 @@ final class AniListAdapter
             synopsis: $this->cleanText(Arr::get($item, 'description')),
             publisher: null,
             language: null,
-            format: $this->format(Arr::get($item, 'format')),
+            format: $this->format(Arr::get($item, 'format'), $countryOfOrigin),
             identifier: "ANILIST:{$externalId}",
             coverUrl: $coverUrl,
         );
@@ -164,9 +172,13 @@ final class AniListAdapter
         return $normalizedYear > 0 ? $normalizedYear : null;
     }
 
-    private function format(mixed $format): ?string
+    private function format(mixed $format, ?string $countryOfOrigin): ?string
     {
         $normalizedFormat = Str::upper((string) $format);
+
+        if ($countryOfOrigin === 'KR' && in_array($normalizedFormat, ['MANGA', 'ONE_SHOT'], true)) {
+            return $normalizedFormat === 'ONE_SHOT' ? 'Manhwa satu bab' : 'Manhwa';
+        }
 
         return match ($normalizedFormat) {
             'MANGA' => 'Manga',
@@ -177,11 +189,11 @@ final class AniListAdapter
         };
     }
 
-    private function literatureType(mixed $format, string $requestedType): string
+    private function literatureType(mixed $format, ?string $countryOfOrigin, string $requestedType): string
     {
         return match (Str::upper((string) $format)) {
             'NOVEL' => 'light-novel',
-            'MANGA', 'ONE_SHOT' => 'manga',
+            'MANGA', 'ONE_SHOT' => $countryOfOrigin === 'KR' ? 'manhwa' : 'manga',
             default => $requestedType === 'light-novel' ? 'light-novel' : 'manga',
         };
     }
@@ -200,12 +212,14 @@ final class AniListAdapter
     private function searchQuery(): string
     {
         return <<<'GRAPHQL'
-            query SearchLiterature($search: String!, $perPage: Int!, $formats: [MediaFormat]) {
+            query SearchLiterature($search: String!, $perPage: Int!, $formats: [MediaFormat], $countryOfOrigin: CountryCode, $excludedCountries: [CountryCode]) {
               Page(page: 1, perPage: $perPage) {
                 media(
                   search: $search
                   type: MANGA
                   format_in: $formats
+                  countryOfOrigin: $countryOfOrigin
+                  countryOfOrigin_not_in: $excludedCountries
                   isAdult: false
                   sort: SEARCH_MATCH
                 ) {
@@ -220,6 +234,7 @@ final class AniListAdapter
                     year
                   }
                   genres
+                  countryOfOrigin
                   coverImage {
                     extraLarge
                     large

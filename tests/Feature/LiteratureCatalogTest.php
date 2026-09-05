@@ -131,7 +131,7 @@ class LiteratureCatalogTest extends TestCase
 
         $response = $this->get(route('literatures.index', [
             'q' => 'Dune',
-            'type' => 'book',
+            'type' => 'novel',
         ]));
 
         $response
@@ -143,6 +143,7 @@ class LiteratureCatalogTest extends TestCase
         $this->assertDatabaseHas('literatures', [
             'external_id' => 'google-dune',
             'title' => 'Dune',
+            'type' => 'novel',
             'cover_url' => 'https://books.google.com/dune-cover.jpg',
         ]);
         Http::assertSentCount(1);
@@ -189,6 +190,7 @@ class LiteratureCatalogTest extends TestCase
                             'description' => 'A story about two brothers.',
                             'startDate' => ['year' => 2001],
                             'genres' => ['Action'],
+                            'countryOfOrigin' => 'JP',
                             'coverImage' => ['large' => 'https://s4.anilist.co/fullmetal.jpg'],
                             'format' => 'MANGA',
                             'staff' => [
@@ -218,6 +220,49 @@ class LiteratureCatalogTest extends TestCase
             'external_id' => '5114',
             'title' => 'Fullmetal Alchemist',
             'type' => 'manga',
+        ]);
+        Http::assertSentCount(1);
+    }
+
+    public function test_catalog_search_imports_anilist_manhwa_separately_from_manga(): void
+    {
+        $this->configureAniList();
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://graphql.anilist.co*' => Http::response([
+                'data' => [
+                    'Page' => [
+                        'media' => [[
+                            'id' => 105398,
+                            'title' => ['english' => 'Solo Leveling'],
+                            'description' => 'A Korean action fantasy series.',
+                            'startDate' => ['year' => 2018],
+                            'genres' => ['Action', 'Fantasy'],
+                            'countryOfOrigin' => 'KR',
+                            'coverImage' => ['extraLarge' => 'https://s4.anilist.co/solo-leveling.jpg'],
+                            'format' => 'MANGA',
+                            'staff' => ['edges' => []],
+                        ]],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $response = $this->get(route('literatures.index', [
+            'q' => 'Solo Leveling',
+            'type' => 'manhwa',
+        ]));
+
+        $response
+            ->assertOk()
+            ->assertSeeText('Solo Leveling')
+            ->assertSeeText('Manhwa')
+            ->assertDontSeeText('Katalog lokal tetap aktif.');
+        $this->assertDatabaseHas('literatures', [
+            'external_id' => '105398',
+            'title' => 'Solo Leveling',
+            'type' => 'manhwa',
+            'format' => 'Manhwa',
         ]);
         Http::assertSentCount(1);
     }

@@ -17,8 +17,10 @@ class LiteratureController extends Controller
      */
     private const TYPES = [
         'book' => 'Buku',
+        'novel' => 'Novel',
         'western-comic' => 'Komik Barat',
         'manga' => 'Manga',
+        'manhwa' => 'Manhwa',
         'light-novel' => 'Light Novel',
     ];
 
@@ -28,15 +30,15 @@ class LiteratureController extends Controller
         $selectedType = trim((string) $request->query('type', ''));
         $unavailableSources = [];
 
-        if ($query !== '' && in_array($selectedType, ['', 'book'], true)) {
+        if ($query !== '' && in_array($selectedType, ['', 'book', 'novel'], true)) {
             try {
-                $catalogSync->syncGoogleBooks($query);
+                $catalogSync->syncGoogleBooks($query, $selectedType === '' ? 'all' : $selectedType);
             } catch (LiteratureSourceUnavailable) {
                 $unavailableSources[] = 'Google Books';
             }
         }
 
-        if ($query !== '' && in_array($selectedType, ['', 'manga', 'light-novel'], true)) {
+        if ($query !== '' && in_array($selectedType, ['', 'manga', 'manhwa', 'light-novel'], true)) {
             try {
                 $catalogSync->syncAniList($query, $selectedType === '' ? 'all' : $selectedType);
             } catch (LiteratureSourceUnavailable) {

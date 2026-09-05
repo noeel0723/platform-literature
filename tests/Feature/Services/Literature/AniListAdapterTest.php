@@ -42,6 +42,7 @@ class AniListAdapterTest extends TestCase
         $this->assertSame('ANILIST:5114', $manga->identifier);
         $this->assertSame('https://s4.anilist.co/file/anilistcdn/media/manga/cover/large.jpg', $manga->coverUrl);
         $this->assertSame('A story about two brothers.', $manga->synopsis);
+        $this->assertSame('Manga', $manga->format);
 
         Http::assertSent(function (Request $request): bool {
             $data = $request->data();
@@ -49,7 +50,41 @@ class AniListAdapterTest extends TestCase
             return $request->method() === 'POST'
                 && $data['variables']['search'] === 'Fullmetal Alchemist'
                 && $data['variables']['perPage'] === 4
-                && $data['variables']['formats'] === ['MANGA', 'ONE_SHOT'];
+                && $data['variables']['formats'] === ['MANGA', 'ONE_SHOT']
+                && $data['variables']['countryOfOrigin'] === null
+                && $data['variables']['excludedCountries'] === ['KR'];
+        });
+    }
+
+    public function test_search_classifies_korean_comics_as_manhwa(): void
+    {
+        $this->configureAniList();
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://graphql.anilist.co*' => Http::response([
+                'data' => [
+                    'Page' => [
+                        'media' => [[
+                            ...$this->completeManga(),
+                            'id' => 105398,
+                            'title' => ['english' => 'Solo Leveling'],
+                            'countryOfOrigin' => 'KR',
+                        ]],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $manhwa = app(AniListAdapter::class)->search('Solo Leveling', 'manhwa')->first();
+
+        $this->assertSame('manhwa', $manhwa->type);
+        $this->assertSame('Manhwa', $manhwa->format);
+        Http::assertSent(function (Request $request): bool {
+            $variables = $request->data()['variables'];
+
+            return $variables['formats'] === ['MANGA', 'ONE_SHOT']
+                && $variables['countryOfOrigin'] === 'KR'
+                && $variables['excludedCountries'] === null;
         });
     }
 
@@ -156,6 +191,7 @@ class AniListAdapterTest extends TestCase
             'description' => '<p>A story about <strong>two brothers</strong>.</p>',
             'startDate' => ['year' => 2001],
             'genres' => ['Action', 'Adventure'],
+            'countryOfOrigin' => 'JP',
             'coverImage' => [
                 'extraLarge' => 'https://s4.anilist.co/file/anilistcdn/media/manga/cover/large.jpg',
             ],
