@@ -50,4 +50,14 @@ return [
         'timeout' => (int) env('ANILIST_TIMEOUT', 12),
     ],
 
+    'comic_vine' => [
+        'base_url' => env('COMIC_VINE_BASE_URL', 'https://comicvine.gamespot.com/api'),
+        'key' => env('COMIC_VINE_API_KEY'),
+        'user_agent' => env('COMIC_VINE_USER_AGENT', 'LiteratureSocialDiscovery/1.0 academic-project'),
+        'max_results' => (int) env('COMIC_VINE_MAX_RESULTS', 6),
+        'cache_minutes' => (int) env('COMIC_VINE_CACHE_MINUTES', 30),
+        'connect_timeout' => (int) env('COMIC_VINE_CONNECT_TIMEOUT', 3),
+        'timeout' => (int) env('COMIC_VINE_TIMEOUT', 12),
+    ],
+
 ];

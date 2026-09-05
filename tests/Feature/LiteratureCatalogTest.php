@@ -222,6 +222,45 @@ class LiteratureCatalogTest extends TestCase
         Http::assertSentCount(1);
     }
 
+    public function test_catalog_search_imports_comic_vine_volumes_into_the_internal_catalog(): void
+    {
+        $this->configureComicVine();
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://comicvine.gamespot.com/api/search/*' => Http::response([
+                'status_code' => 1,
+                'error' => 'OK',
+                'results' => [[
+                    'resource_type' => 'volume',
+                    'id' => 1815,
+                    'name' => 'Watchmen',
+                    'deck' => 'Who watches the Watchmen?',
+                    'description' => 'A landmark superhero story.',
+                    'start_year' => 1986,
+                    'publisher' => ['name' => 'DC Comics'],
+                    'image' => ['super_url' => 'https://comicvine.gamespot.com/watchmen.jpg'],
+                ]],
+            ]),
+        ]);
+
+        $response = $this->get(route('literatures.index', [
+            'q' => 'Watchmen',
+            'type' => 'western-comic',
+        ]));
+
+        $response
+            ->assertOk()
+            ->assertSeeText('Watchmen')
+            ->assertSeeText('Comic Vine')
+            ->assertDontSeeText('Katalog lokal tetap aktif.');
+        $this->assertDatabaseHas('literatures', [
+            'external_id' => '1815',
+            'title' => 'Watchmen',
+            'type' => 'western-comic',
+        ]);
+        Http::assertSentCount(1);
+    }
+
     /**
      * @param  array<string, mixed>  $attributes
      * @param  array<int, string>  $authors
@@ -281,6 +320,19 @@ class LiteratureCatalogTest extends TestCase
             'services.anilist.max_results' => 6,
             'services.anilist.connect_timeout' => 1,
             'services.anilist.timeout' => 2,
+        ]);
+    }
+
+    private function configureComicVine(): void
+    {
+        config()->set([
+            'services.comic_vine.base_url' => 'https://comicvine.gamespot.com/api',
+            'services.comic_vine.key' => 'test-comic-vine-key',
+            'services.comic_vine.user_agent' => 'LiteratureSocialDiscovery/1.0 test-suite',
+            'services.comic_vine.max_results' => 6,
+            'services.comic_vine.cache_minutes' => 30,
+            'services.comic_vine.connect_timeout' => 1,
+            'services.comic_vine.timeout' => 2,
         ]);
     }
 }

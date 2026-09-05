@@ -16,6 +16,7 @@ final class CatalogSyncService
     public function __construct(
         private GoogleBooksAdapter $googleBooks,
         private AniListAdapter $aniList,
+        private ComicVineAdapter $comicVine,
     ) {}
 
     public function syncGoogleBooks(string $query): int
@@ -51,6 +52,22 @@ final class CatalogSyncService
             sourceName: 'AniList',
             baseUrl: (string) config('services.anilist.base_url'),
             supportedTypes: ['manga', 'light-novel'],
+            items: $items,
+        );
+    }
+
+    public function syncComicVine(string $query): int
+    {
+        $items = $this->comicVine->search(
+            $query,
+            (int) config('services.comic_vine.max_results', 6),
+        );
+
+        return $this->sync(
+            sourceKey: 'comic-vine',
+            sourceName: 'Comic Vine',
+            baseUrl: (string) config('services.comic_vine.base_url'),
+            supportedTypes: ['western-comic'],
             items: $items,
         );
     }

@@ -71,12 +71,18 @@
             <div class="mt-9 grid gap-px bg-ink-950/10 md:grid-cols-3">
                 @foreach ([
                     ['Google Books', 'Buku dan novel umum', 'GB', 'Terhubung / API key server'],
-                    ['Comic Vine', 'Komik Barat', 'CV', 'Adapter berikutnya'],
+                    ['Comic Vine', 'Komik Barat', 'CV', filled(config('services.comic_vine.key')) ? 'Terhubung / API key server' : 'Menunggu API key'],
                     ['AniList', 'Manga dan light novel', 'AL', 'Terhubung / data publik'],
                 ] as [$source, $scope, $code, $status])
                     <article class="bg-brand-cream/85 p-6 sm:p-8">
                         <span class="grid size-12 place-items-center bg-brand-sky font-bold text-ink-950">{{ $code }}</span>
-                        <h3 class="mt-6 text-xl font-bold text-ink-950">{{ $source }}</h3>
+                        <h3 class="mt-6 text-xl font-bold text-ink-950">
+                            @if ($source === 'Comic Vine')
+                                <a href="https://comicvine.gamespot.com/" target="_blank" rel="noreferrer" class="underline decoration-ink-950/20 underline-offset-4 transition hover:decoration-brand-coral">{{ $source }}</a>
+                            @else
+                                {{ $source }}
+                            @endif
+                        </h3>
                         <p class="mt-2 text-ink-950/60">{{ $scope }}</p>
                         <p class="mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-brand-coral">{{ $status }}</p>
                     </article>

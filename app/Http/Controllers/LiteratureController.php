@@ -44,6 +44,14 @@ class LiteratureController extends Controller
             }
         }
 
+        if ($query !== '' && in_array($selectedType, ['', 'western-comic'], true)) {
+            try {
+                $catalogSync->syncComicVine($query);
+            } catch (LiteratureSourceUnavailable) {
+                $unavailableSources[] = 'Comic Vine';
+            }
+        }
+
         $sourceWarning = $unavailableSources === []
             ? null
             : implode(' dan ', array_unique($unavailableSources))
