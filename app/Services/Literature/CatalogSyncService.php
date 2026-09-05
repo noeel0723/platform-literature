@@ -6,12 +6,17 @@ use App\Models\ApiSource;
 use App\Models\Author;
 use App\Models\Category;
 use App\Models\Literature;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 final class CatalogSyncService
 {
-    public function __construct(private GoogleBooksAdapter $googleBooks) {}
+    public function __construct(
+        private GoogleBooksAdapter $googleBooks,
+        private AniListAdapter $aniList,
+    ) {}
 
     public function syncGoogleBooks(string $query): int
     {
@@ -20,17 +25,64 @@ final class CatalogSyncService
             (int) config('services.google_books.max_results', 6),
         );
 
+        return $this->sync(
+            sourceKey: 'google-books',
+            sourceName: 'Google Books',
+            baseUrl: (string) config('services.google_books.base_url'),
+            supportedTypes: ['book'],
+            items: $items,
+        );
+    }
+
+    public function syncAniList(string $query, string $literatureType): int
+    {
+        if (! in_array($literatureType, ['all', 'manga', 'light-novel'], true)) {
+            throw new InvalidArgumentException('AniList sync only supports all, manga, and light-novel types.');
+        }
+
+        $items = $this->aniList->search(
+            $query,
+            $literatureType,
+            (int) config('services.anilist.max_results', 6),
+        );
+
+        return $this->sync(
+            sourceKey: 'anilist',
+            sourceName: 'AniList',
+            baseUrl: (string) config('services.anilist.base_url'),
+            supportedTypes: ['manga', 'light-novel'],
+            items: $items,
+        );
+    }
+
+    /**
+     * @param  list<string>  $supportedTypes
+     * @param  Collection<int, NormalizedLiterature>  $items
+     */
+    private function sync(
+        string $sourceKey,
+        string $sourceName,
+        string $baseUrl,
+        array $supportedTypes,
+        Collection $items,
+    ): int {
         if ($items->isEmpty()) {
             return 0;
         }
 
-        return DB::transaction(function () use ($items): int {
+        return DB::transaction(function () use (
+            $sourceKey,
+            $sourceName,
+            $baseUrl,
+            $supportedTypes,
+            $items,
+        ): int {
             $source = ApiSource::query()->updateOrCreate(
-                ['key' => 'google-books'],
+                ['key' => $sourceKey],
                 [
-                    'name' => 'Google Books',
-                    'base_url' => rtrim((string) config('services.google_books.base_url'), '/'),
-                    'supported_types' => ['book'],
+                    'name' => $sourceName,
+                    'base_url' => rtrim($baseUrl, '/'),
+                    'supported_types' => $supportedTypes,
                     'is_active' => true,
                 ],
             );
@@ -74,9 +126,9 @@ final class CatalogSyncService
         $literature->fill([
             'api_source_id' => $source->id,
             'external_id' => $item->externalId,
-            'slug' => $literature->exists ? $literature->slug : $this->uniqueSlug($item),
+            'slug' => $literature->exists ? $literature->slug : $this->uniqueSlug($source, $item),
             'title' => $item->title,
-            'type' => 'book',
+            'type' => $item->type,
             'publication_year' => $item->publicationYear ?? $literature->publication_year,
             'tagline' => $item->tagline ?? $literature->tagline,
             'synopsis' => $item->synopsis ?? $literature->synopsis,
@@ -136,7 +188,7 @@ final class CatalogSyncService
         $literature->categories()->sync($categoryIds);
     }
 
-    private function uniqueSlug(NormalizedLiterature $item): string
+    private function uniqueSlug(ApiSource $source, NormalizedLiterature $item): string
     {
         $baseSlug = Str::slug($item->title);
 
@@ -145,7 +197,7 @@ final class CatalogSyncService
         }
 
         return Str::limit($baseSlug, 180, '')
-            .'-google-books-'
+            .'-'.$source->key.'-'
             .Str::slug($item->externalId);
     }
 }

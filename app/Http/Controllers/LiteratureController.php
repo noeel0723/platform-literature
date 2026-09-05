@@ -26,15 +26,28 @@ class LiteratureController extends Controller
     {
         $query = trim((string) $request->query('q', ''));
         $selectedType = trim((string) $request->query('type', ''));
-        $sourceWarning = null;
+        $unavailableSources = [];
 
         if ($query !== '' && in_array($selectedType, ['', 'book'], true)) {
             try {
                 $catalogSync->syncGoogleBooks($query);
             } catch (LiteratureSourceUnavailable) {
-                $sourceWarning = 'Google Books sementara tidak dapat dihubungkan. Hasil dari katalog lokal tetap ditampilkan.';
+                $unavailableSources[] = 'Google Books';
             }
         }
+
+        if ($query !== '' && in_array($selectedType, ['', 'manga', 'light-novel'], true)) {
+            try {
+                $catalogSync->syncAniList($query, $selectedType === '' ? 'all' : $selectedType);
+            } catch (LiteratureSourceUnavailable) {
+                $unavailableSources[] = 'AniList';
+            }
+        }
+
+        $sourceWarning = $unavailableSources === []
+            ? null
+            : implode(' dan ', array_unique($unavailableSources))
+                .' sementara tidak dapat dihubungkan. Hasil dari katalog lokal tetap ditampilkan.';
 
         $literatures = Literature::query()
             ->with(['apiSource', 'authors', 'categories'])

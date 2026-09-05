@@ -72,6 +72,40 @@ class CatalogSyncServiceTest extends TestCase
         Http::assertSentCount(1);
     }
 
+    public function test_repeated_anilist_sync_updates_one_manga_without_duplicates(): void
+    {
+        $this->configureAniList();
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://graphql.anilist.co*' => Http::response([
+                'data' => [
+                    'Page' => [
+                        'media' => [$this->manga()],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $firstSyncCount = app(CatalogSyncService::class)->syncAniList('Fullmetal Alchemist', 'manga');
+        $secondSyncCount = app(CatalogSyncService::class)->syncAniList('Fullmetal Alchemist', 'manga');
+
+        $this->assertSame(1, $firstSyncCount);
+        $this->assertSame(1, $secondSyncCount);
+        $this->assertDatabaseCount('api_sources', 1);
+        $this->assertDatabaseCount('literatures', 1);
+        $this->assertDatabaseHas('literatures', [
+            'external_id' => '5114',
+            'title' => 'Fullmetal Alchemist',
+            'type' => 'manga',
+            'identifier' => 'ANILIST:5114',
+        ]);
+        $this->assertDatabaseHas('api_sources', [
+            'key' => 'anilist',
+            'name' => 'AniList',
+        ]);
+        Http::assertSentCount(2);
+    }
+
     private function configureGoogleBooks(): void
     {
         config()->set([
@@ -80,6 +114,16 @@ class CatalogSyncServiceTest extends TestCase
             'services.google_books.max_results' => 6,
             'services.google_books.connect_timeout' => 1,
             'services.google_books.timeout' => 2,
+        ]);
+    }
+
+    private function configureAniList(): void
+    {
+        config()->set([
+            'services.anilist.base_url' => 'https://graphql.anilist.co',
+            'services.anilist.max_results' => 6,
+            'services.anilist.connect_timeout' => 1,
+            'services.anilist.timeout' => 2,
         ]);
     }
 
@@ -102,6 +146,26 @@ class CatalogSyncServiceTest extends TestCase
                 'imageLinks' => ['thumbnail' => 'https://books.google.com/cover.jpg'],
                 'language' => 'en',
                 'printType' => 'BOOK',
+            ],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function manga(): array
+    {
+        return [
+            'id' => 5114,
+            'title' => ['english' => 'Fullmetal Alchemist'],
+            'description' => 'A story about two brothers.',
+            'startDate' => ['year' => 2001],
+            'genres' => ['Action'],
+            'coverImage' => ['large' => 'https://s4.anilist.co/cover.jpg'],
+            'format' => 'MANGA',
+            'staff' => [
+                'edges' => [[
+                    'role' => 'Story & Art',
+                    'node' => ['name' => ['full' => 'Hiromu Arakawa']],
+                ]],
             ],
         ];
     }

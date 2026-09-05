@@ -43,4 +43,11 @@ return [
         'timeout' => (int) env('GOOGLE_BOOKS_TIMEOUT', 8),
     ],
 
+    'anilist' => [
+        'base_url' => env('ANILIST_BASE_URL', 'https://graphql.anilist.co'),
+        'max_results' => (int) env('ANILIST_MAX_RESULTS', 6),
+        'connect_timeout' => (int) env('ANILIST_CONNECT_TIMEOUT', 3),
+        'timeout' => (int) env('ANILIST_TIMEOUT', 12),
+    ],
+
 ];

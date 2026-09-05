@@ -73,7 +73,10 @@ class LiteratureCatalogTest extends TestCase
             ['Misteri'],
         );
 
-        $this->get(route('literatures.index', ['q' => $query]))
+        $this->get(route('literatures.index', [
+            'q' => $query,
+            'type' => 'western-comic',
+        ]))
             ->assertOk()
             ->assertSeeText('Watchmen');
     }
@@ -158,7 +161,10 @@ class LiteratureCatalogTest extends TestCase
             ['Frank Herbert'],
         );
 
-        $response = $this->get(route('literatures.index', ['q' => 'Dune']));
+        $response = $this->get(route('literatures.index', [
+            'q' => 'Dune',
+            'type' => 'book',
+        ]));
 
         $response
             ->assertOk()
@@ -166,6 +172,53 @@ class LiteratureCatalogTest extends TestCase
             ->assertSeeText('Katalog lokal tetap aktif.')
             ->assertSeeText('Hasil dari katalog lokal tetap ditampilkan.');
         $this->assertDatabaseCount('literatures', 1);
+        Http::assertSentCount(1);
+    }
+
+    public function test_catalog_search_imports_anilist_manga_into_the_internal_catalog(): void
+    {
+        $this->configureAniList();
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://graphql.anilist.co*' => Http::response([
+                'data' => [
+                    'Page' => [
+                        'media' => [[
+                            'id' => 5114,
+                            'title' => ['english' => 'Fullmetal Alchemist'],
+                            'description' => 'A story about two brothers.',
+                            'startDate' => ['year' => 2001],
+                            'genres' => ['Action'],
+                            'coverImage' => ['large' => 'https://s4.anilist.co/fullmetal.jpg'],
+                            'format' => 'MANGA',
+                            'staff' => [
+                                'edges' => [[
+                                    'role' => 'Story & Art',
+                                    'node' => ['name' => ['full' => 'Hiromu Arakawa']],
+                                ]],
+                            ],
+                        ]],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $response = $this->get(route('literatures.index', [
+            'q' => 'Fullmetal Alchemist',
+            'type' => 'manga',
+        ]));
+
+        $response
+            ->assertOk()
+            ->assertSeeText('Fullmetal Alchemist')
+            ->assertSeeText('Hiromu Arakawa')
+            ->assertSeeText('AniList')
+            ->assertDontSeeText('Katalog lokal tetap aktif.');
+        $this->assertDatabaseHas('literatures', [
+            'external_id' => '5114',
+            'title' => 'Fullmetal Alchemist',
+            'type' => 'manga',
+        ]);
         Http::assertSentCount(1);
     }
 
@@ -218,6 +271,16 @@ class LiteratureCatalogTest extends TestCase
             'services.google_books.max_results' => 6,
             'services.google_books.connect_timeout' => 1,
             'services.google_books.timeout' => 2,
+        ]);
+    }
+
+    private function configureAniList(): void
+    {
+        config()->set([
+            'services.anilist.base_url' => 'https://graphql.anilist.co',
+            'services.anilist.max_results' => 6,
+            'services.anilist.connect_timeout' => 1,
+            'services.anilist.timeout' => 2,
         ]);
     }
 }

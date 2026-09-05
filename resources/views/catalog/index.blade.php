@@ -70,15 +70,15 @@
             </div>
             <div class="mt-9 grid gap-px bg-ink-950/10 md:grid-cols-3">
                 @foreach ([
-                    ['Google Books', 'Buku dan novel umum', 'GB'],
-                    ['Comic Vine', 'Komik Barat', 'CV'],
-                    ['AniList', 'Manga dan light novel', 'AL'],
-                ] as [$source, $scope, $code])
+                    ['Google Books', 'Buku dan novel umum', 'GB', 'Terhubung / API key server'],
+                    ['Comic Vine', 'Komik Barat', 'CV', 'Adapter berikutnya'],
+                    ['AniList', 'Manga dan light novel', 'AL', 'Terhubung / data publik'],
+                ] as [$source, $scope, $code, $status])
                     <article class="bg-brand-cream/85 p-6 sm:p-8">
                         <span class="grid size-12 place-items-center bg-brand-sky font-bold text-ink-950">{{ $code }}</span>
                         <h3 class="mt-6 text-xl font-bold text-ink-950">{{ $source }}</h3>
                         <p class="mt-2 text-ink-950/60">{{ $scope }}</p>
-                        <p class="mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-brand-coral">Skema sumber siap / Adapter berikutnya</p>
+                        <p class="mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-brand-coral">{{ $status }}</p>
                     </article>
                 @endforeach
             </div>

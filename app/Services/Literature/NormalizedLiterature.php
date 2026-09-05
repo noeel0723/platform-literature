@@ -11,6 +11,7 @@ final readonly class NormalizedLiterature
     public function __construct(
         public string $externalId,
         public string $title,
+        public string $type,
         public array $authors,
         public array $categories,
         public ?int $publicationYear,

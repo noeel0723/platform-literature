@@ -107,6 +107,7 @@ final class GoogleBooksAdapter
         return new NormalizedLiterature(
             externalId: $externalId,
             title: $title,
+            type: 'book',
             authors: $this->stringList(Arr::get($item, 'volumeInfo.authors')),
             categories: $this->stringList(Arr::get($item, 'volumeInfo.categories')),
             publicationYear: $publicationYear,
