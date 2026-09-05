@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'api_source_id',
@@ -50,6 +51,12 @@ class Literature extends Model
     public function categories(): BelongsToMany
     {
         return $this->belongsToMany(Category::class)->withTimestamps();
+    }
+
+    /** @return HasMany<ReadingList, $this> */
+    public function readingLists(): HasMany
+    {
+        return $this->hasMany(ReadingList::class);
     }
 
     public function getRouteKeyName(): string

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exceptions\LiteratureSourceUnavailable;
 use App\Models\Literature;
+use App\Models\ReadingList;
 use App\Services\Literature\CatalogSyncService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -94,8 +95,15 @@ class LiteratureController extends Controller
     {
         $literature->load(['apiSource', 'authors', 'categories']);
 
+        $readingList = request()->user()?->readingLists()
+            ->whereBelongsTo($literature)
+            ->with('progress')
+            ->first();
+
         return view('catalog.show', [
             'literature' => $this->present($literature),
+            'readingList' => $readingList,
+            'readingStatuses' => ReadingList::STATUS_LABELS,
         ]);
     }
 

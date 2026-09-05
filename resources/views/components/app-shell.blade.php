@@ -23,7 +23,9 @@
                         <a href="{{ route('home') }}" class="whitespace-nowrap transition hover:text-brand-coral">Beranda</a>
                         <a href="{{ route('literatures.index') }}" class="whitespace-nowrap transition hover:text-brand-coral">Katalog</a>
                         <a href="{{ route('home') }}#sources" class="whitespace-nowrap transition hover:text-brand-coral">Sumber</a>
-                        <a href="{{ route('home') }}#increment" class="whitespace-nowrap transition hover:text-brand-coral">Increment 1</a>
+                        @auth
+                            <a href="{{ route('diary.index') }}" class="whitespace-nowrap transition hover:text-brand-coral">Diary</a>
+                        @endauth
                     </nav>
 
                     <form action="{{ route('literatures.index') }}" method="GET" role="search" class="flex h-10 w-56 min-w-0 overflow-hidden rounded-full border border-ink-950/20 bg-white/35 lg:w-64 xl:w-72">
@@ -36,6 +38,16 @@
                             <svg aria-hidden="true" class="size-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
                         </button>
                     </form>
+
+                    @auth
+                        <form action="{{ route('logout') }}" method="POST" class="shrink-0">
+                            @csrf
+                            <button class="whitespace-nowrap border border-ink-950/20 px-3 py-2 text-xs font-bold uppercase tracking-wider transition hover:bg-ink-950 hover:text-brand-cream">Keluar</button>
+                        </form>
+                    @else
+                        <a href="{{ route('login') }}" class="shrink-0 whitespace-nowrap text-xs font-bold uppercase tracking-wider text-ink-950 hover:text-brand-coral">Masuk</a>
+                        <a href="{{ route('register') }}" class="shrink-0 whitespace-nowrap bg-ink-950 px-3 py-2 text-xs font-bold uppercase tracking-wider text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Daftar</a>
+                    @endauth
                 </div>
 
                 <button type="button" class="ml-auto grid size-10 shrink-0 place-items-center border border-ink-950/20 bg-transparent text-ink-950 transition hover:bg-ink-950 hover:text-brand-cream md:ml-0 xl:hidden" data-mobile-menu-button aria-expanded="false" aria-controls="mobile-menu">
@@ -60,17 +72,31 @@
                 <a href="{{ route('home') }}" class="px-3 py-3 transition hover:bg-brand-sky/25">Beranda</a>
                 <a href="{{ route('literatures.index') }}" class="px-3 py-3 transition hover:bg-brand-sky/25">Katalog</a>
                 <a href="{{ route('home') }}#sources" class="px-3 py-3 transition hover:bg-brand-sky/25">Sumber API</a>
-                <a href="{{ route('home') }}#increment" class="px-3 py-3 transition hover:bg-brand-sky/25">Increment 1</a>
+                @auth
+                    <a href="{{ route('diary.index') }}" class="px-3 py-3 transition hover:bg-brand-sky/25">Personal Diary</a>
+                    <form action="{{ route('logout') }}" method="POST">
+                        @csrf
+                        <button class="w-full px-3 py-3 text-left transition hover:bg-brand-sky/25">Keluar</button>
+                    </form>
+                @else
+                    <a href="{{ route('login') }}" class="px-3 py-3 transition hover:bg-brand-sky/25">Masuk</a>
+                    <a href="{{ route('register') }}" class="px-3 py-3 transition hover:bg-brand-sky/25">Daftar</a>
+                @endauth
             </div>
         </nav>
     </header>
 
-    <main id="main-content">{{ $slot }}</main>
+    <main id="main-content">
+        @if (session('success'))
+            <div class="border-b border-ink-950/10 bg-ink-950 px-5 py-3 text-center text-sm font-semibold text-brand-cream" role="status">{{ session('success') }}</div>
+        @endif
+        {{ $slot }}
+    </main>
 
     <footer class="border-t border-ink-950/10">
         <div class="mx-auto flex max-w-7xl flex-col gap-3 px-5 py-9 text-sm text-ink-950/60 sm:px-8 md:flex-row md:justify-between lg:px-10">
             <p>Literature Social Discovery</p>
-            <p>Increment 1 - Fondasi sistem dan katalog terintegrasi.</p>
+            <p>Increment 2 - Reading Management dan Personal Diary.</p>
         </div>
     </footer>
 </body>

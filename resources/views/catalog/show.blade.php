@@ -76,6 +76,7 @@
             <a href="#authors" class="pb-4 text-ink-950/70 hover:text-brand-coral">Pengarang</a>
             <a href="#details" class="pb-4 text-ink-950/70 hover:text-brand-coral">Detail</a>
             <a href="#genres" class="pb-4 text-ink-950/70 hover:text-brand-coral">Genre</a>
+            <a href="#readlist" class="pb-4 text-ink-950/70 hover:text-brand-coral">Readlist</a>
         </nav>
 
         <div class="mt-10 grid gap-10 lg:grid-cols-[1.25fr_.75fr]">
@@ -113,6 +114,81 @@
                     <div><dt class="text-ink-950/60">Tahap implementasi</dt><dd class="mt-1 font-semibold text-ink-950">Katalog internal MySQL</dd></div>
                 </dl>
             </aside>
+        </div>
+    </section>
+
+    <section id="readlist" class="border-t border-ink-950/10 bg-white/20">
+        <div class="mx-auto grid max-w-7xl gap-8 px-5 py-14 sm:px-8 lg:grid-cols-[.7fr_1.3fr] lg:px-10 lg:py-20">
+            <div>
+                <p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">Increment 2</p>
+                <h2 class="mt-3 font-serif text-4xl font-bold text-ink-950">Kelola bacaanmu</h2>
+                <p class="mt-4 max-w-md leading-7 text-ink-950/65">Simpan status, catat halaman atau bab terakhir, dan tambahkan catatan singkat. Setiap perubahan akan masuk ke Personal Diary secara otomatis.</p>
+                @auth
+                    <a href="{{ route('diary.index') }}" class="mt-6 inline-flex font-bold text-ink-950 underline decoration-brand-coral decoration-2 underline-offset-4">Buka Personal Diary</a>
+                @endauth
+            </div>
+
+            @auth
+                <form action="{{ route('reading-list.update', $literature['slug']) }}" method="POST" class="grid gap-5 border border-ink-950/15 bg-brand-cream/65 p-6 sm:grid-cols-2 sm:p-8">
+                    @csrf
+                    @method('PUT')
+
+                    <div class="sm:col-span-2">
+                        <label for="status" class="text-sm font-bold text-ink-950">Status bacaan</label>
+                        <select id="status" name="status" class="mt-2 w-full border border-ink-950/20 bg-white/60 px-4 py-3 outline-none focus:border-brand-coral">
+                            @foreach ($readingStatuses as $value => $label)
+                                <option value="{{ $value }}" @selected(old('status', $readingList?->status ?? 'want_to_read') === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        @error('status') <p class="mt-2 text-sm font-semibold text-red-700">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div>
+                        <label for="progress_value" class="text-sm font-bold text-ink-950">Progres saat ini</label>
+                        <input id="progress_value" name="progress_value" type="number" min="0" value="{{ old('progress_value', $readingList?->progress?->current_value) }}" placeholder="Contoh: 120" class="mt-2 w-full border border-ink-950/20 bg-white/60 px-4 py-3 outline-none focus:border-brand-coral">
+                        @error('progress_value') <p class="mt-2 text-sm font-semibold text-red-700">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div>
+                        <label for="progress_total" class="text-sm font-bold text-ink-950">Total</label>
+                        <input id="progress_total" name="progress_total" type="number" min="1" value="{{ old('progress_total', $readingList?->progress?->total_value) }}" placeholder="Contoh: 320" class="mt-2 w-full border border-ink-950/20 bg-white/60 px-4 py-3 outline-none focus:border-brand-coral">
+                        @error('progress_total') <p class="mt-2 text-sm font-semibold text-red-700">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label for="progress_unit" class="text-sm font-bold text-ink-950">Satuan progres</label>
+                        <select id="progress_unit" name="progress_unit" class="mt-2 w-full border border-ink-950/20 bg-white/60 px-4 py-3 outline-none focus:border-brand-coral">
+                            @foreach (['page' => 'Halaman', 'chapter' => 'Bab', 'percent' => 'Persen'] as $value => $label)
+                                <option value="{{ $value }}" @selected(old('progress_unit', $readingList?->progress?->unit ?? 'page') === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label for="note" class="text-sm font-bold text-ink-950">Catatan aktivitas <span class="font-normal text-ink-950/50">(opsional)</span></label>
+                        <textarea id="note" name="note" rows="3" maxlength="1000" placeholder="Tuliskan kesan atau pengingat singkat..." class="mt-2 w-full resize-y border border-ink-950/20 bg-white/60 px-4 py-3 outline-none focus:border-brand-coral">{{ old('note') }}</textarea>
+                        @error('note') <p class="mt-2 text-sm font-semibold text-red-700">{{ $message }}</p> @enderror
+                    </div>
+
+                    @if ($readingList)
+                        <label class="flex items-start gap-3 text-sm leading-6 text-ink-950/70 sm:col-span-2">
+                            <input name="reread" type="checkbox" value="1" class="mt-1 size-4 accent-brand-coral">
+                            Mulai baca ulang. Progres akan kembali ke 0 dan jumlah baca ulang bertambah.
+                        </label>
+                    @endif
+
+                    <button class="bg-ink-950 px-5 py-3.5 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950 sm:col-span-2">Simpan ke Readlist</button>
+                </form>
+            @else
+                <div class="border border-ink-950/15 bg-brand-cream/65 p-7 sm:p-9">
+                    <p class="font-serif text-2xl font-bold text-ink-950">Masuk untuk mencatat bacaan</p>
+                    <p class="mt-3 leading-7 text-ink-950/65">Katalog tetap dapat dijelajahi tanpa akun. Akun diperlukan agar status dan progres tersimpan secara pribadi.</p>
+                    <div class="mt-6 flex flex-wrap gap-3">
+                        <a href="{{ route('login') }}" class="bg-ink-950 px-5 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Masuk</a>
+                        <a href="{{ route('register') }}" class="border border-ink-950/20 px-5 py-3 font-bold text-ink-950 transition hover:border-brand-coral">Buat akun</a>
+                    </div>
+                </div>
+            @endauth
         </div>
     </section>
 </x-app-shell>

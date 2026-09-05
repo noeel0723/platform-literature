@@ -2,7 +2,7 @@
     <section class="catalog-grid border-b border-ink-950/10">
         <div class="mx-auto min-w-0 max-w-7xl px-5 py-14 sm:px-8 lg:px-10 lg:py-20">
             <div class="min-w-0 max-w-3xl">
-                <p class="mb-5 text-xs font-bold uppercase tracking-[0.28em] text-brand-coral">Increment 1 / Katalog terintegrasi</p>
+                <p class="mb-5 text-xs font-bold uppercase tracking-[0.28em] text-brand-coral">Increment 1-2 / Katalog dan reading management</p>
                 <h1 class="max-w-2xl font-serif text-5xl font-bold leading-[0.98] tracking-tight text-ink-950 sm:text-6xl lg:text-7xl">
                     Satu rak untuk setiap cerita.
                 </h1>
@@ -98,7 +98,7 @@
                 <h2 class="mt-3 font-serif text-3xl font-bold text-ink-950">Yang tersedia pada tahap ini.</h2>
             </div>
             <div class="grid gap-4 sm:grid-cols-2">
-                @foreach (['Pencarian lintas format', 'Detail metadata terstruktur', 'Identitas sumber data', 'Tampilan responsif'] as $feature)
+                @foreach (['Pencarian lintas format', 'Detail metadata terstruktur', 'Akun pengguna', 'Readlist dan progres', 'Personal Diary', 'Tampilan responsif'] as $feature)
                     <div class="flex gap-4 border border-ink-950/10 bg-white/35 p-5">
                         <span class="mt-1 size-2 shrink-0 bg-brand-coral"></span>
                         <p class="font-semibold text-ink-950">{{ $feature }}</p>
