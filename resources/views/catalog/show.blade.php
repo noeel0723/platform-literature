@@ -13,7 +13,7 @@
     <section class="catalog-grid relative overflow-hidden border-b border-brand-sky/15">
         <div class="absolute inset-x-0 top-0 h-72 bg-linear-to-b from-brand-primary/25 to-transparent"></div>
         <div class="relative mx-auto max-w-7xl px-5 pb-16 pt-10 sm:px-8 lg:px-10 lg:pb-20 lg:pt-16">
-            <a href="{{ route('literatures.index') }}" class="inline-flex items-center gap-2 text-sm font-semibold text-brand-sky transition hover:text-brand-coral">
+            <a href="{{ route('literatures.index') }}" class="inline-flex items-center gap-2 text-sm font-semibold text-brand-cream transition hover:text-brand-sky">
                 <span aria-hidden="true">&larr;</span> Kembali ke katalog
             </a>
 
@@ -45,7 +45,7 @@
                     <div class="border-b border-brand-sky/20 p-5">
                         <p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-sky">Status katalog</p>
                         <div class="mt-4 flex items-center gap-3">
-                            <span class="grid size-10 place-items-center bg-brand-primary font-bold text-white">OK</span>
+                            <span class="grid size-10 place-items-center bg-brand-cream font-bold text-ink-950">OK</span>
                             <div>
                                 <p class="font-bold text-brand-cream">Metadata tersedia</p>
                                 <p class="text-sm text-brand-sky">Siap ditampilkan</p>
@@ -57,7 +57,7 @@
                         <div class="flex justify-between gap-4"><dt class="text-brand-sky">Format</dt><dd class="font-semibold text-brand-cream">{{ $literature['format'] }}</dd></div>
                         <div class="flex justify-between gap-4"><dt class="text-brand-sky">Bahasa</dt><dd class="font-semibold text-brand-cream">{{ $literature['language'] }}</dd></div>
                     </dl>
-                    <a href="{{ route('literatures.index') }}#search" class="block bg-brand-primary px-5 py-4 text-center font-bold text-white transition hover:bg-brand-coral hover:text-ink-950">Cari karya lain</a>
+                    <a href="{{ route('literatures.index') }}" class="block bg-brand-cream px-5 py-4 text-center font-bold text-ink-950 transition hover:bg-brand-sky">Cari karya lain</a>
                 </aside>
             </div>
         </div>
@@ -66,9 +66,9 @@
     <section class="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:px-10 lg:py-20">
         <nav class="flex gap-6 overflow-x-auto border-b border-brand-sky/20 text-sm font-bold uppercase tracking-[0.14em] text-brand-sky" aria-label="Bagian detail">
             <a href="#summary" class="border-b-2 border-brand-coral pb-4 text-brand-cream">Ringkasan</a>
-            <a href="#authors" class="pb-4 hover:text-brand-cream">Pengarang</a>
-            <a href="#details" class="pb-4 hover:text-brand-cream">Detail</a>
-            <a href="#genres" class="pb-4 hover:text-brand-cream">Genre</a>
+            <a href="#authors" class="pb-4 text-brand-cream/80 hover:text-brand-cream">Pengarang</a>
+            <a href="#details" class="pb-4 text-brand-cream/80 hover:text-brand-cream">Detail</a>
+            <a href="#genres" class="pb-4 text-brand-cream/80 hover:text-brand-cream">Genre</a>
         </nav>
 
         <div class="mt-10 grid gap-10 lg:grid-cols-[1.25fr_.75fr]">

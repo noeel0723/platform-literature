@@ -25,7 +25,7 @@
             </div>
         </div>
         <div class="pt-3">
-            <h3 class="truncate font-semibold text-brand-cream transition group-hover:text-brand-coral">{{ $literature['title'] }}</h3>
+            <h3 class="truncate font-semibold text-brand-cream transition group-hover:text-brand-sky">{{ $literature['title'] }}</h3>
             <p class="mt-1 truncate text-sm text-brand-sky">{{ $literature['author'] }}</p>
         </div>
     </a>
