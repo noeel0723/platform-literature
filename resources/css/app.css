@@ -11,7 +11,6 @@
 
     --color-brand-cream: #ffe1d7;
     --color-brand-sky: #84affb;
-    --color-brand-primary: #0259dd;
     --color-brand-coral: #ff6648;
 
     --color-ink-950: #071226;
@@ -27,7 +26,7 @@
 
     body {
         background-image:
-            radial-gradient(circle at 15% 10%, rgb(2 89 221 / 0.17), transparent 28rem),
+            radial-gradient(circle at 15% 10%, rgb(255 225 215 / 0.12), transparent 28rem),
             radial-gradient(circle at 85% 28%, rgb(255 102 72 / 0.08), transparent 24rem);
     }
 

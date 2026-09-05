@@ -2,7 +2,7 @@
     <span class="grid grid-cols-2 gap-0.5" aria-hidden="true">
         <span class="size-3.5 rounded-full bg-brand-cream"></span>
         <span class="size-3.5 rounded-full bg-brand-sky"></span>
-        <span class="size-3.5 rounded-full bg-brand-primary"></span>
+        <span class="size-3.5 rounded-full bg-brand-cream"></span>
         <span class="size-3.5 rounded-full bg-brand-coral"></span>
     </span>
     <span>

@@ -2,16 +2,16 @@
     @php
         $coverTheme = match ($literature['theme']) {
             'coral' => 'from-brand-coral via-brand-cream to-brand-sky text-ink-950',
-            'sky' => 'from-brand-sky via-brand-primary to-ink-950 text-brand-cream',
-            'cream' => 'from-brand-cream via-brand-sky to-brand-primary text-ink-950',
-            'deep' => 'from-ink-950 via-brand-primary to-brand-coral text-brand-cream',
-            'mixed' => 'from-brand-primary via-brand-coral to-brand-cream text-brand-cream',
-            default => 'from-brand-primary via-brand-sky to-brand-cream text-brand-cream',
+            'sky' => 'from-brand-sky via-brand-cream to-ink-950 text-ink-950',
+            'cream' => 'from-brand-cream via-brand-sky to-brand-cream text-ink-950',
+            'deep' => 'from-ink-950 via-brand-cream to-brand-coral text-ink-950',
+            'mixed' => 'from-brand-cream via-brand-coral to-brand-sky text-ink-950',
+            default => 'from-brand-cream via-brand-sky to-brand-coral text-ink-950',
         };
     @endphp
 
     <section class="catalog-grid relative overflow-hidden border-b border-brand-sky/15">
-        <div class="absolute inset-x-0 top-0 h-72 bg-linear-to-b from-brand-primary/25 to-transparent"></div>
+        <div class="absolute inset-x-0 top-0 h-72 bg-linear-to-b from-brand-cream/15 to-transparent"></div>
         <div class="relative mx-auto max-w-7xl px-5 pb-16 pt-10 sm:px-8 lg:px-10 lg:pb-20 lg:pt-16">
             <a href="{{ route('literatures.index') }}" class="inline-flex items-center gap-2 text-sm font-semibold text-brand-cream transition hover:text-brand-sky">
                 <span aria-hidden="true">&larr;</span> Kembali ke katalog
@@ -103,7 +103,7 @@
                     <div class="border-b border-brand-sky/15 pb-4"><dt class="text-brand-sky">Penerbit</dt><dd class="mt-1 font-semibold text-brand-cream">{{ $literature['publisher'] }}</dd></div>
                     <div class="border-b border-brand-sky/15 pb-4"><dt class="text-brand-sky">Identifier eksternal</dt><dd class="mt-1 font-semibold text-brand-cream">{{ $literature['identifier'] }}</dd></div>
                     <div class="border-b border-brand-sky/15 pb-4"><dt class="text-brand-sky">Sumber metadata</dt><dd class="mt-1 font-semibold text-brand-cream">{{ $literature['source'] }}</dd></div>
-                    <div><dt class="text-brand-sky">Tahap implementasi</dt><dd class="mt-1 font-semibold text-brand-cream">Data demonstrasi Increment 1</dd></div>
+                    <div><dt class="text-brand-sky">Tahap implementasi</dt><dd class="mt-1 font-semibold text-brand-cream">Katalog internal MySQL</dd></div>
                 </dl>
             </aside>
         </div>

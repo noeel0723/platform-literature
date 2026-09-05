@@ -59,7 +59,7 @@
             <div class="max-w-2xl">
                 <p class="text-xs font-bold uppercase tracking-[0.22em] text-brand-coral">Sumber metadata</p>
                 <h2 class="mt-3 font-serif text-3xl font-bold text-brand-cream sm:text-4xl">Tiga sumber, satu bahasa katalog.</h2>
-                <p class="mt-4 leading-7 text-brand-sky">Respons setiap API akan dipetakan ke struktur internal yang sama sebelum disimpan ke MySQL.</p>
+                <p class="mt-4 leading-7 text-brand-sky">Fondasi katalog kini tersimpan di MySQL. Respons setiap API berikutnya akan dipetakan ke struktur internal yang sama.</p>
             </div>
             <div class="mt-9 grid gap-px bg-brand-sky/20 md:grid-cols-3">
                 @foreach ([
@@ -71,7 +71,7 @@
                         <span class="grid size-12 place-items-center bg-brand-sky font-bold text-ink-950">{{ $code }}</span>
                         <h3 class="mt-6 text-xl font-bold text-brand-cream">{{ $source }}</h3>
                         <p class="mt-2 text-brand-sky">{{ $scope }}</p>
-                        <p class="mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-brand-coral">Mapping / Normalisasi / Source tracking</p>
+                        <p class="mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-brand-coral">Skema sumber siap / Adapter berikutnya</p>
                     </article>
                 @endforeach
             </div>

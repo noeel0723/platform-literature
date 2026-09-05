@@ -3,11 +3,11 @@
 @php
     $posterTheme = match ($literature['theme']) {
         'coral' => 'from-brand-coral via-brand-cream to-brand-sky text-ink-950',
-        'sky' => 'from-brand-sky via-brand-primary to-ink-950 text-brand-cream',
-        'cream' => 'from-brand-cream via-brand-sky to-brand-primary text-ink-950',
-        'deep' => 'from-ink-950 via-brand-primary to-brand-coral text-brand-cream',
-        'mixed' => 'from-brand-primary via-brand-coral to-brand-cream text-brand-cream',
-        default => 'from-brand-primary via-brand-sky to-brand-cream text-brand-cream',
+        'sky' => 'from-brand-sky via-brand-cream to-ink-950 text-ink-950',
+        'cream' => 'from-brand-cream via-brand-sky to-brand-cream text-ink-950',
+        'deep' => 'from-ink-950 via-brand-cream to-brand-coral text-ink-950',
+        'mixed' => 'from-brand-cream via-brand-coral to-brand-sky text-ink-950',
+        default => 'from-brand-cream via-brand-sky to-brand-coral text-ink-950',
     };
 @endphp
 
