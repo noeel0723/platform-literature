@@ -19,13 +19,20 @@
 
             <div class="mt-10 grid gap-8 md:grid-cols-[220px_1fr] lg:grid-cols-[250px_1fr_280px] lg:items-end">
                 <div class="relative aspect-[2/3] overflow-hidden border border-ink-950/20 bg-linear-to-br {{ $coverTheme }} shadow-2xl">
-                    <div class="absolute inset-0 opacity-30 [background-image:linear-gradient(115deg,transparent_20%,rgba(255,255,255,.35)_50%,transparent_80%)]"></div>
-                    <div class="absolute inset-x-0 top-0 flex justify-between p-4 text-xs font-bold uppercase tracking-wider">
+                    @if ($literature['cover_url'] !== null)
+                        <img src="{{ $literature['cover_url'] }}" alt="Sampul {{ $literature['title'] }}" class="absolute inset-0 size-full object-cover">
+                        <div class="absolute inset-0 bg-linear-to-t from-ink-950/80 via-transparent to-ink-950/25"></div>
+                    @else
+                        <div class="absolute inset-0 opacity-30 [background-image:linear-gradient(115deg,transparent_20%,rgba(255,255,255,.35)_50%,transparent_80%)]"></div>
+                    @endif
+                    <div class="absolute inset-x-0 top-0 flex justify-between p-4 text-xs font-bold uppercase tracking-wider {{ $literature['cover_url'] !== null ? 'text-brand-cream' : '' }}">
                         <span>{{ $literature['type_label'] }}</span>
                         <span>{{ $literature['year'] }}</span>
                     </div>
-                    <div class="absolute inset-x-0 bottom-0 p-6">
-                        <span class="font-serif text-6xl font-bold leading-none">{{ $literature['initials'] }}</span>
+                    <div class="absolute inset-x-0 bottom-0 p-6 {{ $literature['cover_url'] !== null ? 'text-brand-cream' : '' }}">
+                        @if ($literature['cover_url'] === null)
+                            <span class="font-serif text-6xl font-bold leading-none">{{ $literature['initials'] }}</span>
+                        @endif
                         <p class="mt-4 border-t border-current/40 pt-4 text-xs font-bold uppercase tracking-[0.18em]">{{ $literature['source'] }}</p>
                     </div>
                 </div>

@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\LiteratureSourceUnavailable;
 use App\Models\Literature;
+use App\Services\Literature\CatalogSyncService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -20,10 +22,19 @@ class LiteratureController extends Controller
         'light-novel' => 'Light Novel',
     ];
 
-    public function index(Request $request): View
+    public function index(Request $request, CatalogSyncService $catalogSync): View
     {
         $query = trim((string) $request->query('q', ''));
         $selectedType = trim((string) $request->query('type', ''));
+        $sourceWarning = null;
+
+        if ($query !== '' && in_array($selectedType, ['', 'book'], true)) {
+            try {
+                $catalogSync->syncGoogleBooks($query);
+            } catch (LiteratureSourceUnavailable) {
+                $sourceWarning = 'Google Books sementara tidak dapat dihubungkan. Hasil dari katalog lokal tetap ditampilkan.';
+            }
+        }
 
         $literatures = Literature::query()
             ->with(['apiSource', 'authors', 'categories'])
@@ -51,6 +62,7 @@ class LiteratureController extends Controller
             'literatures' => $literatures,
             'query' => $query,
             'selectedType' => $selectedType,
+            'sourceWarning' => $sourceWarning,
             'types' => self::TYPES,
         ]);
     }
@@ -87,6 +99,7 @@ class LiteratureController extends Controller
             'format' => $literature->format ?? self::TYPES[$literature->type] ?? Str::headline($literature->type),
             'genres' => $literature->categories->pluck('name')->all(),
             'identifier' => $literature->identifier ?? $literature->external_id,
+            'cover_url' => $literature->cover_url,
             'theme' => $literature->theme,
             'initials' => $this->initials($literature->title),
         ];

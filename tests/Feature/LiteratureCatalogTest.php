@@ -7,6 +7,7 @@ use App\Models\Author;
 use App\Models\Category;
 use App\Models\Literature;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\TestWith;
 use Tests\TestCase;
@@ -101,6 +102,73 @@ class LiteratureCatalogTest extends TestCase
             ->assertNotFound();
     }
 
+    public function test_catalog_search_imports_google_books_results_into_the_internal_catalog(): void
+    {
+        $this->configureGoogleBooks();
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://www.googleapis.com/books/v1/volumes*' => Http::response([
+                'items' => [[
+                    'id' => 'google-dune',
+                    'volumeInfo' => [
+                        'title' => 'Dune',
+                        'authors' => ['Frank Herbert'],
+                        'publishedDate' => '1965',
+                        'industryIdentifiers' => [
+                            ['type' => 'ISBN_13', 'identifier' => '9780441172719'],
+                        ],
+                        'categories' => ['Science Fiction'],
+                        'imageLinks' => ['thumbnail' => 'https://books.google.com/dune-cover.jpg'],
+                        'language' => 'en',
+                        'printType' => 'BOOK',
+                    ],
+                ]],
+            ]),
+        ]);
+
+        $response = $this->get(route('literatures.index', [
+            'q' => 'Dune',
+            'type' => 'book',
+        ]));
+
+        $response
+            ->assertOk()
+            ->assertSeeText('Dune')
+            ->assertSeeText('Frank Herbert')
+            ->assertSee('Sampul Dune')
+            ->assertDontSeeText('Katalog lokal tetap aktif.');
+        $this->assertDatabaseHas('literatures', [
+            'external_id' => 'google-dune',
+            'title' => 'Dune',
+            'cover_url' => 'https://books.google.com/dune-cover.jpg',
+        ]);
+        Http::assertSentCount(1);
+    }
+
+    public function test_catalog_search_uses_local_results_when_google_books_is_unavailable(): void
+    {
+        $this->configureGoogleBooks();
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://www.googleapis.com/books/v1/volumes*' => Http::failedConnection(),
+        ]);
+        $this->createLiterature(
+            ['title' => 'Dune', 'slug' => 'dune', 'type' => 'book'],
+            'Google Books',
+            ['Frank Herbert'],
+        );
+
+        $response = $this->get(route('literatures.index', ['q' => 'Dune']));
+
+        $response
+            ->assertOk()
+            ->assertSeeText('Dune')
+            ->assertSeeText('Katalog lokal tetap aktif.')
+            ->assertSeeText('Hasil dari katalog lokal tetap ditampilkan.');
+        $this->assertDatabaseCount('literatures', 1);
+        Http::assertSentCount(1);
+    }
+
     /**
      * @param  array<string, mixed>  $attributes
      * @param  array<int, string>  $authors
@@ -140,5 +208,16 @@ class LiteratureCatalogTest extends TestCase
         }
 
         return $literature;
+    }
+
+    private function configureGoogleBooks(): void
+    {
+        config()->set([
+            'services.google_books.base_url' => 'https://www.googleapis.com/books/v1',
+            'services.google_books.key' => 'test-google-books-key',
+            'services.google_books.max_results' => 6,
+            'services.google_books.connect_timeout' => 1,
+            'services.google_books.timeout' => 2,
+        ]);
     }
 }

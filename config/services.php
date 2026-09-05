@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'google_books' => [
+        'base_url' => env('GOOGLE_BOOKS_BASE_URL', 'https://www.googleapis.com/books/v1'),
+        'key' => env('GOOGLE_BOOKS_API_KEY'),
+        'max_results' => (int) env('GOOGLE_BOOKS_MAX_RESULTS', 6),
+        'connect_timeout' => (int) env('GOOGLE_BOOKS_CONNECT_TIMEOUT', 3),
+        'timeout' => (int) env('GOOGLE_BOOKS_TIMEOUT', 8),
+    ],
+
 ];

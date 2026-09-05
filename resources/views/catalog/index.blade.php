@@ -39,6 +39,13 @@
             </div>
         </div>
 
+        @if ($sourceWarning !== null)
+            <div role="status" class="mb-8 border border-brand-coral/35 bg-white/35 px-4 py-3 text-sm leading-6 text-ink-950/70">
+                <span class="font-bold text-ink-950">Katalog lokal tetap aktif.</span>
+                {{ $sourceWarning }}
+            </div>
+        @endif
+
         @if ($literatures->isEmpty())
             <div class="border border-ink-950/10 bg-white/35 px-6 py-14 text-center">
                 <p class="font-serif text-2xl font-bold text-ink-950">Belum ada karya yang cocok.</p>
