@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\DiscussionController;
+use App\Http\Controllers\LikeController;
 use App\Http\Controllers\LiteratureController;
 use App\Http\Controllers\ReadingDiaryController;
 use App\Http\Controllers\ReadingListController;
@@ -30,5 +31,13 @@ Route::middleware('auth')->group(function (): void {
         ->name('discussions.store');
     Route::post('/discussions/{discussion}/comments', [CommentController::class, 'store'])
         ->name('discussions.comments.store');
+    Route::post('/reviews/{review}/like', [LikeController::class, 'storeReview'])
+        ->name('reviews.likes.store');
+    Route::delete('/reviews/{review}/like', [LikeController::class, 'destroyReview'])
+        ->name('reviews.likes.destroy');
+    Route::post('/discussions/{discussion}/like', [LikeController::class, 'storeDiscussion'])
+        ->name('discussions.likes.store');
+    Route::delete('/discussions/{discussion}/like', [LikeController::class, 'destroyDiscussion'])
+        ->name('discussions.likes.destroy');
     Route::get('/diary', [ReadingDiaryController::class, 'index'])->name('diary.index');
 });

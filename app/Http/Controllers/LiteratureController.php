@@ -93,7 +93,19 @@ class LiteratureController extends Controller
 
     public function show(Literature $literature): View
     {
-        $literature->load(['apiSource', 'authors', 'categories', 'reviews.user']);
+        $userId = request()->user()?->id ?? 0;
+
+        $literature->load([
+            'apiSource',
+            'authors',
+            'categories',
+            'reviews' => fn ($reviews) => $reviews
+                ->with([
+                    'user',
+                    'likes' => fn ($likes) => $likes->where('user_id', $userId),
+                ])
+                ->withCount('likes'),
+        ]);
 
         $readingList = request()->user()?->readingLists()
             ->whereBelongsTo($literature)
@@ -105,10 +117,11 @@ class LiteratureController extends Controller
         $discussions = $literature->discussions()
             ->with([
                 'user',
+                'likes' => fn ($likes) => $likes->where('user_id', $userId),
                 'topLevelComments.user',
                 'topLevelComments.replies.user',
             ])
-            ->withCount('comments')
+            ->withCount(['comments', 'likes'])
             ->latest()
             ->limit(20)
             ->get();

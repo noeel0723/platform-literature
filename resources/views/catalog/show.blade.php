@@ -262,13 +262,25 @@
                     <h3 class="font-serif text-2xl font-bold text-ink-950">Reader reviews</h3>
                     <div class="mt-5 grid gap-4">
                         @forelse ($reviews as $review)
-                            <article class="border border-ink-950/10 bg-white/35 p-5 sm:p-6">
+                            <article id="review-{{ $review->id }}" class="scroll-mt-28 border border-ink-950/10 bg-white/35 p-5 sm:p-6">
                                 <div class="flex flex-wrap items-center justify-between gap-3">
                                     <div>
                                         <p class="font-bold text-ink-950">{{ $review->user->name }}</p>
                                         <time datetime="{{ $review->created_at->utc()->toIso8601String() }}" data-local-datetime class="mt-1 block text-xs font-semibold uppercase tracking-wider text-ink-950/45">{{ $review->created_at->utc()->format('M j, Y, g:i A') }} (UTC)</time>
                                     </div>
                                     <p class="text-lg tracking-widest text-brand-coral" aria-label="{{ $review->rating }} out of 5 stars">{{ str_repeat('★', $review->rating) }}<span class="text-ink-950/15">{{ str_repeat('★', 5 - $review->rating) }}</span></p>
+                                </div>
+
+                                <div class="mt-4 flex flex-wrap items-center gap-3 border-t border-ink-950/10 pt-4">
+                                    <span class="text-xs font-bold uppercase tracking-wider text-ink-950/45">{{ $review->likes_count }} {{ Str::plural('like', $review->likes_count) }}</span>
+                                    @auth
+                                        @php($reviewIsLiked = $review->likes->isNotEmpty())
+                                        <form action="{{ $reviewIsLiked ? route('reviews.likes.destroy', $review) : route('reviews.likes.store', $review) }}" method="POST">
+                                            @csrf
+                                            @if ($reviewIsLiked) @method('DELETE') @endif
+                                            <button class="border px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition {{ $reviewIsLiked ? 'border-brand-coral bg-brand-coral text-ink-950' : 'border-ink-950/20 text-ink-950 hover:border-brand-coral' }}" aria-pressed="{{ $reviewIsLiked ? 'true' : 'false' }}">{{ $reviewIsLiked ? 'Liked' : 'Like' }}</button>
+                                        </form>
+                                    @endauth
                                 </div>
 
                                 @if ($review->body)
@@ -350,6 +362,18 @@
                                     <time datetime="{{ $discussion->created_at->utc()->toIso8601String() }}" data-local-datetime class="mt-1 block text-xs font-semibold uppercase tracking-wider text-ink-950/45">{{ $discussion->created_at->utc()->format('M j, Y, g:i A') }} (UTC)</time>
                                 </div>
                                 <span class="text-xs font-bold uppercase tracking-wider text-ink-950/45">{{ $discussion->comments_count }} {{ Str::plural('comment', $discussion->comments_count) }}</span>
+                            </div>
+
+                            <div class="mt-4 flex flex-wrap items-center gap-3 border-t border-ink-950/10 pt-4">
+                                <span class="text-xs font-bold uppercase tracking-wider text-ink-950/45">{{ $discussion->likes_count }} {{ Str::plural('like', $discussion->likes_count) }}</span>
+                                @auth
+                                    @php($discussionIsLiked = $discussion->likes->isNotEmpty())
+                                    <form action="{{ $discussionIsLiked ? route('discussions.likes.destroy', $discussion) : route('discussions.likes.store', $discussion) }}" method="POST">
+                                        @csrf
+                                        @if ($discussionIsLiked) @method('DELETE') @endif
+                                        <button class="border px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition {{ $discussionIsLiked ? 'border-brand-coral bg-brand-coral text-ink-950' : 'border-ink-950/20 text-ink-950 hover:border-brand-coral' }}" aria-pressed="{{ $discussionIsLiked ? 'true' : 'false' }}">{{ $discussionIsLiked ? 'Liked' : 'Like' }}</button>
+                                    </form>
+                                @endauth
                             </div>
 
                             <h3 class="mt-5 font-serif text-2xl font-bold text-ink-950">{{ $discussion->title }}</h3>

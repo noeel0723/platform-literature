@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 #[Fillable(['user_id', 'literature_id', 'title', 'body', 'contains_spoiler'])]
 class Discussion extends Model
@@ -39,6 +40,17 @@ class Discussion extends Model
         return $this->hasMany(Comment::class)
             ->whereNull('parent_id')
             ->oldest();
+    }
+
+    /** @return MorphMany<Like, $this> */
+    public function likes(): MorphMany
+    {
+        return $this->morphMany(Like::class, 'likeable');
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(fn (Discussion $discussion) => $discussion->likes()->delete());
     }
 
     /** @return array<string, string> */
