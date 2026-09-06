@@ -73,6 +73,8 @@ document.querySelectorAll('[data-star-rating]').forEach((ratingGroup) => {
         return;
     }
 
+    let selectedRating = Number(input.value) || 0;
+
     const renderRating = (rating) => {
         ratingButtons.forEach((button) => {
             const isSelected = Number(button.dataset.ratingValue) <= rating;
@@ -88,13 +90,25 @@ document.querySelectorAll('[data-star-rating]').forEach((ratingGroup) => {
     };
 
     ratingButtons.forEach((button) => {
+        const previewRating = () => renderRating(Number(button.dataset.ratingValue));
+
+        button.addEventListener('pointerenter', previewRating);
+        button.addEventListener('focus', previewRating);
         button.addEventListener('click', () => {
             const rating = Number(button.dataset.ratingValue);
 
+            selectedRating = rating;
             input.value = rating.toFixed(1);
             renderRating(rating);
         });
     });
 
-    renderRating(Number(input.value) || 0);
+    ratingGroup.addEventListener('pointerleave', () => renderRating(selectedRating));
+    ratingGroup.addEventListener('focusout', (event) => {
+        if (!ratingGroup.contains(event.relatedTarget)) {
+            renderRating(selectedRating);
+        }
+    });
+
+    renderRating(selectedRating);
 });

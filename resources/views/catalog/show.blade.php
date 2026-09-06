@@ -71,27 +71,23 @@
 
                     @auth
                         <div class="grid grid-cols-2 divide-x divide-ink-950/10 border-b border-ink-950/10">
+                            <form action="{{ route('reading-list.update', $literature['slug']) }}" method="POST">
+                                @csrf
+                                @method('PUT')
+                                <input type="hidden" name="status" value="completed">
+                                <button class="size-full px-3 py-5 text-center font-bold text-ink-950 transition {{ $readingList?->status === 'completed' ? 'bg-brand-sky/25' : 'hover:bg-brand-sky/35' }}" aria-pressed="{{ $readingList?->status === 'completed' ? 'true' : 'false' }}" @disabled($readingList?->status === 'completed')>
+                                    <svg class="mx-auto size-8 {{ $readingList?->status === 'completed' ? 'text-brand-coral' : 'text-ink-950' }}" aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="16" cy="16" r="13"></circle>
+                                        <path d="m10 16 4 4 8-9"></path>
+                                    </svg>
+                                    <span class="mt-1 block text-sm">{{ $readingList?->status === 'completed' ? 'Completed' : 'Mark as read' }}</span>
+                                </button>
+                            </form>
                             <button type="button" data-dialog-open="review-dialog" class="px-3 py-5 text-center font-bold text-ink-950 transition hover:bg-brand-coral">
-                                <span class="block text-2xl" aria-hidden="true">★</span>
-                                <span class="mt-1 block text-sm">{{ $currentReview ? 'Edit review' : 'Rate & review' }}</span>
+                                <span class="block text-3xl leading-none" aria-hidden="true">★</span>
+                                <span class="mt-2 block text-sm">{{ $currentReview ? 'Edit review' : 'Rate & review' }}</span>
                             </button>
-                            <a href="#readlist" class="px-3 py-5 text-center font-bold text-ink-950 transition hover:bg-brand-sky/35">
-                                <span class="block text-2xl" aria-hidden="true">✓</span>
-                                <span class="mt-1 block text-sm">{{ $readingList ? ($readingStatuses[$readingList->status] ?? 'Readlist') : 'Add to Readlist' }}</span>
-                            </a>
                         </div>
-                        <form action="{{ route('reading-list.update', $literature['slug']) }}" method="POST" class="grid gap-3 p-5">
-                            @csrf
-                            @method('PUT')
-                            <label for="quick-status" class="text-xs font-bold uppercase tracking-[0.15em] text-ink-950/55">Reading status</label>
-                            <select id="quick-status" name="status" class="w-full border border-ink-950/20 bg-white/55 px-3 py-2.5 outline-none focus:border-brand-coral">
-                                @foreach ($readingStatuses as $value => $label)
-                                    <option value="{{ $value }}" @selected(($readingList?->status ?? 'want_to_read') === $value)>{{ $label }}</option>
-                                @endforeach
-                            </select>
-                            <button class="bg-ink-950 px-4 py-3 text-sm font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Save status</button>
-                            <a href="#readlist" class="text-center text-xs font-bold text-ink-950/65 underline decoration-brand-coral underline-offset-4">Update progress &amp; notes</a>
-                        </form>
                     @else
                         <div class="p-5">
                             <p class="text-sm leading-6 text-ink-950/65">Log in to rate, review, and track this literature.</p>
@@ -354,7 +350,7 @@
                             </div>
                             <output data-rating-output for="review-rating" class="min-w-16 text-sm font-bold text-ink-950/60">Choose a rating</output>
                         </div>
-                        <p class="mt-2 text-xs text-ink-950/50">Half-star ratings such as 1.5, 2.5, or 4.5 are supported.</p>
+                        <p class="mt-2 text-xs text-ink-950/50">Hover to preview a rating, then click to select it. Half-star ratings such as 1.5, 2.5, or 4.5 are supported.</p>
                         @error('rating') <p class="mt-2 text-sm font-semibold text-red-700">{{ $message }}</p> @enderror
                     </fieldset>
 

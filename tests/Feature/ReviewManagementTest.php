@@ -42,6 +42,12 @@ class ReviewManagementTest extends TestCase
             'body' => 'A powerful ending.',
             'contains_spoiler' => true,
         ]);
+        $this->assertDatabaseHas('reading_lists', [
+            'user_id' => $user->id,
+            'literature_id' => $literature->id,
+            'status' => 'completed',
+        ]);
+        $this->assertDatabaseHas('reading_logs', ['event_type' => 'completed']);
     }
 
     public function test_user_can_save_a_half_star_rating(): void
@@ -137,6 +143,9 @@ class ReviewManagementTest extends TestCase
             ->assertSee('data-dialog-open="review-dialog"', false)
             ->assertSee('data-rating-value="1.5"', false)
             ->assertSee('data-rating-value="2.5"', false)
-            ->assertSeeText('Half-star ratings such as 1.5, 2.5, or 4.5 are supported.');
+            ->assertSeeText('Hover to preview a rating')
+            ->assertSeeText('Mark as read')
+            ->assertSee('name="status" value="completed"', false)
+            ->assertDontSee('id="quick-status"', false);
     }
 }
