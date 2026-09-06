@@ -44,11 +44,11 @@ class UpdateReadingListRequest extends FormRequest
                 $total = $this->filled('progress_total') ? $this->integer('progress_total') : null;
 
                 if ($total !== null && $current > $total) {
-                    $validator->errors()->add('progress_value', 'Progres saat ini tidak boleh melebihi total bacaan.');
+                    $validator->errors()->add('progress_value', 'Current progress cannot exceed the total length.');
                 }
 
                 if ($this->input('progress_unit') === 'percent' && $current > 100) {
-                    $validator->errors()->add('progress_value', 'Progres persen tidak boleh melebihi 100.');
+                    $validator->errors()->add('progress_value', 'Percentage progress cannot exceed 100.');
                 }
             },
         ];

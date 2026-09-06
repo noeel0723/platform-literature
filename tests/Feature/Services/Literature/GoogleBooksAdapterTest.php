@@ -65,12 +65,13 @@ class GoogleBooksAdapterTest extends TestCase
                     ],
                 ]],
             ]),
+            'https://www.wikidata.org/w/api.php*' => Http::response(['search' => []]),
         ]);
 
         $book = app(GoogleBooksAdapter::class)->search('The Science of Dune')->first();
 
         $this->assertSame('book', $book->type);
-        $this->assertSame('Buku', $book->format);
+        $this->assertSame('Book', $book->format);
         $this->assertSame('https://books.google.com/thumbnail.jpg', $book->coverUrl);
     }
 
@@ -79,6 +80,7 @@ class GoogleBooksAdapterTest extends TestCase
         $this->configureGoogleBooks();
         config()->set([
             'services.work_metadata.wikidata_url' => 'https://www.wikidata.org/w/api.php',
+            'services.work_metadata.content_language' => 'en',
             'services.work_metadata.wikipedia_summary_url' => 'https://{language}.wikipedia.org/api/rest_v1/page/summary/{title}',
             'services.work_metadata.user_agent' => 'LiteratureSocialDiscovery/1.0 tests',
         ]);
@@ -92,6 +94,8 @@ class GoogleBooksAdapterTest extends TestCase
                         'title' => 'Harry Potter dan Relikui Kematian',
                         'authors' => ['J. K. Rowling'],
                         'language' => 'id',
+                        'subtitle' => 'Edisi bahasa Indonesia',
+                        'description' => 'Ringkasan bahasa Indonesia yang tidak boleh ditampilkan.',
                         'printType' => 'BOOK',
                     ],
                 ]]]);
@@ -107,18 +111,19 @@ class GoogleBooksAdapterTest extends TestCase
 
             if (str_starts_with($request->url(), 'https://www.wikidata.org/w/api.php')) {
                 return Http::response(['entities' => ['Q46758' => [
+                    'descriptions' => ['en' => ['value' => 'fantasy novel by J. K. Rowling']],
                     'claims' => ['P1476' => [[
                         'rank' => 'normal',
                         'mainsnak' => ['datavalue' => ['value' => ['text' => 'Harry Potter and the Deathly Hallows']]],
                     ]]],
-                    'sitelinks' => ['idwiki' => ['title' => 'Harry Potter dan Relikui Kematian']],
+                    'sitelinks' => ['enwiki' => ['title' => 'Harry Potter and the Deathly Hallows']],
                 ]]]);
             }
 
             return Http::response([
-                'extract' => 'Ringkasan karya yang dilengkapi.',
+                'extract' => 'An English supplemental summary.',
                 'content_urls' => ['desktop' => [
-                    'page' => 'https://id.wikipedia.org/wiki/Harry_Potter_dan_Relikui_Kematian',
+                    'page' => 'https://en.wikipedia.org/wiki/Harry_Potter_and_the_Deathly_Hallows',
                 ]],
             ]);
         });
@@ -127,8 +132,9 @@ class GoogleBooksAdapterTest extends TestCase
 
         $this->assertSame('Harry Potter dan Relikui Kematian', $book->title);
         $this->assertSame('Harry Potter and the Deathly Hallows', $book->originalTitle);
-        $this->assertSame('Ringkasan karya yang dilengkapi.', $book->synopsis);
-        $this->assertSame('Wikipedia ID', $book->synopsisSourceName);
+        $this->assertSame('fantasy novel by J. K. Rowling', $book->tagline);
+        $this->assertSame('An English supplemental summary.', $book->synopsis);
+        $this->assertSame('Wikipedia EN', $book->synopsisSourceName);
         Http::assertSentCount(4);
     }
 
@@ -146,13 +152,15 @@ class GoogleBooksAdapterTest extends TestCase
                     ],
                 ]],
             ]),
+            'https://www.wikidata.org/w/api.php*' => Http::response(['search' => []]),
         ]);
 
         $novel = app(GoogleBooksAdapter::class)->search('A Story', 6, 'novel')->first();
 
         $this->assertSame('novel', $novel->type);
         $this->assertSame('Novel', $novel->format);
-        Http::assertSent(fn (Request $request): bool => $request['q'] === 'A Story subject:fiction');
+        Http::assertSent(fn (Request $request): bool => str_starts_with($request->url(), 'https://www.googleapis.com/books/v1/volumes')
+            && $request['q'] === 'A Story subject:fiction');
     }
 
     public function test_search_returns_an_empty_collection_for_an_incomplete_response(): void

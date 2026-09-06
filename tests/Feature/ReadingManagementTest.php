@@ -137,12 +137,8 @@ class ReadingManagementTest extends TestCase
             ->assertDontSee('Another Private Reading');
     }
 
-    public function test_diary_displays_utc_activity_in_the_configured_local_timezone(): void
+    public function test_diary_exposes_utc_activity_for_browser_localization(): void
     {
-        config()->set([
-            'app.display_timezone' => 'Asia/Makassar',
-            'app.display_timezone_label' => 'WITA',
-        ]);
         $user = User::factory()->create();
         $readingList = ReadingList::factory()
             ->for($user)
@@ -154,6 +150,8 @@ class ReadingManagementTest extends TestCase
 
         $this->actingAs($user)->get(route('diary.index'))
             ->assertOk()
-            ->assertSee('06/09/2026 12:30 WITA');
+            ->assertSee('datetime="2026-09-06T04:30:00+00:00"', false)
+            ->assertSee('data-local-datetime', false)
+            ->assertSee('Sep 6, 2026, 4:30 AM (UTC)');
     }
 }

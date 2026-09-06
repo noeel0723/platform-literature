@@ -17,6 +17,6 @@ class ReadingListController extends Controller
         $readingManager->update($request->user(), $literature, $request->validated());
 
         return redirect()->route('literatures.show', $literature)
-            ->with('success', 'Status dan progres bacaan berhasil disimpan.');
+            ->with('success', 'Your reading status and progress have been saved.');
     }
 }

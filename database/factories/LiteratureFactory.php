@@ -32,7 +32,7 @@ class LiteratureFactory extends Factory
             'tagline' => fake()->sentence(),
             'synopsis' => fake()->paragraph(),
             'publisher' => fake()->company(),
-            'language' => 'Indonesia',
+            'language' => 'en',
             'format' => 'Novel',
             'identifier' => fake()->unique()->isbn13(),
             'cover_url' => null,

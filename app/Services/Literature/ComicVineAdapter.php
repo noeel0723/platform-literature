@@ -150,7 +150,7 @@ final class ComicVineAdapter
             synopsis: $this->cleanText(Arr::get($item, 'description')),
             publisher: $this->cleanText(Arr::get($item, 'publisher.name')),
             language: null,
-            format: 'Komik Barat',
+            format: 'Western Comic',
             identifier: "COMICVINE:4050-{$externalId}",
             coverUrl: $coverUrl,
         );

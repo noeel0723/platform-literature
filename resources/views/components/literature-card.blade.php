@@ -15,7 +15,7 @@
     <a href="{{ route('literatures.show', $literature['slug']) }}" class="block focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-coral focus-visible:ring-offset-4 focus-visible:ring-offset-brand-cream">
         <div class="poster-shine relative aspect-[2/3] overflow-hidden border border-ink-950/15 bg-linear-to-br {{ $posterTheme }} shadow-[0_20px_50px_rgba(7,18,38,0.16)] transition duration-300 group-hover:-translate-y-1 group-hover:border-brand-coral">
             @if ($literature['cover_url'] !== null)
-                <img src="{{ $literature['cover_url'] }}" alt="Sampul {{ $literature['title'] }}" class="absolute inset-0 size-full object-cover" loading="lazy">
+                <img src="{{ $literature['cover_url'] }}" alt="Cover of {{ $literature['title'] }}" class="absolute inset-0 size-full object-cover" loading="lazy">
                 <div class="absolute inset-0 bg-linear-to-t from-ink-950/80 via-transparent to-ink-950/25"></div>
             @else
                 <div class="absolute inset-0 opacity-30 [background-image:linear-gradient(115deg,transparent_20%,rgba(255,255,255,.35)_50%,transparent_80%)]"></div>

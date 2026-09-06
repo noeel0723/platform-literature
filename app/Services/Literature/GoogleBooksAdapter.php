@@ -105,10 +105,16 @@ final class GoogleBooksAdapter
         $categories = $this->stringList(Arr::get($item, 'volumeInfo.categories'));
         $authors = $this->stringList(Arr::get($item, 'volumeInfo.authors'));
         $language = $this->cleanText(Arr::get($item, 'volumeInfo.language'));
-        $synopsis = $this->cleanText(Arr::get($item, 'volumeInfo.description'));
-        $enrichment = $language !== null && ($synopsis === null || $language !== 'en')
-            ? $this->metadataEnricher->find($title, $authors, $language, $synopsis === null)
+        $sourceTagline = $this->cleanText(Arr::get($item, 'volumeInfo.subtitle'));
+        $sourceSynopsis = $this->cleanText(Arr::get($item, 'volumeInfo.description'));
+        $contentLanguage = (string) config('services.work_metadata.content_language', 'en');
+        $sourceUsesContentLanguage = $language === null || $language === $contentLanguage;
+        $enrichment = $sourceSynopsis === null || ! $sourceUsesContentLanguage
+            ? $this->metadataEnricher->find($title, $authors, $language, $sourceSynopsis === null || ! $sourceUsesContentLanguage)
             : new WorkMetadata;
+        $tagline = $sourceUsesContentLanguage ? $sourceTagline ?? $enrichment->tagline : $enrichment->tagline;
+        $synopsis = $sourceUsesContentLanguage ? $sourceSynopsis ?? $enrichment->synopsis : $enrichment->synopsis;
+        $usedEnrichmentSynopsis = $enrichment->synopsis !== null && $synopsis === $enrichment->synopsis;
         $literatureType = $this->literatureType($title, $categories, $synopsis, $requestedType);
 
         return new NormalizedLiterature(
@@ -118,16 +124,16 @@ final class GoogleBooksAdapter
             authors: $authors,
             categories: $categories,
             publicationYear: $publicationYear,
-            tagline: $this->cleanText(Arr::get($item, 'volumeInfo.subtitle')) ?? $enrichment->tagline,
-            synopsis: $synopsis ?? $enrichment->synopsis,
+            tagline: $tagline,
+            synopsis: $synopsis,
             publisher: $this->cleanText(Arr::get($item, 'volumeInfo.publisher')),
             language: $language,
             format: $this->format(Arr::get($item, 'volumeInfo.printType'), $literatureType),
             identifier: $this->identifier(Arr::get($item, 'volumeInfo.industryIdentifiers')),
             coverUrl: $this->coverUrl(Arr::get($item, 'volumeInfo.imageLinks')),
             originalTitle: $enrichment->originalTitle,
-            synopsisSourceName: $synopsis === null ? $enrichment->synopsisSourceName : null,
-            synopsisSourceUrl: $synopsis === null ? $enrichment->synopsisSourceUrl : null,
+            synopsisSourceName: $usedEnrichmentSynopsis ? $enrichment->synopsisSourceName : null,
+            synopsisSourceUrl: $usedEnrichmentSynopsis ? $enrichment->synopsisSourceUrl : null,
         );
     }
 
@@ -219,8 +225,8 @@ final class GoogleBooksAdapter
     private function format(mixed $printType, string $literatureType): string
     {
         return match (Str::upper((string) $printType)) {
-            'MAGAZINE' => 'Majalah',
-            default => $literatureType === 'novel' ? 'Novel' : 'Buku',
+            'MAGAZINE' => 'Magazine',
+            default => $literatureType === 'novel' ? 'Novel' : 'Book',
         };
     }
 

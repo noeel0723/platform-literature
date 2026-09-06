@@ -17,9 +17,9 @@ class LiteratureController extends Controller
      * @var array<string, string>
      */
     private const TYPES = [
-        'book' => 'Buku',
+        'book' => 'Book',
         'novel' => 'Novel',
-        'western-comic' => 'Komik Barat',
+        'western-comic' => 'Western Comic',
         'manga' => 'Manga',
         'manhwa' => 'Manhwa',
         'light-novel' => 'Light Novel',
@@ -57,8 +57,8 @@ class LiteratureController extends Controller
 
         $sourceWarning = $unavailableSources === []
             ? null
-            : implode(' dan ', array_unique($unavailableSources))
-                .' sementara tidak dapat dihubungkan. Hasil dari katalog lokal tetap ditampilkan.';
+            : implode(' and ', array_unique($unavailableSources))
+                .' cannot be reached right now. Results from the local catalog are still available.';
 
         $literatures = Literature::query()
             ->with(['apiSource', 'authors', 'categories'])
@@ -93,17 +93,23 @@ class LiteratureController extends Controller
 
     public function show(Literature $literature): View
     {
-        $literature->load(['apiSource', 'authors', 'categories']);
+        $literature->load(['apiSource', 'authors', 'categories', 'reviews.user']);
 
         $readingList = request()->user()?->readingLists()
             ->whereBelongsTo($literature)
             ->with('progress')
+            ->first();
+        $currentReview = request()->user()?->reviews()
+            ->whereBelongsTo($literature)
             ->first();
 
         return view('catalog.show', [
             'literature' => $this->present($literature),
             'readingList' => $readingList,
             'readingStatuses' => ReadingList::STATUS_LABELS,
+            'reviews' => $literature->reviews->sortByDesc('created_at')->values(),
+            'currentReview' => $currentReview,
+            'averageRating' => $literature->reviews->avg('rating'),
         ]);
     }
 
@@ -114,24 +120,39 @@ class LiteratureController extends Controller
     {
         $authorNames = $literature->authors->pluck('name');
         $displayTitle = $literature->original_title ?? $literature->title;
+        $metadataIsEnglish = $literature->apiSource->key !== 'google-books'
+            || $literature->language === null
+            || $literature->language === 'en'
+            || $literature->synopsis_source_name === 'Wikipedia EN';
+        $formatLabels = [
+            'Buku' => 'Book',
+            'Komik Barat' => 'Western Comic',
+            'Manhwa satu bab' => 'One-shot Manhwa',
+        ];
+        $languageLabels = [
+            'en' => 'English',
+            'id' => 'Indonesian',
+            'ja' => 'Japanese',
+            'ko' => 'Korean',
+        ];
 
         return [
             'slug' => $literature->slug,
             'title' => $displayTitle,
             'edition_title' => $displayTitle === $literature->title ? null : $literature->title,
-            'year' => $literature->publication_year === null ? 'Tahun belum tersedia' : (string) $literature->publication_year,
+            'year' => $literature->publication_year === null ? 'Year unavailable' : (string) $literature->publication_year,
             'type' => $literature->type,
             'type_label' => self::TYPES[$literature->type] ?? Str::headline($literature->type),
-            'author' => $authorNames->isEmpty() ? 'Pengarang belum tersedia' : $authorNames->implode(' & '),
+            'author' => $authorNames->isEmpty() ? 'Author unavailable' : $authorNames->implode(' & '),
             'authors' => $authorNames->all(),
             'source' => $literature->apiSource->name,
-            'tagline' => $literature->tagline ?? 'Informasi ringkas belum tersedia.',
-            'synopsis' => $literature->synopsis ?? 'Sinopsis belum tersedia dari sumber metadata.',
-            'synopsis_source_name' => $literature->synopsis_source_name,
-            'synopsis_source_url' => $literature->synopsis_source_url,
-            'publisher' => $literature->publisher ?? 'Belum tersedia',
-            'language' => $literature->language ?? 'Belum tersedia',
-            'format' => $literature->format ?? self::TYPES[$literature->type] ?? Str::headline($literature->type),
+            'tagline' => $metadataIsEnglish ? $literature->tagline ?? 'Short description unavailable.' : 'Short description unavailable in English.',
+            'synopsis' => $metadataIsEnglish ? $literature->synopsis ?? 'Synopsis unavailable from the metadata source.' : 'Synopsis unavailable in English.',
+            'synopsis_source_name' => $metadataIsEnglish ? $literature->synopsis_source_name : null,
+            'synopsis_source_url' => $metadataIsEnglish ? $literature->synopsis_source_url : null,
+            'publisher' => $literature->publisher ?? 'Unavailable',
+            'language' => $languageLabels[$literature->language] ?? $literature->language ?? 'Unavailable',
+            'format' => $formatLabels[$literature->format] ?? $literature->format ?? self::TYPES[$literature->type] ?? Str::headline($literature->type),
             'genres' => $literature->categories->pluck('name')->all(),
             'identifier' => $literature->identifier ?? $literature->external_id,
             'cover_url' => $literature->cover_url,

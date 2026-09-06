@@ -25,14 +25,14 @@ class ReadingLog extends Model
 
     /** @var array<string, string> */
     public const EVENT_LABELS = [
-        'added_to_readlist' => 'Ditambahkan ke Readlist',
-        'started' => 'Mulai membaca',
-        'progress_updated' => 'Memperbarui progres',
-        'completed' => 'Menyelesaikan bacaan',
-        'dnf' => 'Berhenti membaca',
-        'reread' => 'Mulai membaca ulang',
-        'note_added' => 'Menambahkan catatan',
-        'status_updated' => 'Mengubah status bacaan',
+        'added_to_readlist' => 'Added to Readlist',
+        'started' => 'Started reading',
+        'progress_updated' => 'Updated progress',
+        'completed' => 'Completed reading',
+        'dnf' => 'Stopped reading',
+        'reread' => 'Started a reread',
+        'note_added' => 'Added a note',
+        'status_updated' => 'Updated reading status',
     ];
 
     /** @return BelongsTo<ReadingList, $this> */

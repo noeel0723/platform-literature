@@ -13,6 +13,7 @@ class WorkMetadataEnricherTest extends TestCase
     {
         config()->set([
             'services.work_metadata.wikidata_url' => 'https://www.wikidata.org/w/api.php',
+            'services.work_metadata.content_language' => 'en',
             'services.work_metadata.wikipedia_summary_url' => 'https://{language}.wikipedia.org/api/rest_v1/page/summary/{title}',
             'services.work_metadata.user_agent' => 'LiteratureSocialDiscovery/1.0 tests',
             'services.work_metadata.cache_days' => 30,
@@ -30,7 +31,7 @@ class WorkMetadataEnricherTest extends TestCase
 
             if (str_starts_with($request->url(), 'https://www.wikidata.org/w/api.php') && $request['action'] === 'wbgetentities') {
                 return Http::response(['entities' => ['Q46758' => [
-                    'descriptions' => ['id' => ['value' => 'novel fantasi karya J. K. Rowling']],
+                    'descriptions' => ['en' => ['value' => 'fantasy novel by J. K. Rowling']],
                     'claims' => ['P1476' => [[
                         'rank' => 'normal',
                         'mainsnak' => ['datavalue' => ['value' => [
@@ -38,14 +39,14 @@ class WorkMetadataEnricherTest extends TestCase
                             'language' => 'en',
                         ]]],
                     ]]],
-                    'sitelinks' => ['idwiki' => ['title' => 'Harry Potter dan Relikui Kematian']],
+                    'sitelinks' => ['enwiki' => ['title' => 'Harry Potter and the Deathly Hallows']],
                 ]]]);
             }
 
             return Http::response([
-                'extract' => 'Harry menghadapi bagian terakhir dari perjalanannya melawan Voldemort.',
+                'extract' => 'Harry faces the final part of his journey against Voldemort.',
                 'content_urls' => ['desktop' => [
-                    'page' => 'https://id.wikipedia.org/wiki/Harry_Potter_dan_Relikui_Kematian',
+                    'page' => 'https://en.wikipedia.org/wiki/Harry_Potter_and_the_Deathly_Hallows',
                 ]],
             ]);
         });
@@ -57,10 +58,10 @@ class WorkMetadataEnricherTest extends TestCase
         );
 
         $this->assertSame('Harry Potter and the Deathly Hallows', $metadata->originalTitle);
-        $this->assertSame('novel fantasi karya J. K. Rowling', $metadata->tagline);
-        $this->assertSame('Harry menghadapi bagian terakhir dari perjalanannya melawan Voldemort.', $metadata->synopsis);
-        $this->assertSame('Wikipedia ID', $metadata->synopsisSourceName);
-        $this->assertSame('https://id.wikipedia.org/wiki/Harry_Potter_dan_Relikui_Kematian', $metadata->synopsisSourceUrl);
+        $this->assertSame('fantasy novel by J. K. Rowling', $metadata->tagline);
+        $this->assertSame('Harry faces the final part of his journey against Voldemort.', $metadata->synopsis);
+        $this->assertSame('Wikipedia EN', $metadata->synopsisSourceName);
+        $this->assertSame('https://en.wikipedia.org/wiki/Harry_Potter_and_the_Deathly_Hallows', $metadata->synopsisSourceUrl);
         Http::assertSentCount(3);
     }
 
@@ -68,6 +69,7 @@ class WorkMetadataEnricherTest extends TestCase
     {
         config()->set([
             'services.work_metadata.wikidata_url' => 'https://www.wikidata.org/w/api.php',
+            'services.work_metadata.content_language' => 'en',
             'services.work_metadata.user_agent' => 'LiteratureSocialDiscovery/1.0 tests',
         ]);
         Cache::flush();
@@ -91,6 +93,7 @@ class WorkMetadataEnricherTest extends TestCase
     {
         config()->set([
             'services.work_metadata.wikidata_url' => 'https://www.wikidata.org/w/api.php',
+            'services.work_metadata.content_language' => 'en',
             'services.work_metadata.wikipedia_summary_url' => 'https://{language}.wikipedia.org/api/rest_v1/page/summary/{title}',
             'services.work_metadata.user_agent' => 'LiteratureSocialDiscovery/1.0 tests',
         ]);
@@ -107,12 +110,12 @@ class WorkMetadataEnricherTest extends TestCase
 
             if (str_starts_with($request->url(), 'https://www.wikidata.org/w/api.php') && $request['action'] === 'wbgetentities') {
                 return Http::response(['entities' => ['Q46887' => [
-                    'descriptions' => ['id' => ['value' => 'novel fantasi karya J. K. Rowling']],
+                    'descriptions' => ['en' => ['value' => 'fantasy novel by J. K. Rowling']],
                     'claims' => ['P1476' => [[
                         'rank' => 'normal',
                         'mainsnak' => ['datavalue' => ['value' => ['text' => 'Harry Potter and the Half-Blood Prince']]],
                     ]]],
-                    'sitelinks' => ['idwiki' => ['title' => 'Harry Potter dan Pangeran Berdarah-Campuran']],
+                    'sitelinks' => ['enwiki' => ['title' => 'Harry Potter and the Half-Blood Prince']],
                 ]]]);
             }
 
@@ -126,7 +129,7 @@ class WorkMetadataEnricherTest extends TestCase
         );
 
         $this->assertSame('Harry Potter and the Half-Blood Prince', $metadata->originalTitle);
-        $this->assertSame('novel fantasi karya J. K. Rowling', $metadata->tagline);
+        $this->assertSame('fantasy novel by J. K. Rowling', $metadata->tagline);
         $this->assertNull($metadata->synopsis);
     }
 }

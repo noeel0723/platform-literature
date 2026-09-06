@@ -25,10 +25,10 @@ class ReadingList extends Model
 
     /** @var array<string, string> */
     public const STATUS_LABELS = [
-        'want_to_read' => 'Ingin dibaca',
-        'reading' => 'Sedang dibaca',
-        'completed' => 'Selesai',
-        'dnf' => 'DNF / Berhenti',
+        'want_to_read' => 'Want to read',
+        'reading' => 'Reading',
+        'completed' => 'Completed',
+        'dnf' => 'DNF',
     ];
 
     /** @return BelongsTo<User, $this> */

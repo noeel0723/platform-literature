@@ -5,9 +5,9 @@
             <div class="mt-3 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
                 <div>
                     <h1 class="font-serif text-5xl font-bold text-ink-950">Personal Diary</h1>
-                    <p class="mt-3 max-w-2xl leading-7 text-ink-950/65">Riwayat kronologis status, progres, dan catatan bacaan milik {{ auth()->user()->name }}.</p>
+                    <p class="mt-3 max-w-2xl leading-7 text-ink-950/65">A chronological record of {{ auth()->user()->name }}'s reading statuses, progress, and notes.</p>
                 </div>
-                <a href="{{ route('literatures.index') }}" class="w-fit bg-ink-950 px-5 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Tambah bacaan</a>
+                <a href="{{ route('literatures.index') }}" class="w-fit bg-ink-950 px-5 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Add literature</a>
             </div>
 
             <div class="mt-10 grid grid-cols-2 gap-px border border-ink-950/10 bg-ink-950/10 sm:grid-cols-4">
@@ -25,7 +25,7 @@
         <div>
             <div class="flex items-end justify-between border-b border-ink-950/15 pb-3">
                 <h2 class="font-serif text-3xl font-bold text-ink-950">Readlist</h2>
-                <span class="text-sm text-ink-950/55">{{ $readingLists->count() }} karya</span>
+                <span class="text-sm text-ink-950/55">{{ $readingLists->count() }} titles</span>
             </div>
             <div class="mt-5 grid gap-3">
                 @forelse ($readingLists as $item)
@@ -36,7 +36,7 @@
                             @endif
                         </div>
                         <div class="min-w-0 py-1">
-                            <h3 class="truncate font-bold text-ink-950 group-hover:text-brand-coral">{{ $item->literature->title }}</h3>
+                            <h3 class="truncate font-bold text-ink-950 group-hover:text-brand-coral">{{ $item->literature->original_title ?? $item->literature->title }}</h3>
                             <p class="mt-1 text-sm text-ink-950/60">{{ $statusLabels[$item->status] ?? $item->status }}</p>
                             @if ($item->progress)
                                 <p class="mt-2 text-xs font-semibold uppercase tracking-wider text-ink-950/50">{{ $item->progress->current_value }}{{ $item->progress->total_value ? ' / '.$item->progress->total_value : '' }} {{ $item->progress->unit }}</p>
@@ -44,32 +44,32 @@
                         </div>
                     </a>
                 @empty
-                    <div class="border border-dashed border-ink-950/20 p-6 text-ink-950/60">Readlist masih kosong. Buka katalog dan pilih sebuah karya untuk memulai.</div>
+                    <div class="border border-dashed border-ink-950/20 p-6 text-ink-950/60">Your Readlist is empty. Open the catalog and choose a title to begin.</div>
                 @endforelse
             </div>
         </div>
 
         <div>
             <div class="flex items-end justify-between border-b border-ink-950/15 pb-3">
-                <h2 class="font-serif text-3xl font-bold text-ink-950">Riwayat aktivitas</h2>
-                <span class="text-sm text-ink-950/55">100 aktivitas terbaru</span>
+                <h2 class="font-serif text-3xl font-bold text-ink-950">Activity history</h2>
+                <span class="text-sm text-ink-950/55">Latest 100 activities</span>
             </div>
             <ol class="mt-5 border-l border-ink-950/20 pl-6">
                 @forelse ($logs as $log)
                     <li class="relative pb-8">
                         <span class="absolute -left-[1.75rem] top-1.5 size-3 border-2 border-brand-cream bg-brand-coral ring-1 ring-ink-950/20"></span>
-                        <time class="text-xs font-bold uppercase tracking-wider text-ink-950/50">{{ $log->occurred_at->timezone(config('app.display_timezone'))->format('d/m/Y H:i') }} {{ config('app.display_timezone_label') }}</time>
+                        <time datetime="{{ $log->occurred_at->utc()->toIso8601String() }}" data-local-datetime class="text-xs font-bold uppercase tracking-wider text-ink-950/50">{{ $log->occurred_at->utc()->format('M j, Y, g:i A') }} (UTC)</time>
                         <p class="mt-1 text-lg font-bold text-ink-950">{{ $eventLabels[$log->event_type] ?? $log->event_type }}</p>
-                        <a href="{{ route('literatures.show', $log->readingList->literature) }}" class="font-semibold text-brand-coral hover:underline">{{ $log->readingList->literature->title }}</a>
+                        <a href="{{ route('literatures.show', $log->readingList->literature) }}" class="font-semibold text-brand-coral hover:underline">{{ $log->readingList->literature->original_title ?? $log->readingList->literature->title }}</a>
                         @if ($log->progress_value !== null)
-                            <p class="mt-2 text-sm text-ink-950/65">Progres: {{ $log->progress_value }}{{ $log->progress_total ? ' / '.$log->progress_total : '' }} {{ $log->progress_unit }}</p>
+                            <p class="mt-2 text-sm text-ink-950/65">Progress: {{ $log->progress_value }}{{ $log->progress_total ? ' / '.$log->progress_total : '' }} {{ $log->progress_unit }}</p>
                         @endif
                         @if ($log->note)
                             <blockquote class="mt-3 border-l-2 border-brand-sky bg-white/40 px-4 py-3 text-sm leading-6 text-ink-950/70">{{ $log->note }}</blockquote>
                         @endif
                     </li>
                 @empty
-                    <li class="border border-dashed border-ink-950/20 p-6 text-ink-950/60">Belum ada aktivitas bacaan yang dicatat.</li>
+                    <li class="border border-dashed border-ink-950/20 p-6 text-ink-950/60">No reading activity has been recorded yet.</li>
                 @endforelse
             </ol>
         </div>

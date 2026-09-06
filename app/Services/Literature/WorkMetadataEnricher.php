@@ -20,8 +20,9 @@ final class WorkMetadataEnricher
             return new WorkMetadata;
         }
 
-        $language = $this->normalizedLanguage($language);
-        $cacheKey = 'work-metadata:'.sha1($language.'|'.$title.'|'.implode('|', $authors));
+        $sourceLanguage = $this->normalizedLanguage($language);
+        $contentLanguage = $this->normalizedLanguage((string) config('services.work_metadata.content_language', 'en'));
+        $cacheKey = 'work-metadata:'.sha1($contentLanguage.'|'.$sourceLanguage.'|'.$title.'|'.implode('|', $authors));
 
         $cached = Cache::get($cacheKey);
 
@@ -29,7 +30,7 @@ final class WorkMetadataEnricher
             return new WorkMetadata(...$cached);
         }
 
-        $metadata = $this->resolve($title, $language);
+        $metadata = $this->resolve($title, $sourceLanguage, $contentLanguage);
 
         if ($this->hasMetadata($metadata)) {
             Cache::put($cacheKey, [
@@ -44,14 +45,14 @@ final class WorkMetadataEnricher
         return $metadata;
     }
 
-    private function resolve(string $title, string $language): WorkMetadata
+    private function resolve(string $title, string $sourceLanguage, string $contentLanguage): WorkMetadata
     {
         try {
             $searchResponse = $this->client()->get((string) config('services.work_metadata.wikidata_url'), [
                 'action' => 'wbsearchentities',
                 'search' => $title,
-                'language' => $language,
-                'uselang' => 'en',
+                'language' => $sourceLanguage,
+                'uselang' => $contentLanguage,
                 'type' => 'item',
                 'limit' => 5,
                 'format' => 'json',
@@ -72,7 +73,7 @@ final class WorkMetadataEnricher
                 'action' => 'wbgetentities',
                 'ids' => $candidate['id'],
                 'props' => 'claims|sitelinks|descriptions',
-                'languages' => "{$language}|en",
+                'languages' => "{$contentLanguage}|{$sourceLanguage}",
                 'format' => 'json',
             ]);
 
@@ -87,11 +88,8 @@ final class WorkMetadataEnricher
             }
 
             $originalTitle = $this->originalTitle($entity);
-            $tagline = $this->cleanText(
-                Arr::get($entity, "descriptions.{$language}.value")
-                    ?? Arr::get($entity, 'descriptions.en.value'),
-            );
-            $wiki = $this->wikipediaSummary($entity, $language);
+            $tagline = $this->cleanText(Arr::get($entity, "descriptions.{$contentLanguage}.value"));
+            $wiki = $this->wikipediaSummary($entity, $contentLanguage);
 
             return new WorkMetadata(
                 originalTitle: $this->sameTitle($originalTitle, $title) ? null : $originalTitle,
@@ -142,19 +140,18 @@ final class WorkMetadataEnricher
     }
 
     /** @return array{synopsis: ?string, source_name: ?string, source_url: ?string} */
-    private function wikipediaSummary(array $entity, string $language): array
+    private function wikipediaSummary(array $entity, string $contentLanguage): array
     {
-        $siteKey = Arr::has($entity, "sitelinks.{$language}wiki") ? "{$language}wiki" : 'enwiki';
+        $siteKey = "{$contentLanguage}wiki";
         $pageTitle = $this->cleanText(Arr::get($entity, "sitelinks.{$siteKey}.title"));
 
         if ($pageTitle === null) {
             return ['synopsis' => null, 'source_name' => null, 'source_url' => null];
         }
 
-        $wikiLanguage = $siteKey === 'enwiki' ? 'en' : $language;
         $endpoint = str_replace(
             ['{language}', '{title}'],
-            [$wikiLanguage, rawurlencode(str_replace(' ', '_', $pageTitle))],
+            [$contentLanguage, rawurlencode(str_replace(' ', '_', $pageTitle))],
             (string) config('services.work_metadata.wikipedia_summary_url'),
         );
 
@@ -177,7 +174,7 @@ final class WorkMetadataEnricher
 
         return [
             'synopsis' => Str::limit($synopsis, 1800),
-            'source_name' => 'Wikipedia '.Str::upper($wikiLanguage),
+            'source_name' => 'Wikipedia '.Str::upper($contentLanguage),
             'source_url' => $sourceUrl,
         ];
     }

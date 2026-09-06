@@ -33,7 +33,8 @@ class LiteratureCatalogTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertSeeText('Satu rak untuk setiap cerita')
+            ->assertSeeText('One shelf for every story')
+            ->assertSeeText('Literahaven')
             ->assertSeeText('Bumi Manusia')
             ->assertSeeText('Google Books');
     }
@@ -139,8 +140,8 @@ class LiteratureCatalogTest extends TestCase
             ->assertOk()
             ->assertSeeText('Dune')
             ->assertSeeText('Frank Herbert')
-            ->assertSee('Sampul Dune')
-            ->assertDontSeeText('Katalog lokal tetap aktif.');
+            ->assertSee('Cover of Dune')
+            ->assertDontSeeText('The local catalog remains available.');
         $this->assertDatabaseHas('literatures', [
             'external_id' => 'google-dune',
             'title' => 'Dune',
@@ -171,8 +172,8 @@ class LiteratureCatalogTest extends TestCase
         $response
             ->assertOk()
             ->assertSeeText('Dune')
-            ->assertSeeText('Katalog lokal tetap aktif.')
-            ->assertSeeText('Hasil dari katalog lokal tetap ditampilkan.');
+            ->assertSeeText('The local catalog remains available.')
+            ->assertSeeText('Results from the local catalog are still available.');
         $this->assertDatabaseCount('literatures', 1);
         Http::assertSentCount(1);
     }
@@ -216,7 +217,7 @@ class LiteratureCatalogTest extends TestCase
             ->assertSeeText('Fullmetal Alchemist')
             ->assertSeeText('Hiromu Arakawa')
             ->assertSeeText('AniList')
-            ->assertDontSeeText('Katalog lokal tetap aktif.');
+            ->assertDontSeeText('The local catalog remains available.');
         $this->assertDatabaseHas('literatures', [
             'external_id' => '5114',
             'title' => 'Fullmetal Alchemist',
@@ -258,7 +259,7 @@ class LiteratureCatalogTest extends TestCase
             ->assertOk()
             ->assertSeeText('Solo Leveling')
             ->assertSeeText('Manhwa')
-            ->assertDontSeeText('Katalog lokal tetap aktif.');
+            ->assertDontSeeText('The local catalog remains available.');
         $this->assertDatabaseHas('literatures', [
             'external_id' => '105398',
             'title' => 'Solo Leveling',
@@ -298,7 +299,7 @@ class LiteratureCatalogTest extends TestCase
             ->assertOk()
             ->assertSeeText('Watchmen')
             ->assertSeeText('Comic Vine')
-            ->assertDontSeeText('Katalog lokal tetap aktif.');
+            ->assertDontSeeText('The local catalog remains available.');
         $this->assertDatabaseHas('literatures', [
             'external_id' => '1815',
             'title' => 'Watchmen',

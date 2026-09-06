@@ -185,7 +185,7 @@ final class AniListAdapter
         $normalizedFormat = Str::upper((string) $format);
 
         if ($countryOfOrigin === 'KR' && in_array($normalizedFormat, ['MANGA', 'ONE_SHOT'], true)) {
-            return $normalizedFormat === 'ONE_SHOT' ? 'Manhwa satu bab' : 'Manhwa';
+            return $normalizedFormat === 'ONE_SHOT' ? 'One-shot Manhwa' : 'Manhwa';
         }
 
         return match ($normalizedFormat) {

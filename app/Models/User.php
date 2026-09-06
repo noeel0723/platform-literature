@@ -31,6 +31,12 @@ class User extends Authenticatable
         return $this->hasManyThrough(ReadingLog::class, ReadingList::class);
     }
 
+    /** @return HasMany<Review, $this> */
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
+
     /**
      * Get the attributes that should be cast.
      *

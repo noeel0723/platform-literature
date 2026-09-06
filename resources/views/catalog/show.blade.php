@@ -14,13 +14,13 @@
         <div class="absolute inset-x-0 top-0 h-72 bg-linear-to-b from-white/35 to-transparent"></div>
         <div class="relative mx-auto max-w-7xl px-5 pb-16 pt-10 sm:px-8 lg:px-10 lg:pb-20 lg:pt-16">
             <a href="{{ route('literatures.index') }}" class="inline-flex items-center gap-2 text-sm font-semibold text-ink-950/75 transition hover:text-brand-coral">
-                <span aria-hidden="true">&larr;</span> Kembali ke katalog
+                <span aria-hidden="true">&larr;</span> Back to catalog
             </a>
 
             <div class="mt-10 grid gap-8 md:grid-cols-[220px_1fr] lg:grid-cols-[250px_1fr_280px] lg:items-end">
                 <div class="relative aspect-[2/3] overflow-hidden border border-ink-950/20 bg-linear-to-br {{ $coverTheme }} shadow-2xl">
                     @if ($literature['cover_url'] !== null)
-                        <img src="{{ $literature['cover_url'] }}" alt="Sampul {{ $literature['title'] }}" class="absolute inset-0 size-full object-cover">
+                        <img src="{{ $literature['cover_url'] }}" alt="Cover of {{ $literature['title'] }}" class="absolute inset-0 size-full object-cover">
                         <div class="absolute inset-0 bg-linear-to-t from-ink-950/80 via-transparent to-ink-950/25"></div>
                     @else
                         <div class="absolute inset-0 opacity-30 [background-image:linear-gradient(115deg,transparent_20%,rgba(255,255,255,.35)_50%,transparent_80%)]"></div>
@@ -44,59 +44,60 @@
                     </div>
                     <h1 class="mt-4 font-serif text-5xl font-bold leading-none tracking-tight text-ink-950 sm:text-6xl">{{ $literature['title'] }}</h1>
                     @if ($literature['edition_title'])
-                        <p class="mt-3 text-sm text-ink-950/55">Judul edisi: <span class="font-semibold text-ink-950/75">{{ $literature['edition_title'] }}</span></p>
+                        <p class="mt-3 text-sm text-ink-950/55">Edition title: <span class="font-semibold text-ink-950/75">{{ $literature['edition_title'] }}</span></p>
                     @endif
-                    <p class="mt-4 text-lg text-ink-950/60">Oleh <span class="font-semibold text-ink-950">{{ $literature['author'] }}</span></p>
+                    <p class="mt-4 text-lg text-ink-950/60">By <span class="font-semibold text-ink-950">{{ $literature['author'] }}</span></p>
                     <p class="mt-7 max-w-2xl text-lg font-medium uppercase leading-7 tracking-[0.08em] text-ink-950/70">{{ $literature['tagline'] }}</p>
                     <p class="mt-5 max-w-2xl text-base leading-8 text-ink-950/70">{{ $literature['synopsis'] }}</p>
                 </div>
 
-                <aside class="border border-ink-950/10 bg-white/40 lg:mb-2" aria-label="Status katalog">
+                <aside class="border border-ink-950/10 bg-white/40 lg:mb-2" aria-label="Catalog status">
                     <div class="border-b border-ink-950/10 p-5">
-                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-ink-950/60">Status katalog</p>
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-ink-950/60">Catalog status</p>
                         <div class="mt-4 flex items-center gap-3">
                             <span class="grid size-10 place-items-center bg-ink-950 font-bold text-brand-cream">OK</span>
                             <div>
-                                <p class="font-bold text-ink-950">Metadata tersedia</p>
-                                <p class="text-sm text-ink-950/60">Siap ditampilkan</p>
+                                <p class="font-bold text-ink-950">Metadata available</p>
+                                <p class="text-sm text-ink-950/60">Ready to display</p>
                             </div>
                         </div>
                     </div>
                     <dl class="grid gap-4 p-5 text-sm">
-                        <div class="flex justify-between gap-4"><dt class="text-ink-950/60">Sumber</dt><dd class="font-semibold text-ink-950">{{ $literature['source'] }}</dd></div>
+                        <div class="flex justify-between gap-4"><dt class="text-ink-950/60">Source</dt><dd class="font-semibold text-ink-950">{{ $literature['source'] }}</dd></div>
                         <div class="flex justify-between gap-4"><dt class="text-ink-950/60">Format</dt><dd class="font-semibold text-ink-950">{{ $literature['format'] }}</dd></div>
-                        <div class="flex justify-between gap-4"><dt class="text-ink-950/60">Bahasa</dt><dd class="font-semibold text-ink-950">{{ $literature['language'] }}</dd></div>
+                        <div class="flex justify-between gap-4"><dt class="text-ink-950/60">Language</dt><dd class="font-semibold text-ink-950">{{ $literature['language'] }}</dd></div>
                     </dl>
-                    <a href="{{ route('literatures.index') }}" class="block bg-ink-950 px-5 py-4 text-center font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Cari karya lain</a>
+                    <a href="{{ route('literatures.index') }}" class="block bg-ink-950 px-5 py-4 text-center font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Find another title</a>
                 </aside>
             </div>
         </div>
     </section>
 
     <section class="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:px-10 lg:py-20">
-        <nav class="flex gap-6 overflow-x-auto border-b border-ink-950/10 text-sm font-bold uppercase tracking-[0.14em] text-ink-950/60" aria-label="Bagian detail">
-            <a href="#summary" class="border-b-2 border-brand-coral pb-4 text-ink-950">Ringkasan</a>
-            <a href="#authors" class="pb-4 text-ink-950/70 hover:text-brand-coral">Pengarang</a>
+        <nav class="flex gap-6 overflow-x-auto border-b border-ink-950/10 text-sm font-bold uppercase tracking-[0.14em] text-ink-950/60" aria-label="Literature details">
+            <a href="#summary" class="border-b-2 border-brand-coral pb-4 text-ink-950">Summary</a>
+            <a href="#authors" class="pb-4 text-ink-950/70 hover:text-brand-coral">Authors</a>
             <a href="#details" class="pb-4 text-ink-950/70 hover:text-brand-coral">Detail</a>
             <a href="#genres" class="pb-4 text-ink-950/70 hover:text-brand-coral">Genre</a>
             <a href="#readlist" class="pb-4 text-ink-950/70 hover:text-brand-coral">Readlist</a>
+            <a href="#reviews" class="pb-4 text-ink-950/70 hover:text-brand-coral">Reviews</a>
         </nav>
 
         <div class="mt-10 grid gap-10 lg:grid-cols-[1.25fr_.75fr]">
             <div id="summary" class="border border-ink-950/10 bg-white/40 p-6 sm:p-8">
-                <p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">Tentang karya</p>
-                <h2 class="mt-3 font-serif text-3xl font-bold text-ink-950">Ringkasan metadata</h2>
+                <p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">About this work</p>
+                <h2 class="mt-3 font-serif text-3xl font-bold text-ink-950">Metadata summary</h2>
                 <p class="mt-5 max-w-3xl text-base leading-8 text-ink-950/70">{{ $literature['synopsis'] }}</p>
                 @if ($literature['synopsis_source_name'] && $literature['synopsis_source_url'])
                     <p class="mt-4 text-xs leading-5 text-ink-950/50">
-                        Ringkasan pelengkap dari
+                        Supplemental summary from
                         <a href="{{ $literature['synopsis_source_url'] }}" target="_blank" rel="noopener noreferrer" class="font-semibold underline decoration-brand-coral underline-offset-4">{{ $literature['synopsis_source_name'] }}</a>
-                        dengan lisensi <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer" class="underline underline-offset-4">CC BY-SA</a>.
+                        under the <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer" class="underline underline-offset-4">CC BY-SA</a> license.
                     </p>
                 @endif
 
                 <div id="authors" class="mt-10 border-t border-ink-950/10 pt-7">
-                    <h3 class="text-sm font-bold uppercase tracking-[0.18em] text-ink-950/60">Pengarang dan kreator</h3>
+                    <h3 class="text-sm font-bold uppercase tracking-[0.18em] text-ink-950/60">Authors and creators</h3>
                     <div class="mt-4 flex flex-wrap gap-2">
                         @foreach ($literature['authors'] as $author)
                             <span class="bg-brand-sky/25 px-3 py-2 font-semibold text-ink-950">{{ $author }}</span>
@@ -116,12 +117,12 @@
 
             <aside id="details" class="h-fit border border-ink-950/10 bg-white/40 p-6 sm:p-8">
                 <p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">Source tracking</p>
-                <h2 class="mt-3 font-serif text-2xl font-bold text-ink-950">Detail katalog</h2>
+                <h2 class="mt-3 font-serif text-2xl font-bold text-ink-950">Catalog details</h2>
                 <dl class="mt-7 grid gap-5 text-sm">
-                    <div class="border-b border-ink-950/10 pb-4"><dt class="text-ink-950/60">Penerbit</dt><dd class="mt-1 font-semibold text-ink-950">{{ $literature['publisher'] }}</dd></div>
-                    <div class="border-b border-ink-950/10 pb-4"><dt class="text-ink-950/60">Identifier eksternal</dt><dd class="mt-1 font-semibold text-ink-950">{{ $literature['identifier'] }}</dd></div>
-                    <div class="border-b border-ink-950/10 pb-4"><dt class="text-ink-950/60">Sumber metadata</dt><dd class="mt-1 font-semibold text-ink-950">{{ $literature['source'] }}</dd></div>
-                    <div><dt class="text-ink-950/60">Tahap implementasi</dt><dd class="mt-1 font-semibold text-ink-950">Katalog internal MySQL</dd></div>
+                    <div class="border-b border-ink-950/10 pb-4"><dt class="text-ink-950/60">Publisher</dt><dd class="mt-1 font-semibold text-ink-950">{{ $literature['publisher'] }}</dd></div>
+                    <div class="border-b border-ink-950/10 pb-4"><dt class="text-ink-950/60">External identifier</dt><dd class="mt-1 font-semibold text-ink-950">{{ $literature['identifier'] }}</dd></div>
+                    <div class="border-b border-ink-950/10 pb-4"><dt class="text-ink-950/60">Metadata source</dt><dd class="mt-1 font-semibold text-ink-950">{{ $literature['source'] }}</dd></div>
+                    <div><dt class="text-ink-950/60">Storage</dt><dd class="mt-1 font-semibold text-ink-950">Internal MySQL catalog</dd></div>
                 </dl>
             </aside>
         </div>
@@ -131,10 +132,10 @@
         <div class="mx-auto grid max-w-7xl gap-8 px-5 py-14 sm:px-8 lg:grid-cols-[.7fr_1.3fr] lg:px-10 lg:py-20">
             <div>
                 <p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">Increment 2</p>
-                <h2 class="mt-3 font-serif text-4xl font-bold text-ink-950">Kelola bacaanmu</h2>
-                <p class="mt-4 max-w-md leading-7 text-ink-950/65">Simpan status, catat halaman atau bab terakhir, dan tambahkan catatan singkat. Setiap perubahan akan masuk ke Personal Diary secara otomatis.</p>
+                <h2 class="mt-3 font-serif text-4xl font-bold text-ink-950">Manage your reading</h2>
+                <p class="mt-4 max-w-md leading-7 text-ink-950/65">Save a status, record your latest page or chapter, and add a short note. Every change is added to your Personal Diary automatically.</p>
                 @auth
-                    <a href="{{ route('diary.index') }}" class="mt-6 inline-flex font-bold text-ink-950 underline decoration-brand-coral decoration-2 underline-offset-4">Buka Personal Diary</a>
+                    <a href="{{ route('diary.index') }}" class="mt-6 inline-flex font-bold text-ink-950 underline decoration-brand-coral decoration-2 underline-offset-4">Open Personal Diary</a>
                 @endauth
             </div>
 
@@ -144,7 +145,7 @@
                     @method('PUT')
 
                     <div class="sm:col-span-2">
-                        <label for="status" class="text-sm font-bold text-ink-950">Status bacaan</label>
+                        <label for="status" class="text-sm font-bold text-ink-950">Reading status</label>
                         <select id="status" name="status" class="mt-2 w-full border border-ink-950/20 bg-white/60 px-4 py-3 outline-none focus:border-brand-coral">
                             @foreach ($readingStatuses as $value => $label)
                                 <option value="{{ $value }}" @selected(old('status', $readingList?->status ?? 'want_to_read') === $value)>{{ $label }}</option>
@@ -154,51 +155,138 @@
                     </div>
 
                     <div>
-                        <label for="progress_value" class="text-sm font-bold text-ink-950">Progres saat ini</label>
-                        <input id="progress_value" name="progress_value" type="number" min="0" value="{{ old('progress_value', $readingList?->progress?->current_value) }}" placeholder="Contoh: 120" class="mt-2 w-full border border-ink-950/20 bg-white/60 px-4 py-3 outline-none focus:border-brand-coral">
+                        <label for="progress_value" class="text-sm font-bold text-ink-950">Current progress</label>
+                        <input id="progress_value" name="progress_value" type="number" min="0" value="{{ old('progress_value', $readingList?->progress?->current_value) }}" placeholder="Example: 120" class="mt-2 w-full border border-ink-950/20 bg-white/60 px-4 py-3 outline-none focus:border-brand-coral">
                         @error('progress_value') <p class="mt-2 text-sm font-semibold text-red-700">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
                         <label for="progress_total" class="text-sm font-bold text-ink-950">Total</label>
-                        <input id="progress_total" name="progress_total" type="number" min="1" value="{{ old('progress_total', $readingList?->progress?->total_value) }}" placeholder="Contoh: 320" class="mt-2 w-full border border-ink-950/20 bg-white/60 px-4 py-3 outline-none focus:border-brand-coral">
+                        <input id="progress_total" name="progress_total" type="number" min="1" value="{{ old('progress_total', $readingList?->progress?->total_value) }}" placeholder="Example: 320" class="mt-2 w-full border border-ink-950/20 bg-white/60 px-4 py-3 outline-none focus:border-brand-coral">
                         @error('progress_total') <p class="mt-2 text-sm font-semibold text-red-700">{{ $message }}</p> @enderror
                     </div>
 
                     <div class="sm:col-span-2">
-                        <label for="progress_unit" class="text-sm font-bold text-ink-950">Satuan progres</label>
+                        <label for="progress_unit" class="text-sm font-bold text-ink-950">Progress unit</label>
                         <select id="progress_unit" name="progress_unit" class="mt-2 w-full border border-ink-950/20 bg-white/60 px-4 py-3 outline-none focus:border-brand-coral">
-                            @foreach (['page' => 'Halaman', 'chapter' => 'Bab', 'percent' => 'Persen'] as $value => $label)
+                            @foreach (['page' => 'Pages', 'chapter' => 'Chapters', 'percent' => 'Percent'] as $value => $label)
                                 <option value="{{ $value }}" @selected(old('progress_unit', $readingList?->progress?->unit ?? 'page') === $value)>{{ $label }}</option>
                             @endforeach
                         </select>
                     </div>
 
                     <div class="sm:col-span-2">
-                        <label for="note" class="text-sm font-bold text-ink-950">Catatan aktivitas <span class="font-normal text-ink-950/50">(opsional)</span></label>
-                        <textarea id="note" name="note" rows="3" maxlength="1000" placeholder="Tuliskan kesan atau pengingat singkat..." class="mt-2 w-full resize-y border border-ink-950/20 bg-white/60 px-4 py-3 outline-none focus:border-brand-coral">{{ old('note') }}</textarea>
+                        <label for="note" class="text-sm font-bold text-ink-950">Activity note <span class="font-normal text-ink-950/50">(optional)</span></label>
+                        <textarea id="note" name="note" rows="3" maxlength="1000" placeholder="Write a short thought or reminder..." class="mt-2 w-full resize-y border border-ink-950/20 bg-white/60 px-4 py-3 outline-none focus:border-brand-coral">{{ old('note') }}</textarea>
                         @error('note') <p class="mt-2 text-sm font-semibold text-red-700">{{ $message }}</p> @enderror
                     </div>
 
                     @if ($readingList)
                         <label class="flex items-start gap-3 text-sm leading-6 text-ink-950/70 sm:col-span-2">
                             <input name="reread" type="checkbox" value="1" class="mt-1 size-4 accent-brand-coral">
-                            Mulai baca ulang. Progres akan kembali ke 0 dan jumlah baca ulang bertambah.
+                            Start a reread. Progress will return to 0 and the reread count will increase.
                         </label>
                     @endif
 
-                    <button class="bg-ink-950 px-5 py-3.5 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950 sm:col-span-2">Simpan ke Readlist</button>
+                    <button class="bg-ink-950 px-5 py-3.5 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950 sm:col-span-2">Save to Readlist</button>
                 </form>
             @else
                 <div class="border border-ink-950/15 bg-brand-cream/65 p-7 sm:p-9">
-                    <p class="font-serif text-2xl font-bold text-ink-950">Masuk untuk mencatat bacaan</p>
-                    <p class="mt-3 leading-7 text-ink-950/65">Katalog tetap dapat dijelajahi tanpa akun. Akun diperlukan agar status dan progres tersimpan secara pribadi.</p>
+                    <p class="font-serif text-2xl font-bold text-ink-950">Log in to track your reading</p>
+                    <p class="mt-3 leading-7 text-ink-950/65">The catalog remains public. An account keeps your status and progress private to you.</p>
                     <div class="mt-6 flex flex-wrap gap-3">
-                        <a href="{{ route('login') }}" class="bg-ink-950 px-5 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Masuk</a>
-                        <a href="{{ route('register') }}" class="border border-ink-950/20 px-5 py-3 font-bold text-ink-950 transition hover:border-brand-coral">Buat akun</a>
+                        <a href="{{ route('login') }}" class="bg-ink-950 px-5 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Log in</a>
+                        <a href="{{ route('register') }}" class="border border-ink-950/20 px-5 py-3 font-bold text-ink-950 transition hover:border-brand-coral">Create account</a>
                     </div>
                 </div>
             @endauth
+        </div>
+    </section>
+
+    <section id="reviews" class="border-t border-ink-950/10">
+        <div class="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:px-10 lg:py-20">
+            <div class="flex flex-col gap-4 border-b border-ink-950/15 pb-6 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">Increment 3 / Social Cataloging</p>
+                    <h2 class="mt-3 font-serif text-4xl font-bold text-ink-950">Ratings &amp; reviews</h2>
+                    <p class="mt-3 max-w-2xl leading-7 text-ink-950/65">Share a rating, write a review, and protect other readers by marking spoilers.</p>
+                </div>
+                <div class="text-left sm:text-right">
+                    <p class="font-serif text-4xl font-bold text-ink-950">{{ $averageRating ? number_format($averageRating, 1) : '—' }}</p>
+                    <p class="text-xs font-bold uppercase tracking-wider text-ink-950/50">{{ $reviews->count() }} {{ Str::plural('rating', $reviews->count()) }}</p>
+                </div>
+            </div>
+
+            <div class="mt-9 grid gap-10 lg:grid-cols-[.8fr_1.2fr]">
+                <div>
+                    @auth
+                        <form action="{{ route('reviews.update', $literature['slug']) }}" method="POST" class="grid gap-5 border border-ink-950/15 bg-white/40 p-6 sm:p-8">
+                            @csrf
+                            @method('PUT')
+
+                            <div>
+                                <label for="rating" class="text-sm font-bold text-ink-950">Your rating</label>
+                                <select id="rating" name="rating" required class="mt-2 w-full border border-ink-950/20 bg-brand-cream/60 px-4 py-3 outline-none focus:border-brand-coral">
+                                    <option value="">Choose 1–5 stars</option>
+                                    @foreach (range(1, 5) as $rating)
+                                        <option value="{{ $rating }}" @selected((int) old('rating', $currentReview?->rating) === $rating)>{{ $rating }} {{ Str::plural('star', $rating) }}</option>
+                                    @endforeach
+                                </select>
+                                @error('rating') <p class="mt-2 text-sm font-semibold text-red-700">{{ $message }}</p> @enderror
+                            </div>
+
+                            <div>
+                                <label for="review-body" class="text-sm font-bold text-ink-950">Review <span class="font-normal text-ink-950/50">(optional)</span></label>
+                                <textarea id="review-body" name="body" rows="6" maxlength="5000" placeholder="What stayed with you after reading?" class="mt-2 w-full resize-y border border-ink-950/20 bg-brand-cream/60 px-4 py-3 leading-7 outline-none focus:border-brand-coral">{{ old('body', $currentReview?->body) }}</textarea>
+                                @error('body') <p class="mt-2 text-sm font-semibold text-red-700">{{ $message }}</p> @enderror
+                            </div>
+
+                            <label class="flex items-start gap-3 text-sm leading-6 text-ink-950/70">
+                                <input name="contains_spoiler" type="checkbox" value="1" class="mt-1 size-4 accent-brand-coral" @checked(old('contains_spoiler', $currentReview?->contains_spoiler))>
+                                This review contains spoilers. Hide its text until another reader chooses to reveal it.
+                            </label>
+
+                            <button class="bg-ink-950 px-5 py-3.5 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">{{ $currentReview ? 'Update review' : 'Publish review' }}</button>
+                        </form>
+                    @else
+                        <div class="border border-ink-950/15 bg-white/40 p-7">
+                            <p class="font-serif text-2xl font-bold text-ink-950">Join the conversation</p>
+                            <p class="mt-3 leading-7 text-ink-950/65">Log in to rate this work and publish a spoiler-aware review.</p>
+                            <a href="{{ route('login') }}" class="mt-6 inline-block bg-ink-950 px-5 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Log in</a>
+                        </div>
+                    @endauth
+                </div>
+
+                <div>
+                    <h3 class="font-serif text-2xl font-bold text-ink-950">Reader reviews</h3>
+                    <div class="mt-5 grid gap-4">
+                        @forelse ($reviews as $review)
+                            <article class="border border-ink-950/10 bg-white/35 p-5 sm:p-6">
+                                <div class="flex flex-wrap items-center justify-between gap-3">
+                                    <div>
+                                        <p class="font-bold text-ink-950">{{ $review->user->name }}</p>
+                                        <time datetime="{{ $review->created_at->utc()->toIso8601String() }}" data-local-datetime class="mt-1 block text-xs font-semibold uppercase tracking-wider text-ink-950/45">{{ $review->created_at->utc()->format('M j, Y, g:i A') }} (UTC)</time>
+                                    </div>
+                                    <p class="text-lg tracking-widest text-brand-coral" aria-label="{{ $review->rating }} out of 5 stars">{{ str_repeat('★', $review->rating) }}<span class="text-ink-950/15">{{ str_repeat('★', 5 - $review->rating) }}</span></p>
+                                </div>
+
+                                @if ($review->body)
+                                    @if ($review->contains_spoiler)
+                                        <button type="button" class="mt-5 border border-ink-950/20 px-4 py-2 text-sm font-bold text-ink-950 transition hover:border-brand-coral" data-spoiler-reveal aria-controls="review-body-{{ $review->id }}">Reveal spoiler review</button>
+                                        <p id="review-body-{{ $review->id }}" hidden class="mt-5 whitespace-pre-line leading-7 text-ink-950/70">{{ $review->body }}</p>
+                                    @else
+                                        <p class="mt-5 whitespace-pre-line leading-7 text-ink-950/70">{{ $review->body }}</p>
+                                    @endif
+                                @else
+                                    <p class="mt-5 text-sm italic text-ink-950/50">Rating only.</p>
+                                @endif
+                            </article>
+                        @empty
+                            <div class="border border-dashed border-ink-950/20 p-7 text-ink-950/60">No reviews yet. Be the first reader to share a rating.</div>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 </x-app-shell>

@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\LiteratureController;
 use App\Http\Controllers\ReadingDiaryController;
 use App\Http\Controllers\ReadingListController;
+use App\Http\Controllers\ReviewController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [LiteratureController::class, 'index'])->name('home');
@@ -21,5 +22,7 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::put('/literatures/{literature}/reading-list', [ReadingListController::class, 'update'])
         ->name('reading-list.update');
+    Route::put('/literatures/{literature}/review', [ReviewController::class, 'update'])
+        ->name('reviews.update');
     Route::get('/diary', [ReadingDiaryController::class, 'index'])->name('diary.index');
 });

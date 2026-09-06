@@ -26,7 +26,7 @@ class AuthController extends Controller
         $request->session()->regenerate();
 
         return redirect()->route('literatures.index')
-            ->with('success', 'Akun berhasil dibuat. Kamu sudah bisa menyimpan bacaan.');
+            ->with('success', 'Your account is ready. You can now save literature to your Readlist.');
     }
 
     public function showLogin(): View
@@ -38,14 +38,14 @@ class AuthController extends Controller
     {
         if (! Auth::attempt($request->safe()->only(['email', 'password']), $request->boolean('remember'))) {
             throw ValidationException::withMessages([
-                'email' => 'Email atau kata sandi tidak cocok.',
+                'email' => 'The email address or password is incorrect.',
             ]);
         }
 
         $request->session()->regenerate();
 
         return redirect()->intended(route('literatures.index'))
-            ->with('success', 'Selamat datang kembali.');
+            ->with('success', 'Welcome back.');
     }
 
     public function logout(Request $request): RedirectResponse
@@ -54,6 +54,6 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('home')->with('success', 'Kamu telah keluar dari akun.');
+        return redirect()->route('home')->with('success', 'You have been logged out.');
     }
 }

@@ -61,6 +61,12 @@ class Literature extends Model
         return $this->hasMany(ReadingList::class);
     }
 
+    /** @return HasMany<Review, $this> */
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
+
     public function getRouteKeyName(): string
     {
         return 'slug';

@@ -20,14 +20,14 @@ class EnrichLiteratureMetadata extends Command
         $limit = max(1, min((int) $this->option('limit'), 500));
         $query = trim((string) $this->option('query'));
         $delay = max(0, min((int) $this->option('delay'), 5000));
+        $contentLanguage = (string) config('services.work_metadata.content_language', 'en');
         $literatures = Literature::query()
             ->whereHas('apiSource', fn ($query) => $query->where('key', 'google-books'))
-            ->where(function ($query): void {
+            ->where(function ($query) use ($contentLanguage): void {
                 $query->whereNull('synopsis')
-                    ->orWhere(function ($translated): void {
-                        $translated->whereNull('original_title')
-                            ->whereNotNull('language')
-                            ->where('language', '!=', 'en');
+                    ->orWhere(function ($translated) use ($contentLanguage): void {
+                        $translated->whereNotNull('language')
+                            ->where('language', '!=', $contentLanguage);
                     });
             })
             ->when($query !== '', fn ($builder) => $builder->where('title', 'like', "%{$query}%"))
@@ -46,22 +46,23 @@ class EnrichLiteratureMetadata extends Command
         $progress->start();
 
         foreach ($literatures as $literature) {
+            $usesContentLanguage = $literature->language === null || $literature->language === $contentLanguage;
             $metadata = $metadataEnricher->find(
                 $literature->title,
                 $literature->authors->pluck('name')->all(),
                 $literature->language,
-                $literature->synopsis === null,
+                $literature->synopsis === null || ! $usesContentLanguage,
             );
 
             if ($literature->original_title === null && $metadata->originalTitle !== null) {
                 $literature->original_title = $metadata->originalTitle;
             }
 
-            if ($literature->tagline === null && $metadata->tagline !== null) {
+            if (($literature->tagline === null || ! $usesContentLanguage) && $metadata->tagline !== null) {
                 $literature->tagline = $metadata->tagline;
             }
 
-            if ($literature->synopsis === null && $metadata->synopsis !== null) {
+            if (($literature->synopsis === null || ! $usesContentLanguage) && $metadata->synopsis !== null) {
                 $literature->synopsis = $metadata->synopsis;
                 $literature->synopsis_source_name = $metadata->synopsisSourceName;
                 $literature->synopsis_source_url = $metadata->synopsisSourceUrl;

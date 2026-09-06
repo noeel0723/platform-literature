@@ -45,11 +45,12 @@ return [
 
     'work_metadata' => [
         'wikidata_url' => env('WIKIDATA_API_URL', 'https://www.wikidata.org/w/api.php'),
+        'content_language' => env('WORK_METADATA_CONTENT_LANGUAGE', 'en'),
         'wikipedia_summary_url' => env(
             'WIKIPEDIA_SUMMARY_URL',
             'https://{language}.wikipedia.org/api/rest_v1/page/summary/{title}',
         ),
-        'user_agent' => env('WORK_METADATA_USER_AGENT', 'LiteratureSocialDiscovery/1.0 academic-project'),
+        'user_agent' => env('WORK_METADATA_USER_AGENT', 'Literahaven/1.0 academic-project'),
         'cache_days' => (int) env('WORK_METADATA_CACHE_DAYS', 30),
         'connect_timeout' => (int) env('WORK_METADATA_CONNECT_TIMEOUT', 3),
         'timeout' => (int) env('WORK_METADATA_TIMEOUT', 8),
@@ -65,7 +66,7 @@ return [
     'comic_vine' => [
         'base_url' => env('COMIC_VINE_BASE_URL', 'https://comicvine.gamespot.com/api'),
         'key' => env('COMIC_VINE_API_KEY'),
-        'user_agent' => env('COMIC_VINE_USER_AGENT', 'LiteratureSocialDiscovery/1.0 academic-project'),
+        'user_agent' => env('COMIC_VINE_USER_AGENT', 'Literahaven/1.0 academic-project'),
         'max_results' => (int) env('COMIC_VINE_MAX_RESULTS', 6),
         'cache_minutes' => (int) env('COMIC_VINE_CACHE_MINUTES', 30),
         'connect_timeout' => (int) env('COMIC_VINE_CONNECT_TIMEOUT', 3),
