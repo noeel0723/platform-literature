@@ -13,6 +13,15 @@
                     @error('name') <p class="mt-2 text-sm font-semibold text-red-700">{{ $message }}</p> @enderror
                 </div>
                 <div>
+                    <label for="username" class="text-sm font-bold text-ink-950">Username</label>
+                    <div class="mt-2 flex border border-ink-950/20 bg-brand-cream/40 focus-within:border-brand-coral">
+                        <span class="grid place-items-center border-r border-ink-950/10 px-3 font-semibold text-ink-950/45">@</span>
+                        <input id="username" name="username" value="{{ old('username') }}" required minlength="3" maxlength="50" pattern="[a-z0-9_]+" autocomplete="username" placeholder="imanuel_reader" class="min-w-0 flex-1 bg-transparent px-4 py-3 outline-none">
+                    </div>
+                    <p class="mt-2 text-xs text-ink-950/50">Use lowercase letters, numbers, and underscores.</p>
+                    @error('username') <p class="mt-2 text-sm font-semibold text-red-700">{{ $message }}</p> @enderror
+                </div>
+                <div>
                     <label for="email" class="text-sm font-bold text-ink-950">Email</label>
                     <input id="email" name="email" type="email" value="{{ old('email') }}" required autocomplete="email" class="mt-2 w-full border border-ink-950/20 bg-brand-cream/40 px-4 py-3 outline-none transition focus:border-brand-coral">
                     @error('email') <p class="mt-2 text-sm font-semibold text-red-700">{{ $message }}</p> @enderror

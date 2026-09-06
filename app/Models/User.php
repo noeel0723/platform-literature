@@ -7,12 +7,13 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password'])]
+#[Fillable(['name', 'username', 'email', 'location', 'bio', 'password'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -53,6 +54,29 @@ class User extends Authenticatable
     public function likes(): HasMany
     {
         return $this->hasMany(Like::class);
+    }
+
+    /** @return BelongsToMany<Literature, $this> */
+    public function favoriteLiteratures(): BelongsToMany
+    {
+        return $this->belongsToMany(Literature::class, 'user_favorite_literatures')
+            ->withPivot('position')
+            ->withTimestamps()
+            ->orderByPivot('position');
+    }
+
+    /** @return BelongsToMany<Author, $this> */
+    public function favoriteAuthors(): BelongsToMany
+    {
+        return $this->belongsToMany(Author::class, 'user_favorite_authors')
+            ->withPivot('position')
+            ->withTimestamps()
+            ->orderByPivot('position');
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'username';
     }
 
     /**

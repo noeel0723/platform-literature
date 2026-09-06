@@ -5,6 +5,7 @@ use App\Http\Controllers\CommentController;
 use App\Http\Controllers\DiscussionController;
 use App\Http\Controllers\LikeController;
 use App\Http\Controllers\LiteratureController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReadingDiaryController;
 use App\Http\Controllers\ReadingListController;
 use App\Http\Controllers\ReviewController;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [LiteratureController::class, 'index'])->name('home');
 Route::get('/catalog', [LiteratureController::class, 'index'])->name('literatures.index');
 Route::get('/literatures/{literature}', [LiteratureController::class, 'show'])->name('literatures.show');
+Route::get('/members/{user}', [ProfileController::class, 'show'])->name('profiles.show');
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
@@ -40,4 +42,6 @@ Route::middleware('auth')->group(function (): void {
     Route::delete('/discussions/{discussion}/like', [LikeController::class, 'destroyDiscussion'])
         ->name('discussions.likes.destroy');
     Route::get('/diary', [ReadingDiaryController::class, 'index'])->name('diary.index');
+    Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profiles.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profiles.update');
 });

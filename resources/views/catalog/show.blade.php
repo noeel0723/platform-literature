@@ -271,7 +271,7 @@
                             <article id="review-{{ $review->id }}" class="scroll-mt-28 border border-ink-950/10 bg-white/35 p-5 sm:p-6">
                                 <div class="flex flex-wrap items-center justify-between gap-3">
                                     <div>
-                                        <p class="font-bold text-ink-950">{{ $review->user->name }}</p>
+                                        <a href="{{ route('profiles.show', $review->user) }}" class="font-bold text-ink-950 transition hover:text-brand-coral">{{ $review->user->name }}</a>
                                         <time datetime="{{ $review->created_at->utc()->toIso8601String() }}" data-local-datetime class="mt-1 block text-xs font-semibold uppercase tracking-wider text-ink-950/45">{{ $review->created_at->utc()->format('M j, Y, g:i A') }} (UTC)</time>
                                     </div>
                                     <div class="text-right">
@@ -433,7 +433,7 @@
                         <article id="discussion-{{ $discussion->id }}" class="scroll-mt-28 border border-ink-950/10 bg-white/45 p-5 sm:p-7">
                             <div class="flex flex-wrap items-start justify-between gap-3">
                                 <div>
-                                    <p class="font-bold text-ink-950">{{ $discussion->user->name }}</p>
+                                    <a href="{{ route('profiles.show', $discussion->user) }}" class="font-bold text-ink-950 transition hover:text-brand-coral">{{ $discussion->user->name }}</a>
                                     <time datetime="{{ $discussion->created_at->utc()->toIso8601String() }}" data-local-datetime class="mt-1 block text-xs font-semibold uppercase tracking-wider text-ink-950/45">{{ $discussion->created_at->utc()->format('M j, Y, g:i A') }} (UTC)</time>
                                 </div>
                                 <span class="text-xs font-bold uppercase tracking-wider text-ink-950/45">{{ $discussion->comments_count }} {{ Str::plural('comment', $discussion->comments_count) }}</span>
@@ -465,7 +465,7 @@
                                     @foreach ($discussion->topLevelComments as $comment)
                                         <div class="border-l-2 border-brand-sky bg-brand-cream/45 p-4">
                                             <div class="flex flex-wrap items-center justify-between gap-2">
-                                                <p class="font-bold text-ink-950">{{ $comment->user->name }}</p>
+                                                <a href="{{ route('profiles.show', $comment->user) }}" class="font-bold text-ink-950 transition hover:text-brand-coral">{{ $comment->user->name }}</a>
                                                 <time datetime="{{ $comment->created_at->utc()->toIso8601String() }}" data-local-datetime class="text-xs font-semibold uppercase tracking-wider text-ink-950/45">{{ $comment->created_at->utc()->format('M j, Y, g:i A') }} (UTC)</time>
                                             </div>
 
@@ -479,7 +479,7 @@
                                             @foreach ($comment->replies as $reply)
                                                 <div class="mt-4 ml-4 border-l border-ink-950/15 pl-4">
                                                     <div class="flex flex-wrap items-center justify-between gap-2">
-                                                        <p class="text-sm font-bold text-ink-950">{{ $reply->user->name }} <span class="font-normal text-ink-950/45">replied</span></p>
+                                                        <p class="text-sm font-bold text-ink-950"><a href="{{ route('profiles.show', $reply->user) }}" class="transition hover:text-brand-coral">{{ $reply->user->name }}</a> <span class="font-normal text-ink-950/45">replied</span></p>
                                                         <time datetime="{{ $reply->created_at->utc()->toIso8601String() }}" data-local-datetime class="text-xs font-semibold uppercase tracking-wider text-ink-950/45">{{ $reply->created_at->utc()->format('M j, Y, g:i A') }} (UTC)</time>
                                                     </div>
                                                     @if ($reply->contains_spoiler)

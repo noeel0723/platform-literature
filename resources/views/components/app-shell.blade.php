@@ -24,6 +24,7 @@
                         <a href="{{ route('literatures.index') }}" class="whitespace-nowrap transition hover:text-brand-coral">Catalog</a>
                         <a href="{{ route('home') }}#sources" class="whitespace-nowrap transition hover:text-brand-coral">Sources</a>
                         @auth
+                            <a href="{{ route('profiles.show', auth()->user()) }}" class="whitespace-nowrap transition hover:text-brand-coral">Profile</a>
                             <a href="{{ route('diary.index') }}" class="whitespace-nowrap transition hover:text-brand-coral">Diary</a>
                         @endauth
                     </nav>
@@ -73,6 +74,7 @@
                 <a href="{{ route('literatures.index') }}" class="px-3 py-3 transition hover:bg-brand-sky/25">Catalog</a>
                 <a href="{{ route('home') }}#sources" class="px-3 py-3 transition hover:bg-brand-sky/25">API Sources</a>
                 @auth
+                    <a href="{{ route('profiles.show', auth()->user()) }}" class="px-3 py-3 transition hover:bg-brand-sky/25">My Profile</a>
                     <a href="{{ route('diary.index') }}" class="px-3 py-3 transition hover:bg-brand-sky/25">Personal Diary</a>
                     <form action="{{ route('logout') }}" method="POST">
                         @csrf

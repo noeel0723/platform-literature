@@ -20,7 +20,7 @@ class AuthController extends Controller
 
     public function register(RegisterRequest $request): RedirectResponse
     {
-        $user = User::query()->create($request->safe()->only(['name', 'email', 'password']));
+        $user = User::query()->create($request->safe()->only(['name', 'username', 'email', 'password']));
 
         Auth::login($user);
         $request->session()->regenerate();

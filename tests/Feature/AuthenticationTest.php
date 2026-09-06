@@ -15,6 +15,7 @@ class AuthenticationTest extends TestCase
     {
         $response = $this->post('/register', [
             'name' => 'Imanuel',
+            'username' => 'imanuel_reader',
             'email' => 'imanuel@example.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
@@ -22,6 +23,7 @@ class AuthenticationTest extends TestCase
 
         $response->assertRedirect(route('literatures.index'));
         $this->assertAuthenticated();
+        $this->assertSame('imanuel_reader', User::query()->firstOrFail()->username);
         $this->assertTrue(Hash::check('password123', User::query()->firstOrFail()->password));
     }
 
