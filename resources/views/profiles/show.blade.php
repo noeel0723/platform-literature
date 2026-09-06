@@ -12,8 +12,12 @@
     <section class="catalog-grid border-b border-ink-950/10">
         <div class="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:px-10 lg:py-16">
             <div class="grid gap-7 md:grid-cols-[140px_minmax(0,1fr)] md:items-center">
-                <div class="grid size-32 place-items-center rounded-full border border-ink-950/15 bg-ink-950 font-serif text-4xl font-bold text-brand-cream shadow-xl sm:size-36">
-                    {{ $initials ?: 'LH' }}
+                <div class="grid size-32 place-items-center overflow-hidden rounded-full border border-ink-950/15 bg-ink-950 font-serif text-4xl font-bold text-brand-cream shadow-xl sm:size-36">
+                    @if ($user->avatarUrl())
+                        <img src="{{ $user->avatarUrl() }}" alt="{{ $user->name }}'s profile photo" class="size-full object-cover">
+                    @else
+                        {{ $initials ?: 'LH' }}
+                    @endif
                 </div>
 
                 <div class="min-w-0">
@@ -23,9 +27,19 @@
                             <h1 class="mt-2 font-serif text-5xl font-bold leading-none text-ink-950">{{ $user->name }}</h1>
                             <p class="mt-2 font-semibold text-ink-950/55">&#64;{{ $user->username }}</p>
                         </div>
-                        @if (auth()->id() === $user->id)
-                            <a href="{{ route('profiles.edit') }}" class="w-fit border border-ink-950/20 px-5 py-3 text-sm font-bold text-ink-950 transition hover:border-brand-coral hover:bg-brand-coral">Edit profile</a>
-                        @endif
+                        <div class="flex flex-wrap gap-3">
+                            @if (auth()->id() === $user->id)
+                                <a href="{{ route('profiles.edit') }}" class="w-fit border border-ink-950/20 px-5 py-3 text-sm font-bold text-ink-950 transition hover:border-brand-coral hover:bg-brand-coral">Edit profile</a>
+                            @elseif (auth()->check())
+                                <form action="{{ $isFollowing ? route('profiles.follow.destroy', $user) : route('profiles.follow.store', $user) }}" method="POST">
+                                    @csrf
+                                    @if ($isFollowing) @method('DELETE') @endif
+                                    <button class="w-fit px-5 py-3 text-sm font-bold transition {{ $isFollowing ? 'border border-ink-950/20 text-ink-950 hover:border-brand-coral' : 'bg-ink-950 text-brand-cream hover:bg-brand-coral hover:text-ink-950' }}">{{ $isFollowing ? 'Following' : 'Follow' }}</button>
+                                </form>
+                            @else
+                                <a href="{{ route('login') }}" class="w-fit bg-ink-950 px-5 py-3 text-sm font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Log in to follow</a>
+                            @endif
+                        </div>
                     </div>
 
                     @if ($user->bio)
@@ -43,11 +57,15 @@
                 </div>
             </div>
 
-            <dl class="mt-10 grid grid-cols-2 gap-px border border-ink-950/10 bg-ink-950/10 sm:grid-cols-4">
+            @error('user') <p class="mt-5 text-sm font-semibold text-red-700">{{ $message }}</p> @enderror
+
+            <dl class="mt-10 grid grid-cols-2 gap-px border border-ink-950/10 bg-ink-950/10 sm:grid-cols-3 lg:grid-cols-6">
                 <div class="bg-brand-cream/90 p-5"><dd class="font-serif text-3xl font-bold text-ink-950">{{ $user->reading_lists_count }}</dd><dt class="mt-1 text-xs font-bold uppercase tracking-wider text-ink-950/50">In Readlist</dt></div>
                 <div class="bg-brand-cream/90 p-5"><dd class="font-serif text-3xl font-bold text-ink-950">{{ $user->completed_literature_count }}</dd><dt class="mt-1 text-xs font-bold uppercase tracking-wider text-ink-950/50">Completed</dt></div>
                 <div class="bg-brand-cream/90 p-5"><dd class="font-serif text-3xl font-bold text-ink-950">{{ $user->reviews_count }}</dd><dt class="mt-1 text-xs font-bold uppercase tracking-wider text-ink-950/50">Reviews</dt></div>
                 <div class="bg-brand-cream/90 p-5"><dd class="font-serif text-3xl font-bold text-ink-950">{{ $user->discussions_count }}</dd><dt class="mt-1 text-xs font-bold uppercase tracking-wider text-ink-950/50">Discussions</dt></div>
+                <div class="bg-brand-cream/90"><a href="{{ route('profiles.following', $user) }}" class="block p-5 transition hover:bg-brand-sky/25"><dd class="font-serif text-3xl font-bold text-ink-950">{{ $user->following_count }}</dd><dt class="mt-1 text-xs font-bold uppercase tracking-wider text-ink-950/50">Following</dt></a></div>
+                <div class="bg-brand-cream/90"><a href="{{ route('profiles.followers', $user) }}" class="block p-5 transition hover:bg-brand-sky/25"><dd class="font-serif text-3xl font-bold text-ink-950">{{ $user->followers_count }}</dd><dt class="mt-1 text-xs font-bold uppercase tracking-wider text-ink-950/50">Followers</dt></a></div>
             </dl>
         </div>
     </section>

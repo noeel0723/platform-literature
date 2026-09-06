@@ -38,6 +38,8 @@ class UpdateProfileRequest extends FormRequest
             ],
             'location' => ['nullable', 'string', 'max:100'],
             'bio' => ['nullable', 'string', 'max:500'],
+            'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'remove_avatar' => ['nullable', 'boolean'],
             'favorite_literature_ids' => ['array', 'max:4'],
             'favorite_literature_ids.*' => ['integer', 'distinct', Rule::exists('literatures', 'id')],
             'favorite_author_ids' => ['array', 'max:4'],

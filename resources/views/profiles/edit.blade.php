@@ -9,12 +9,30 @@
     </section>
 
     <section class="mx-auto max-w-5xl px-5 py-12 sm:px-8 lg:px-10 lg:py-16">
-        <form action="{{ route('profiles.update') }}" method="POST" class="grid gap-10">
+        <form action="{{ route('profiles.update') }}" method="POST" enctype="multipart/form-data" class="grid gap-10">
             @csrf
             @method('PUT')
 
             <div class="grid gap-6 border border-ink-950/10 bg-white/35 p-6 sm:grid-cols-2 sm:p-8">
                 <div class="sm:col-span-2"><p class="text-xs font-bold uppercase tracking-[0.18em] text-brand-coral">Public identity</p><h2 class="mt-2 font-serif text-3xl font-bold text-ink-950">Reader information</h2></div>
+                <div class="grid gap-5 border-b border-ink-950/10 pb-6 sm:col-span-2 sm:grid-cols-[112px_minmax(0,1fr)] sm:items-center">
+                    <div class="grid size-28 place-items-center overflow-hidden rounded-full bg-ink-950 font-serif text-3xl font-bold text-brand-cream">
+                        @if ($user->avatarUrl())
+                            <img src="{{ $user->avatarUrl() }}" alt="Current profile photo" class="size-full object-cover">
+                        @else
+                            {{ Str::upper(Str::substr($user->name, 0, 2)) }}
+                        @endif
+                    </div>
+                    <div>
+                        <label for="avatar" class="text-sm font-bold text-ink-950">Profile photo</label>
+                        <input id="avatar" name="avatar" type="file" accept="image/jpeg,image/png,image/webp" class="mt-2 block w-full border border-ink-950/20 bg-brand-cream/55 p-3 text-sm file:mr-4 file:border-0 file:bg-ink-950 file:px-4 file:py-2 file:font-bold file:text-brand-cream">
+                        <p class="mt-2 text-xs leading-5 text-ink-950/50">JPG, PNG, or WebP. Maximum file size: 2 MB.</p>
+                        @error('avatar') <p class="mt-2 text-sm font-semibold text-red-700">{{ $message }}</p> @enderror
+                        @if ($user->avatar_path)
+                            <label class="mt-3 flex items-center gap-2 text-sm text-ink-950/65"><input name="remove_avatar" type="checkbox" value="1" class="size-4 accent-brand-coral"> Remove the current photo</label>
+                        @endif
+                    </div>
+                </div>
                 <div>
                     <label for="name" class="text-sm font-bold text-ink-950">Display name</label>
                     <input id="name" name="name" value="{{ old('name', $user->name) }}" required maxlength="100" autocomplete="name" class="mt-2 w-full border border-ink-950/20 bg-brand-cream/55 px-4 py-3 outline-none focus:border-brand-coral">

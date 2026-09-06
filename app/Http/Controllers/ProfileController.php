@@ -8,6 +8,7 @@ use App\Models\Literature;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
@@ -19,6 +20,8 @@ class ProfileController extends Controller
                 'readingLists',
                 'reviews',
                 'discussions',
+                'followers',
+                'following',
                 'readingLists as completed_literature_count' => fn ($query) => $query->where('status', 'completed'),
             ]);
 
@@ -35,7 +38,9 @@ class ProfileController extends Controller
             ->limit(4)
             ->get();
 
-        return view('profiles.show', compact('user', 'recentReviews', 'recentCompletions'));
+        $isFollowing = request()->user()?->isFollowing($user) ?? false;
+
+        return view('profiles.show', compact('user', 'recentReviews', 'recentCompletions', 'isFollowing'));
     }
 
     public function edit(Request $request): View
@@ -54,13 +59,42 @@ class ProfileController extends Controller
     public function update(UpdateProfileRequest $request): RedirectResponse
     {
         $user = $request->user();
-        $user->update($request->safe()->only(['name', 'username', 'location', 'bio']));
+        $profileData = $request->safe()->only(['name', 'username', 'location', 'bio']);
+
+        if ($request->hasFile('avatar')) {
+            $newAvatarPath = $request->file('avatar')->storePublicly('avatars', 'public');
+
+            if (! is_string($newAvatarPath)) {
+                abort(500, 'The profile photo could not be stored.');
+            }
+
+            if ($user->avatar_path !== null) {
+                Storage::disk('public')->delete($user->avatar_path);
+            }
+
+            $profileData['avatar_path'] = $newAvatarPath;
+        } elseif ($request->boolean('remove_avatar') && $user->avatar_path !== null) {
+            Storage::disk('public')->delete($user->avatar_path);
+            $profileData['avatar_path'] = null;
+        }
+
+        $user->update($profileData);
 
         $user->favoriteLiteratures()->sync($this->positionedIds($request->validated('favorite_literature_ids', [])));
         $user->favoriteAuthors()->sync($this->positionedIds($request->validated('favorite_author_ids', [])));
 
         return redirect()->route('profiles.show', $user)
             ->with('success', 'Your profile has been updated.');
+    }
+
+    public function followers(User $user): View
+    {
+        return $this->connections($user, 'followers');
+    }
+
+    public function following(User $user): View
+    {
+        return $this->connections($user, 'following');
     }
 
     /**
@@ -72,5 +106,19 @@ class ProfileController extends Controller
         return collect($ids)
             ->mapWithKeys(fn (int $id, int $index): array => [$id => ['position' => $index + 1]])
             ->all();
+    }
+
+    private function connections(User $user, string $relationship): View
+    {
+        $connections = $user->{$relationship}()
+            ->withCount(['followers', 'following'])
+            ->orderBy('name')
+            ->paginate(24);
+
+        return view('profiles.connections', [
+            'user' => $user,
+            'connections' => $connections,
+            'relationship' => $relationship,
+        ]);
     }
 }

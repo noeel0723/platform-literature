@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\DiscussionController;
+use App\Http\Controllers\FollowController;
 use App\Http\Controllers\LikeController;
 use App\Http\Controllers\LiteratureController;
 use App\Http\Controllers\ProfileController;
@@ -14,6 +15,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [LiteratureController::class, 'index'])->name('home');
 Route::get('/catalog', [LiteratureController::class, 'index'])->name('literatures.index');
 Route::get('/literatures/{literature}', [LiteratureController::class, 'show'])->name('literatures.show');
+Route::get('/members/{user}/followers', [ProfileController::class, 'followers'])->name('profiles.followers');
+Route::get('/members/{user}/following', [ProfileController::class, 'following'])->name('profiles.following');
 Route::get('/members/{user}', [ProfileController::class, 'show'])->name('profiles.show');
 
 Route::middleware('guest')->group(function (): void {
@@ -44,4 +47,6 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/diary', [ReadingDiaryController::class, 'index'])->name('diary.index');
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profiles.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profiles.update');
+    Route::post('/members/{user}/follow', [FollowController::class, 'store'])->name('profiles.follow.store');
+    Route::delete('/members/{user}/follow', [FollowController::class, 'destroy'])->name('profiles.follow.destroy');
 });

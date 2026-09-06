@@ -12,8 +12,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 
-#[Fillable(['name', 'username', 'email', 'location', 'bio', 'password'])]
+#[Fillable(['name', 'username', 'email', 'location', 'bio', 'avatar_path', 'password'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -72,6 +73,32 @@ class User extends Authenticatable
             ->withPivot('position')
             ->withTimestamps()
             ->orderByPivot('position');
+    }
+
+    /** @return BelongsToMany<User, $this> */
+    public function followers(): BelongsToMany
+    {
+        return $this->belongsToMany(self::class, 'follows', 'followed_id', 'follower_id')
+            ->withTimestamps();
+    }
+
+    /** @return BelongsToMany<User, $this> */
+    public function following(): BelongsToMany
+    {
+        return $this->belongsToMany(self::class, 'follows', 'follower_id', 'followed_id')
+            ->withTimestamps();
+    }
+
+    public function isFollowing(User $user): bool
+    {
+        return $this->following()->whereKey($user->getKey())->exists();
+    }
+
+    public function avatarUrl(): ?string
+    {
+        return $this->avatar_path === null
+            ? null
+            : Storage::disk('public')->url($this->avatar_path);
     }
 
     public function getRouteKeyName(): string
