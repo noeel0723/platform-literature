@@ -102,6 +102,16 @@ class LiteratureController extends Controller
         $currentReview = request()->user()?->reviews()
             ->whereBelongsTo($literature)
             ->first();
+        $discussions = $literature->discussions()
+            ->with([
+                'user',
+                'topLevelComments.user',
+                'topLevelComments.replies.user',
+            ])
+            ->withCount('comments')
+            ->latest()
+            ->limit(20)
+            ->get();
 
         return view('catalog.show', [
             'literature' => $this->present($literature),
@@ -110,6 +120,8 @@ class LiteratureController extends Controller
             'reviews' => $literature->reviews->sortByDesc('created_at')->values(),
             'currentReview' => $currentReview,
             'averageRating' => $literature->reviews->avg('rating'),
+            'discussions' => $discussions,
+            'discussionCount' => $literature->discussions()->count(),
         ]);
     }
 

@@ -37,6 +37,18 @@ class User extends Authenticatable
         return $this->hasMany(Review::class);
     }
 
+    /** @return HasMany<Discussion, $this> */
+    public function discussions(): HasMany
+    {
+        return $this->hasMany(Discussion::class);
+    }
+
+    /** @return HasMany<Comment, $this> */
+    public function comments(): HasMany
+    {
+        return $this->hasMany(Comment::class);
+    }
+
     /**
      * Get the attributes that should be cast.
      *

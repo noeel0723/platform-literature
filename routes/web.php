@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CommentController;
+use App\Http\Controllers\DiscussionController;
 use App\Http\Controllers\LiteratureController;
 use App\Http\Controllers\ReadingDiaryController;
 use App\Http\Controllers\ReadingListController;
@@ -24,5 +26,9 @@ Route::middleware('auth')->group(function (): void {
         ->name('reading-list.update');
     Route::put('/literatures/{literature}/review', [ReviewController::class, 'update'])
         ->name('reviews.update');
+    Route::post('/literatures/{literature}/discussions', [DiscussionController::class, 'store'])
+        ->name('discussions.store');
+    Route::post('/discussions/{discussion}/comments', [CommentController::class, 'store'])
+        ->name('discussions.comments.store');
     Route::get('/diary', [ReadingDiaryController::class, 'index'])->name('diary.index');
 });

@@ -81,6 +81,7 @@
             <a href="#genres" class="pb-4 text-ink-950/70 hover:text-brand-coral">Genre</a>
             <a href="#readlist" class="pb-4 text-ink-950/70 hover:text-brand-coral">Readlist</a>
             <a href="#reviews" class="pb-4 text-ink-950/70 hover:text-brand-coral">Reviews</a>
+            <a href="#discussions" class="pb-4 text-ink-950/70 hover:text-brand-coral">Discussions</a>
         </nav>
 
         <div class="mt-10 grid gap-10 lg:grid-cols-[1.25fr_.75fr]">
@@ -285,6 +286,153 @@
                             <div class="border border-dashed border-ink-950/20 p-7 text-ink-950/60">No reviews yet. Be the first reader to share a rating.</div>
                         @endforelse
                     </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="discussions" class="border-t border-ink-950/10 bg-white/20">
+        <div class="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:px-10 lg:py-20">
+            <div class="flex flex-col gap-4 border-b border-ink-950/15 pb-6 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">Increment 3 / Community</p>
+                    <h2 class="mt-3 font-serif text-4xl font-bold text-ink-950">Discussions &amp; comments</h2>
+                    <p class="mt-3 max-w-2xl leading-7 text-ink-950/65">Start a focused conversation about this work, respond to other readers, and mark spoilers before publishing.</p>
+                </div>
+                <div class="text-left sm:text-right">
+                    <p class="text-xs font-bold uppercase tracking-wider text-ink-950/50">{{ $discussionCount }} {{ Str::plural('discussion', $discussionCount) }}</p>
+                    @if ($discussionCount > $discussions->count())
+                        <p class="mt-1 text-xs text-ink-950/45">Showing the latest {{ $discussions->count() }}</p>
+                    @endif
+                </div>
+            </div>
+
+            <div class="mt-9 grid gap-10 lg:grid-cols-[.7fr_1.3fr]">
+                <div>
+                    @auth
+                        <form action="{{ route('discussions.store', $literature['slug']) }}" method="POST" class="grid gap-5 border border-ink-950/15 bg-brand-cream/70 p-6 sm:p-8">
+                            @csrf
+
+                            <div>
+                                <label for="discussion-title" class="text-sm font-bold text-ink-950">Discussion title</label>
+                                <input id="discussion-title" name="title" value="{{ old('title') }}" required minlength="3" maxlength="150" placeholder="What would you like to discuss?" class="mt-2 w-full border border-ink-950/20 bg-white/60 px-4 py-3 outline-none focus:border-brand-coral">
+                                @error('title') <p class="mt-2 text-sm font-semibold text-red-700">{{ $message }}</p> @enderror
+                            </div>
+
+                            <div>
+                                <label for="discussion-body" class="text-sm font-bold text-ink-950">Opening post</label>
+                                <textarea id="discussion-body" name="discussion_body" rows="7" required minlength="10" maxlength="5000" placeholder="Add context so other readers can join the conversation..." class="mt-2 w-full resize-y border border-ink-950/20 bg-white/60 px-4 py-3 leading-7 outline-none focus:border-brand-coral">{{ old('discussion_body') }}</textarea>
+                                @error('discussion_body') <p class="mt-2 text-sm font-semibold text-red-700">{{ $message }}</p> @enderror
+                            </div>
+
+                            <label class="flex items-start gap-3 text-sm leading-6 text-ink-950/70">
+                                <input name="discussion_contains_spoiler" type="checkbox" value="1" class="mt-1 size-4 accent-brand-coral" @checked(old('discussion_contains_spoiler'))>
+                                This discussion contains spoilers. Hide the opening post until readers reveal it.
+                            </label>
+
+                            <button class="bg-ink-950 px-5 py-3.5 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Start discussion</button>
+                        </form>
+                    @else
+                        <div class="border border-ink-950/15 bg-brand-cream/70 p-7">
+                            <p class="font-serif text-2xl font-bold text-ink-950">Join the discussion</p>
+                            <p class="mt-3 leading-7 text-ink-950/65">Log in to start a discussion, leave a comment, or reply to another reader.</p>
+                            <a href="{{ route('login') }}" class="mt-6 inline-block bg-ink-950 px-5 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Log in</a>
+                        </div>
+                    @endauth
+                </div>
+
+                <div class="grid content-start gap-5">
+                    @forelse ($discussions as $discussion)
+                        <article id="discussion-{{ $discussion->id }}" class="scroll-mt-28 border border-ink-950/10 bg-white/45 p-5 sm:p-7">
+                            <div class="flex flex-wrap items-start justify-between gap-3">
+                                <div>
+                                    <p class="font-bold text-ink-950">{{ $discussion->user->name }}</p>
+                                    <time datetime="{{ $discussion->created_at->utc()->toIso8601String() }}" data-local-datetime class="mt-1 block text-xs font-semibold uppercase tracking-wider text-ink-950/45">{{ $discussion->created_at->utc()->format('M j, Y, g:i A') }} (UTC)</time>
+                                </div>
+                                <span class="text-xs font-bold uppercase tracking-wider text-ink-950/45">{{ $discussion->comments_count }} {{ Str::plural('comment', $discussion->comments_count) }}</span>
+                            </div>
+
+                            <h3 class="mt-5 font-serif text-2xl font-bold text-ink-950">{{ $discussion->title }}</h3>
+                            @if ($discussion->contains_spoiler)
+                                <button type="button" class="mt-5 border border-ink-950/20 px-4 py-2 text-sm font-bold text-ink-950 transition hover:border-brand-coral" data-spoiler-reveal aria-controls="discussion-body-{{ $discussion->id }}">Reveal spoiler discussion</button>
+                                <p id="discussion-body-{{ $discussion->id }}" hidden class="mt-5 whitespace-pre-line leading-7 text-ink-950/70">{{ $discussion->body }}</p>
+                            @else
+                                <p class="mt-5 whitespace-pre-line leading-7 text-ink-950/70">{{ $discussion->body }}</p>
+                            @endif
+
+                            <div class="mt-7 border-t border-ink-950/10 pt-6">
+                                <h4 class="text-sm font-bold uppercase tracking-[0.16em] text-ink-950/55">Comments</h4>
+                                <div class="mt-4 grid gap-4">
+                                    @foreach ($discussion->topLevelComments as $comment)
+                                        <div class="border-l-2 border-brand-sky bg-brand-cream/45 p-4">
+                                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                                <p class="font-bold text-ink-950">{{ $comment->user->name }}</p>
+                                                <time datetime="{{ $comment->created_at->utc()->toIso8601String() }}" data-local-datetime class="text-xs font-semibold uppercase tracking-wider text-ink-950/45">{{ $comment->created_at->utc()->format('M j, Y, g:i A') }} (UTC)</time>
+                                            </div>
+
+                                            @if ($comment->contains_spoiler)
+                                                <button type="button" class="mt-3 text-sm font-bold text-ink-950 underline decoration-brand-coral underline-offset-4" data-spoiler-reveal aria-controls="comment-body-{{ $comment->id }}">Reveal spoiler comment</button>
+                                                <p id="comment-body-{{ $comment->id }}" hidden class="mt-3 whitespace-pre-line leading-7 text-ink-950/70">{{ $comment->body }}</p>
+                                            @else
+                                                <p class="mt-3 whitespace-pre-line leading-7 text-ink-950/70">{{ $comment->body }}</p>
+                                            @endif
+
+                                            @foreach ($comment->replies as $reply)
+                                                <div class="mt-4 ml-4 border-l border-ink-950/15 pl-4">
+                                                    <div class="flex flex-wrap items-center justify-between gap-2">
+                                                        <p class="text-sm font-bold text-ink-950">{{ $reply->user->name }} <span class="font-normal text-ink-950/45">replied</span></p>
+                                                        <time datetime="{{ $reply->created_at->utc()->toIso8601String() }}" data-local-datetime class="text-xs font-semibold uppercase tracking-wider text-ink-950/45">{{ $reply->created_at->utc()->format('M j, Y, g:i A') }} (UTC)</time>
+                                                    </div>
+                                                    @if ($reply->contains_spoiler)
+                                                        <button type="button" class="mt-2 text-sm font-bold text-ink-950 underline decoration-brand-coral underline-offset-4" data-spoiler-reveal aria-controls="comment-body-{{ $reply->id }}">Reveal spoiler reply</button>
+                                                        <p id="comment-body-{{ $reply->id }}" hidden class="mt-2 whitespace-pre-line text-sm leading-6 text-ink-950/70">{{ $reply->body }}</p>
+                                                    @else
+                                                        <p class="mt-2 whitespace-pre-line text-sm leading-6 text-ink-950/70">{{ $reply->body }}</p>
+                                                    @endif
+                                                </div>
+                                            @endforeach
+
+                                            @auth
+                                                <details class="mt-4">
+                                                    <summary class="w-fit cursor-pointer text-sm font-bold text-ink-950 hover:text-brand-coral">Reply</summary>
+                                                    <form action="{{ route('discussions.comments.store', $discussion) }}" method="POST" class="mt-3 grid gap-3">
+                                                        @csrf
+                                                        <input type="hidden" name="parent_id" value="{{ $comment->id }}">
+                                                        <label for="reply-{{ $comment->id }}" class="sr-only">Reply to {{ $comment->user->name }}</label>
+                                                        <textarea id="reply-{{ $comment->id }}" name="comment_body" rows="3" required maxlength="3000" placeholder="Write a reply..." class="w-full resize-y border border-ink-950/20 bg-white/60 px-4 py-3 text-sm leading-6 outline-none focus:border-brand-coral"></textarea>
+                                                        <label class="flex items-center gap-2 text-xs text-ink-950/60">
+                                                            <input name="comment_contains_spoiler" type="checkbox" value="1" class="size-4 accent-brand-coral">
+                                                            This reply contains spoilers
+                                                        </label>
+                                                        <button class="w-fit bg-ink-950 px-4 py-2 text-sm font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Publish reply</button>
+                                                    </form>
+                                                </details>
+                                            @endauth
+                                        </div>
+                                    @endforeach
+                                </div>
+
+                                @auth
+                                    <form action="{{ route('discussions.comments.store', $discussion) }}" method="POST" class="mt-5 grid gap-3 border-t border-ink-950/10 pt-5">
+                                        @csrf
+                                        <label for="comment-{{ $discussion->id }}" class="text-sm font-bold text-ink-950">Add a comment</label>
+                                        <textarea id="comment-{{ $discussion->id }}" name="comment_body" rows="3" required maxlength="3000" placeholder="Add to this discussion..." class="w-full resize-y border border-ink-950/20 bg-brand-cream/60 px-4 py-3 leading-6 outline-none focus:border-brand-coral"></textarea>
+                                        @error('comment_body') <p class="text-sm font-semibold text-red-700">{{ $message }}</p> @enderror
+                                        @error('parent_id') <p class="text-sm font-semibold text-red-700">{{ $message }}</p> @enderror
+                                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                            <label class="flex items-center gap-2 text-xs text-ink-950/60">
+                                                <input name="comment_contains_spoiler" type="checkbox" value="1" class="size-4 accent-brand-coral">
+                                                This comment contains spoilers
+                                            </label>
+                                            <button class="w-fit bg-ink-950 px-4 py-2 text-sm font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Publish comment</button>
+                                        </div>
+                                    </form>
+                                @endauth
+                            </div>
+                        </article>
+                    @empty
+                        <div class="border border-dashed border-ink-950/20 p-7 text-ink-950/60">No discussions yet. Start a focused conversation about this work.</div>
+                    @endforelse
                 </div>
             </div>
         </div>
