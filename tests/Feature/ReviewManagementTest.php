@@ -44,6 +44,23 @@ class ReviewManagementTest extends TestCase
         ]);
     }
 
+    public function test_user_can_save_a_half_star_rating(): void
+    {
+        $user = User::factory()->create();
+        $literature = Literature::factory()->create();
+
+        $this->actingAs($user)->put(route('reviews.update', $literature), [
+            'rating' => 2.5,
+            'body' => 'Promising, although the middle section is uneven.',
+        ])->assertRedirect(route('literatures.show', $literature).'#reviews');
+
+        $this->assertDatabaseHas('reviews', [
+            'user_id' => $user->id,
+            'literature_id' => $literature->id,
+            'rating' => 2.5,
+        ]);
+    }
+
     public function test_updating_a_review_reuses_the_same_record(): void
     {
         $user = User::factory()->create();
@@ -78,6 +95,19 @@ class ReviewManagementTest extends TestCase
         $this->assertDatabaseCount('reviews', 0);
     }
 
+    public function test_rating_must_use_half_star_steps(): void
+    {
+        $user = User::factory()->create();
+        $literature = Literature::factory()->create();
+
+        $this->actingAs($user)
+            ->from(route('literatures.show', $literature).'#reviews')
+            ->put(route('reviews.update', $literature), ['rating' => 2.3])
+            ->assertSessionHasErrors('rating');
+
+        $this->assertDatabaseCount('reviews', 0);
+    }
+
     public function test_detail_page_shows_review_summary_and_spoiler_control(): void
     {
         $literature = Literature::factory()->create(['title' => 'A Reviewable Story']);
@@ -94,5 +124,19 @@ class ReviewManagementTest extends TestCase
             ->assertSeeText('Reveal spoiler review')
             ->assertSee('id="review-body-'.$review->id.'" hidden', false)
             ->assertSeeText('The final chapter changes everything.');
+    }
+
+    public function test_authenticated_detail_page_uses_review_dialog_and_half_star_controls(): void
+    {
+        $user = User::factory()->create();
+        $literature = Literature::factory()->create();
+
+        $this->actingAs($user)->get(route('literatures.show', $literature))
+            ->assertOk()
+            ->assertSee('id="review-dialog"', false)
+            ->assertSee('data-dialog-open="review-dialog"', false)
+            ->assertSee('data-rating-value="1.5"', false)
+            ->assertSee('data-rating-value="2.5"', false)
+            ->assertSeeText('Half-star ratings such as 1.5, 2.5, or 4.5 are supported.');
     }
 }

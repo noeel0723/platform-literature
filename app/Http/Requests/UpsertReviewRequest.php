@@ -23,7 +23,7 @@ class UpsertReviewRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'rating' => ['required', 'integer', 'between:1,5'],
+            'rating' => ['required', 'numeric', 'between:0.5,5', 'multiple_of:0.5'],
             'body' => ['nullable', 'string', 'max:5000'],
             'contains_spoiler' => ['nullable', 'boolean'],
         ];

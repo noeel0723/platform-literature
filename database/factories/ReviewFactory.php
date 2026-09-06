@@ -22,7 +22,7 @@ class ReviewFactory extends Factory
         return [
             'user_id' => User::factory(),
             'literature_id' => Literature::factory(),
-            'rating' => fake()->numberBetween(1, 5),
+            'rating' => fake()->numberBetween(1, 10) / 2,
             'body' => fake()->paragraph(),
             'contains_spoiler' => false,
         ];

@@ -57,6 +57,11 @@
     .group:hover .poster-shine::after {
         transform: translateX(120%);
     }
+
+    .review-dialog::backdrop {
+        background: rgb(7 18 38 / 0.78);
+        backdrop-filter: blur(5px);
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {

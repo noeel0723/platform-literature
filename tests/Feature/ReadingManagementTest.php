@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Literature;
 use App\Models\ReadingList;
 use App\Models\ReadingLog;
+use App\Models\Review;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -88,6 +89,10 @@ class ReadingManagementTest extends TestCase
 
         $readingList = ReadingList::query()->firstOrFail();
         $this->assertNotNull($readingList->completed_at);
+        $this->assertDatabaseHas('reading_logs', [
+            'reading_list_id' => $readingList->id,
+            'event_type' => 'completed',
+        ]);
 
         $this->actingAs($user)->put(route('reading-list.update', $literature), [
             'status' => 'completed',
@@ -153,5 +158,28 @@ class ReadingManagementTest extends TestCase
             ->assertSee('datetime="2026-09-06T04:30:00+00:00"', false)
             ->assertSee('data-local-datetime', false)
             ->assertSee('Sep 6, 2026, 4:30 AM (UTC)');
+    }
+
+    public function test_diary_includes_the_authenticated_users_ratings_and_reviews(): void
+    {
+        $user = User::factory()->create();
+        $otherUser = User::factory()->create();
+        $ownLiterature = Literature::factory()->create(['title' => 'My Rated Literature']);
+        $otherLiterature = Literature::factory()->create(['title' => 'Someone Else Rating']);
+
+        Review::factory()->for($user)->for($ownLiterature)->create([
+            'rating' => 4.5,
+            'body' => 'A memorable reading experience.',
+        ]);
+        Review::factory()->for($otherUser)->for($otherLiterature)->create([
+            'rating' => 3.5,
+        ]);
+
+        $this->actingAs($user)->get(route('diary.index'))
+            ->assertOk()
+            ->assertSeeText('Rated and reviewed')
+            ->assertSeeText('My Rated Literature')
+            ->assertSeeText('4.5 / 5')
+            ->assertDontSeeText('Someone Else Rating');
     }
 }

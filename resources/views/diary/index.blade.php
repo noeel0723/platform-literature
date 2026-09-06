@@ -55,17 +55,23 @@
                 <span class="text-sm text-ink-950/55">Latest 100 activities</span>
             </div>
             <ol class="mt-5 border-l border-ink-950/20 pl-6">
-                @forelse ($logs as $log)
+                @forelse ($activities as $activity)
                     <li class="relative pb-8">
                         <span class="absolute -left-[1.75rem] top-1.5 size-3 border-2 border-brand-cream bg-brand-coral ring-1 ring-ink-950/20"></span>
-                        <time datetime="{{ $log->occurred_at->utc()->toIso8601String() }}" data-local-datetime class="text-xs font-bold uppercase tracking-wider text-ink-950/50">{{ $log->occurred_at->utc()->format('M j, Y, g:i A') }} (UTC)</time>
-                        <p class="mt-1 text-lg font-bold text-ink-950">{{ $eventLabels[$log->event_type] ?? $log->event_type }}</p>
-                        <a href="{{ route('literatures.show', $log->readingList->literature) }}" class="font-semibold text-brand-coral hover:underline">{{ $log->readingList->literature->original_title ?? $log->readingList->literature->title }}</a>
-                        @if ($log->progress_value !== null)
-                            <p class="mt-2 text-sm text-ink-950/65">Progress: {{ $log->progress_value }}{{ $log->progress_total ? ' / '.$log->progress_total : '' }} {{ $log->progress_unit }}</p>
+                        <time datetime="{{ $activity['occurred_at']->utc()->toIso8601String() }}" data-local-datetime class="text-xs font-bold uppercase tracking-wider text-ink-950/50">{{ $activity['occurred_at']->utc()->format('M j, Y, g:i A') }} (UTC)</time>
+                        <p class="mt-1 text-lg font-bold text-ink-950">{{ $activity['label'] }}</p>
+                        <a href="{{ route('literatures.show', $activity['literature']) }}" class="font-semibold text-brand-coral hover:underline">{{ $activity['literature']->original_title ?? $activity['literature']->title }}</a>
+                        @if ($activity['rating'] !== null)
+                            <div class="mt-2 flex items-center gap-2">
+                                <x-star-rating :rating="$activity['rating']" size="sm" />
+                                <span class="text-sm font-semibold text-ink-950/55">{{ number_format($activity['rating'], 1) }} / 5</span>
+                            </div>
                         @endif
-                        @if ($log->note)
-                            <blockquote class="mt-3 border-l-2 border-brand-sky bg-white/40 px-4 py-3 text-sm leading-6 text-ink-950/70">{{ $log->note }}</blockquote>
+                        @if ($activity['progress_value'] !== null)
+                            <p class="mt-2 text-sm text-ink-950/65">Progress: {{ $activity['progress_value'] }}{{ $activity['progress_total'] ? ' / '.$activity['progress_total'] : '' }} {{ $activity['progress_unit'] }}</p>
+                        @endif
+                        @if ($activity['note'])
+                            <blockquote class="mt-3 border-l-2 border-brand-sky bg-white/40 px-4 py-3 text-sm leading-6 text-ink-950/70">{{ $activity['note'] }}</blockquote>
                         @endif
                     </li>
                 @empty

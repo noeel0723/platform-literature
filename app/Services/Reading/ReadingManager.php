@@ -73,6 +73,7 @@ class ReadingManager
 
             $eventType = match (true) {
                 $isReread => 'reread',
+                $status === 'completed' && ($isNew || $statusChanged) => 'completed',
                 $isNew => 'added_to_readlist',
                 $statusChanged && $status === 'reading' => 'started',
                 $statusChanged && $status === 'completed' => 'completed',

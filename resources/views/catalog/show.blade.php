@@ -10,14 +10,23 @@
         };
     @endphp
 
-    <section class="catalog-grid relative overflow-hidden border-b border-ink-950/10">
-        <div class="absolute inset-x-0 top-0 h-72 bg-linear-to-b from-white/35 to-transparent"></div>
-        <div class="relative mx-auto max-w-7xl px-5 pb-16 pt-10 sm:px-8 lg:px-10 lg:pb-20 lg:pt-16">
+    <section class="relative isolate overflow-hidden border-b border-ink-950/10 bg-brand-cream">
+        @if ($literature['cover_url'] !== null)
+            <div class="absolute inset-0 -z-20 overflow-hidden" aria-hidden="true">
+                <img src="{{ $literature['cover_url'] }}" alt="" class="size-full scale-110 object-cover object-center opacity-40 blur-sm">
+            </div>
+            <div class="absolute inset-0 -z-10 bg-linear-to-t from-brand-cream via-brand-cream/75 to-brand-cream/20" aria-hidden="true"></div>
+            <div class="absolute inset-0 -z-10 bg-linear-to-r from-brand-cream/95 via-transparent to-brand-cream/80" aria-hidden="true"></div>
+        @else
+            <div class="catalog-grid absolute inset-0 -z-10" aria-hidden="true"></div>
+        @endif
+
+        <div class="relative mx-auto max-w-7xl px-5 pb-14 pt-8 sm:px-8 lg:px-10 lg:pb-20 lg:pt-10">
             <a href="{{ route('literatures.index') }}" class="inline-flex items-center gap-2 text-sm font-semibold text-ink-950/75 transition hover:text-brand-coral">
                 <span aria-hidden="true">&larr;</span> Back to catalog
             </a>
 
-            <div class="mt-10 grid gap-8 md:grid-cols-[220px_1fr] lg:grid-cols-[250px_1fr_280px] lg:items-end">
+            <div class="mt-24 grid gap-8 md:grid-cols-[220px_1fr] lg:mt-40 lg:grid-cols-[250px_minmax(0,1fr)_300px] lg:items-end">
                 <div class="relative aspect-[2/3] overflow-hidden border border-ink-950/20 bg-linear-to-br {{ $coverTheme }} shadow-2xl">
                     @if ($literature['cover_url'] !== null)
                         <img src="{{ $literature['cover_url'] }}" alt="Cover of {{ $literature['title'] }}" class="absolute inset-0 size-full object-cover">
@@ -37,7 +46,7 @@
                     </div>
                 </div>
 
-                <div class="pb-2">
+                <div class="self-end pb-2">
                     <div class="flex flex-wrap items-center gap-3 text-sm font-semibold uppercase tracking-wider text-ink-950/60">
                         <span class="bg-brand-coral px-2.5 py-1 text-ink-950">{{ $literature['type_label'] }}</span>
                         <span>{{ $literature['year'] }}</span>
@@ -48,26 +57,53 @@
                     @endif
                     <p class="mt-4 text-lg text-ink-950/60">By <span class="font-semibold text-ink-950">{{ $literature['author'] }}</span></p>
                     <p class="mt-7 max-w-2xl text-lg font-medium uppercase leading-7 tracking-[0.08em] text-ink-950/70">{{ $literature['tagline'] }}</p>
-                    <p class="mt-5 max-w-2xl text-base leading-8 text-ink-950/70">{{ $literature['synopsis'] }}</p>
+                    <p class="mt-5 max-w-2xl text-base leading-8 text-ink-950/75">{{ $literature['synopsis'] }}</p>
                 </div>
 
-                <aside class="border border-ink-950/10 bg-white/40 lg:mb-2" aria-label="Catalog status">
-                    <div class="border-b border-ink-950/10 p-5">
-                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-ink-950/60">Catalog status</p>
-                        <div class="mt-4 flex items-center gap-3">
-                            <span class="grid size-10 place-items-center bg-ink-950 font-bold text-brand-cream">OK</span>
-                            <div>
-                                <p class="font-bold text-ink-950">Metadata available</p>
-                                <p class="text-sm text-ink-950/60">Ready to display</p>
-                            </div>
+                <aside class="self-end overflow-hidden border border-ink-950/15 bg-brand-cream/90 shadow-xl backdrop-blur-md md:col-span-2 lg:col-span-1 lg:mb-2" aria-label="Your literature actions">
+                    <div class="border-b border-ink-950/10 p-5 text-center">
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-ink-950/55">Community rating</p>
+                        <div class="mt-3 flex items-center justify-center gap-3">
+                            <x-star-rating :rating="$averageRating ?? 0" />
+                            <span class="font-serif text-2xl font-bold text-ink-950">{{ $averageRating ? number_format($averageRating, 1) : '—' }}</span>
                         </div>
                     </div>
-                    <dl class="grid gap-4 p-5 text-sm">
-                        <div class="flex justify-between gap-4"><dt class="text-ink-950/60">Source</dt><dd class="font-semibold text-ink-950">{{ $literature['source'] }}</dd></div>
-                        <div class="flex justify-between gap-4"><dt class="text-ink-950/60">Format</dt><dd class="font-semibold text-ink-950">{{ $literature['format'] }}</dd></div>
-                        <div class="flex justify-between gap-4"><dt class="text-ink-950/60">Language</dt><dd class="font-semibold text-ink-950">{{ $literature['language'] }}</dd></div>
+
+                    @auth
+                        <div class="grid grid-cols-2 divide-x divide-ink-950/10 border-b border-ink-950/10">
+                            <button type="button" data-dialog-open="review-dialog" class="px-3 py-5 text-center font-bold text-ink-950 transition hover:bg-brand-coral">
+                                <span class="block text-2xl" aria-hidden="true">★</span>
+                                <span class="mt-1 block text-sm">{{ $currentReview ? 'Edit review' : 'Rate & review' }}</span>
+                            </button>
+                            <a href="#readlist" class="px-3 py-5 text-center font-bold text-ink-950 transition hover:bg-brand-sky/35">
+                                <span class="block text-2xl" aria-hidden="true">✓</span>
+                                <span class="mt-1 block text-sm">{{ $readingList ? ($readingStatuses[$readingList->status] ?? 'Readlist') : 'Add to Readlist' }}</span>
+                            </a>
+                        </div>
+                        <form action="{{ route('reading-list.update', $literature['slug']) }}" method="POST" class="grid gap-3 p-5">
+                            @csrf
+                            @method('PUT')
+                            <label for="quick-status" class="text-xs font-bold uppercase tracking-[0.15em] text-ink-950/55">Reading status</label>
+                            <select id="quick-status" name="status" class="w-full border border-ink-950/20 bg-white/55 px-3 py-2.5 outline-none focus:border-brand-coral">
+                                @foreach ($readingStatuses as $value => $label)
+                                    <option value="{{ $value }}" @selected(($readingList?->status ?? 'want_to_read') === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            <button class="bg-ink-950 px-4 py-3 text-sm font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Save status</button>
+                            <a href="#readlist" class="text-center text-xs font-bold text-ink-950/65 underline decoration-brand-coral underline-offset-4">Update progress &amp; notes</a>
+                        </form>
+                    @else
+                        <div class="p-5">
+                            <p class="text-sm leading-6 text-ink-950/65">Log in to rate, review, and track this literature.</p>
+                            <a href="{{ route('login') }}" class="mt-4 block bg-ink-950 px-4 py-3 text-center font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Log in</a>
+                        </div>
+                    @endauth
+
+                    <dl class="grid gap-3 border-t border-ink-950/10 p-5 text-xs">
+                        <div class="flex justify-between gap-4"><dt class="text-ink-950/55">Source</dt><dd class="font-semibold text-ink-950">{{ $literature['source'] }}</dd></div>
+                        <div class="flex justify-between gap-4"><dt class="text-ink-950/55">Format</dt><dd class="font-semibold text-ink-950">{{ $literature['format'] }}</dd></div>
+                        <div class="flex justify-between gap-4"><dt class="text-ink-950/55">Language</dt><dd class="font-semibold text-ink-950">{{ $literature['language'] }}</dd></div>
                     </dl>
-                    <a href="{{ route('literatures.index') }}" class="block bg-ink-950 px-5 py-4 text-center font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Find another title</a>
                 </aside>
             </div>
         </div>
@@ -206,69 +242,42 @@
 
     <section id="reviews" class="border-t border-ink-950/10">
         <div class="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:px-10 lg:py-20">
-            <div class="flex flex-col gap-4 border-b border-ink-950/15 pb-6 sm:flex-row sm:items-end sm:justify-between">
+            <div class="flex flex-col gap-5 border-b border-ink-950/15 pb-6 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">Increment 3 / Social Cataloging</p>
                     <h2 class="mt-3 font-serif text-4xl font-bold text-ink-950">Ratings &amp; reviews</h2>
-                    <p class="mt-3 max-w-2xl leading-7 text-ink-950/65">Share a rating, write a review, and protect other readers by marking spoilers.</p>
+                    <p class="mt-3 max-w-2xl leading-7 text-ink-950/65">Rate in half-star steps, write a review, and protect other readers by marking spoilers.</p>
                 </div>
-                <div class="text-left sm:text-right">
-                    <p class="font-serif text-4xl font-bold text-ink-950">{{ $averageRating ? number_format($averageRating, 1) : '—' }}</p>
-                    <p class="text-xs font-bold uppercase tracking-wider text-ink-950/50">{{ $reviews->count() }} {{ Str::plural('rating', $reviews->count()) }}</p>
+                <div class="flex flex-wrap items-center gap-4 sm:justify-end">
+                    <div class="text-left sm:text-right">
+                        <div class="flex items-center gap-3 sm:justify-end">
+                            <x-star-rating :rating="$averageRating ?? 0" />
+                            <p class="font-serif text-3xl font-bold text-ink-950">{{ $averageRating ? number_format($averageRating, 1) : '—' }}</p>
+                        </div>
+                        <p class="mt-1 text-xs font-bold uppercase tracking-wider text-ink-950/50">{{ $reviews->count() }} {{ Str::plural('rating', $reviews->count()) }}</p>
+                    </div>
+                    @auth
+                        <button type="button" data-dialog-open="review-dialog" class="bg-ink-950 px-5 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">{{ $currentReview ? 'Edit your review' : 'Rate or review' }}</button>
+                    @else
+                        <a href="{{ route('login') }}" class="bg-ink-950 px-5 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Log in to review</a>
+                    @endauth
                 </div>
             </div>
 
-            <div class="mt-9 grid gap-10 lg:grid-cols-[.8fr_1.2fr]">
-                <div>
-                    @auth
-                        <form action="{{ route('reviews.update', $literature['slug']) }}" method="POST" class="grid gap-5 border border-ink-950/15 bg-white/40 p-6 sm:p-8">
-                            @csrf
-                            @method('PUT')
-
-                            <div>
-                                <label for="rating" class="text-sm font-bold text-ink-950">Your rating</label>
-                                <select id="rating" name="rating" required class="mt-2 w-full border border-ink-950/20 bg-brand-cream/60 px-4 py-3 outline-none focus:border-brand-coral">
-                                    <option value="">Choose 1–5 stars</option>
-                                    @foreach (range(1, 5) as $rating)
-                                        <option value="{{ $rating }}" @selected((int) old('rating', $currentReview?->rating) === $rating)>{{ $rating }} {{ Str::plural('star', $rating) }}</option>
-                                    @endforeach
-                                </select>
-                                @error('rating') <p class="mt-2 text-sm font-semibold text-red-700">{{ $message }}</p> @enderror
-                            </div>
-
-                            <div>
-                                <label for="review-body" class="text-sm font-bold text-ink-950">Review <span class="font-normal text-ink-950/50">(optional)</span></label>
-                                <textarea id="review-body" name="body" rows="6" maxlength="5000" placeholder="What stayed with you after reading?" class="mt-2 w-full resize-y border border-ink-950/20 bg-brand-cream/60 px-4 py-3 leading-7 outline-none focus:border-brand-coral">{{ old('body', $currentReview?->body) }}</textarea>
-                                @error('body') <p class="mt-2 text-sm font-semibold text-red-700">{{ $message }}</p> @enderror
-                            </div>
-
-                            <label class="flex items-start gap-3 text-sm leading-6 text-ink-950/70">
-                                <input name="contains_spoiler" type="checkbox" value="1" class="mt-1 size-4 accent-brand-coral" @checked(old('contains_spoiler', $currentReview?->contains_spoiler))>
-                                This review contains spoilers. Hide its text until another reader chooses to reveal it.
-                            </label>
-
-                            <button class="bg-ink-950 px-5 py-3.5 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">{{ $currentReview ? 'Update review' : 'Publish review' }}</button>
-                        </form>
-                    @else
-                        <div class="border border-ink-950/15 bg-white/40 p-7">
-                            <p class="font-serif text-2xl font-bold text-ink-950">Join the conversation</p>
-                            <p class="mt-3 leading-7 text-ink-950/65">Log in to rate this work and publish a spoiler-aware review.</p>
-                            <a href="{{ route('login') }}" class="mt-6 inline-block bg-ink-950 px-5 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Log in</a>
-                        </div>
-                    @endauth
-                </div>
-
-                <div>
-                    <h3 class="font-serif text-2xl font-bold text-ink-950">Reader reviews</h3>
-                    <div class="mt-5 grid gap-4">
-                        @forelse ($reviews as $review)
+            <div class="mt-9">
+                <h3 class="font-serif text-2xl font-bold text-ink-950">Reader reviews</h3>
+                <div class="mt-5 grid gap-4 md:grid-cols-2">
+                    @forelse ($reviews as $review)
                             <article id="review-{{ $review->id }}" class="scroll-mt-28 border border-ink-950/10 bg-white/35 p-5 sm:p-6">
                                 <div class="flex flex-wrap items-center justify-between gap-3">
                                     <div>
                                         <p class="font-bold text-ink-950">{{ $review->user->name }}</p>
                                         <time datetime="{{ $review->created_at->utc()->toIso8601String() }}" data-local-datetime class="mt-1 block text-xs font-semibold uppercase tracking-wider text-ink-950/45">{{ $review->created_at->utc()->format('M j, Y, g:i A') }} (UTC)</time>
                                     </div>
-                                    <p class="text-lg tracking-widest text-brand-coral" aria-label="{{ $review->rating }} out of 5 stars">{{ str_repeat('★', $review->rating) }}<span class="text-ink-950/15">{{ str_repeat('★', 5 - $review->rating) }}</span></p>
+                                    <div class="text-right">
+                                        <x-star-rating :rating="$review->rating" />
+                                        <p class="mt-1 text-xs font-semibold text-ink-950/50">{{ number_format($review->rating, 1) }} / 5</p>
+                                    </div>
                                 </div>
 
                                 <div class="mt-4 flex flex-wrap items-center gap-3 border-t border-ink-950/10 pt-4">
@@ -294,14 +303,80 @@
                                     <p class="mt-5 text-sm italic text-ink-950/50">Rating only.</p>
                                 @endif
                             </article>
-                        @empty
-                            <div class="border border-dashed border-ink-950/20 p-7 text-ink-950/60">No reviews yet. Be the first reader to share a rating.</div>
-                        @endforelse
-                    </div>
+                    @empty
+                        <div class="border border-dashed border-ink-950/20 p-7 text-ink-950/60">No reviews yet. Be the first reader to share a rating.</div>
+                    @endforelse
                 </div>
             </div>
         </div>
     </section>
+
+    @auth
+        <dialog id="review-dialog" data-review-dialog data-auto-open="{{ $errors->has('rating') || $errors->has('body') ? 'true' : 'false' }}" class="review-dialog m-auto max-h-[90vh] w-[min(920px,calc(100%_-_2rem))] overflow-y-auto border border-ink-950/20 bg-brand-cream p-0 text-ink-950 shadow-2xl">
+            <div class="sticky top-0 z-10 flex items-center justify-between border-b border-ink-950/10 bg-ink-950 px-5 py-4 text-brand-cream sm:px-7">
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-[0.18em] text-brand-sky">Your reading experience</p>
+                    <h2 class="mt-1 font-serif text-2xl font-bold">Rate &amp; review</h2>
+                </div>
+                <button type="button" data-dialog-close class="grid size-10 place-items-center border border-brand-cream/30 text-2xl leading-none transition hover:border-brand-coral hover:text-brand-coral" aria-label="Close review dialog">&times;</button>
+            </div>
+
+            <form action="{{ route('reviews.update', $literature['slug']) }}" method="POST" class="grid gap-7 p-5 sm:p-7 md:grid-cols-[180px_minmax(0,1fr)]">
+                @csrf
+                @method('PUT')
+
+                <div>
+                    <div class="aspect-[2/3] overflow-hidden border border-ink-950/15 bg-linear-to-br {{ $coverTheme }} shadow-lg">
+                        @if ($literature['cover_url'] !== null)
+                            <img src="{{ $literature['cover_url'] }}" alt="Cover of {{ $literature['title'] }}" class="size-full object-cover">
+                        @else
+                            <div class="grid size-full place-items-center p-4 text-center font-serif text-5xl font-bold">{{ $literature['initials'] }}</div>
+                        @endif
+                    </div>
+                    <p class="mt-3 text-center text-xs font-bold uppercase tracking-[0.14em] text-ink-950/55">{{ $literature['type_label'] }}</p>
+                </div>
+
+                <div class="min-w-0">
+                    <h3 class="font-serif text-3xl font-bold leading-tight text-ink-950">{{ $literature['title'] }}</h3>
+                    <p class="mt-1 text-sm text-ink-950/55">{{ $literature['author'] }}@if ($literature['year']) &middot; {{ $literature['year'] }} @endif</p>
+
+                    <fieldset class="mt-6">
+                        <legend class="text-sm font-bold text-ink-950">Your rating</legend>
+                        <input id="review-rating" name="rating" type="hidden" required value="{{ old('rating', $currentReview?->rating) }}">
+                        <div class="mt-2 flex flex-wrap items-center gap-4">
+                            <div data-star-rating data-rating-input="review-rating" class="flex" role="radiogroup" aria-label="Choose a rating from 0.5 to 5 stars">
+                                @foreach (range(1, 10) as $halfStep)
+                                    @php($ratingValue = $halfStep / 2)
+                                    <button type="button" data-rating-value="{{ $ratingValue }}" class="h-10 w-4 overflow-hidden text-left text-3xl leading-10 text-ink-950/15 transition focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-coral" role="radio" aria-checked="false" aria-label="{{ number_format($ratingValue, 1) }} out of 5 stars">
+                                        <span class="block w-8 {{ $halfStep % 2 === 0 ? '-translate-x-1/2' : '' }}">&#9733;</span>
+                                    </button>
+                                @endforeach
+                            </div>
+                            <output data-rating-output for="review-rating" class="min-w-16 text-sm font-bold text-ink-950/60">Choose a rating</output>
+                        </div>
+                        <p class="mt-2 text-xs text-ink-950/50">Half-star ratings such as 1.5, 2.5, or 4.5 are supported.</p>
+                        @error('rating') <p class="mt-2 text-sm font-semibold text-red-700">{{ $message }}</p> @enderror
+                    </fieldset>
+
+                    <div class="mt-6">
+                        <label for="review-body" class="text-sm font-bold text-ink-950">Review <span class="font-normal text-ink-950/50">(optional)</span></label>
+                        <textarea id="review-body" name="body" rows="7" maxlength="5000" placeholder="What stayed with you after reading?" class="mt-2 w-full resize-y border border-ink-950/20 bg-white/55 px-4 py-3 leading-7 outline-none focus:border-brand-coral">{{ old('body', $currentReview?->body) }}</textarea>
+                        @error('body') <p class="mt-2 text-sm font-semibold text-red-700">{{ $message }}</p> @enderror
+                    </div>
+
+                    <label class="mt-5 flex items-start gap-3 text-sm leading-6 text-ink-950/70">
+                        <input name="contains_spoiler" type="checkbox" value="1" class="mt-1 size-4 accent-brand-coral" @checked(old('contains_spoiler', $currentReview?->contains_spoiler))>
+                        This review contains spoilers. Hide its text until another reader chooses to reveal it.
+                    </label>
+
+                    <div class="mt-7 flex flex-col-reverse gap-3 border-t border-ink-950/10 pt-5 sm:flex-row sm:justify-end">
+                        <button type="button" data-dialog-close class="border border-ink-950/20 px-5 py-3 font-bold text-ink-950 transition hover:border-brand-coral">Cancel</button>
+                        <button class="bg-ink-950 px-6 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">{{ $currentReview ? 'Update review' : 'Publish review' }}</button>
+                    </div>
+                </div>
+            </form>
+        </dialog>
+    @endauth
 
     <section id="discussions" class="border-t border-ink-950/10 bg-white/20">
         <div class="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:px-10 lg:py-20">
