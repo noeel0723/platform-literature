@@ -43,6 +43,18 @@ return [
         'timeout' => (int) env('GOOGLE_BOOKS_TIMEOUT', 8),
     ],
 
+    'work_metadata' => [
+        'wikidata_url' => env('WIKIDATA_API_URL', 'https://www.wikidata.org/w/api.php'),
+        'wikipedia_summary_url' => env(
+            'WIKIPEDIA_SUMMARY_URL',
+            'https://{language}.wikipedia.org/api/rest_v1/page/summary/{title}',
+        ),
+        'user_agent' => env('WORK_METADATA_USER_AGENT', 'LiteratureSocialDiscovery/1.0 academic-project'),
+        'cache_days' => (int) env('WORK_METADATA_CACHE_DAYS', 30),
+        'connect_timeout' => (int) env('WORK_METADATA_CONNECT_TIMEOUT', 3),
+        'timeout' => (int) env('WORK_METADATA_TIMEOUT', 8),
+    ],
+
     'anilist' => [
         'base_url' => env('ANILIST_BASE_URL', 'https://graphql.anilist.co'),
         'max_results' => (int) env('ANILIST_MAX_RESULTS', 6),

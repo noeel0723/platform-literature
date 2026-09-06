@@ -127,6 +127,7 @@ class LiteratureCatalogTest extends TestCase
                     ],
                 ]],
             ]),
+            'https://www.wikidata.org/w/api.php*' => Http::response(['search' => []]),
         ]);
 
         $response = $this->get(route('literatures.index', [
@@ -146,7 +147,7 @@ class LiteratureCatalogTest extends TestCase
             'type' => 'novel',
             'cover_url' => 'https://books.google.com/dune-cover.jpg',
         ]);
-        Http::assertSentCount(1);
+        Http::assertSentCount(2);
     }
 
     public function test_catalog_search_uses_local_results_when_google_books_is_unavailable(): void

@@ -58,7 +58,7 @@
                 @forelse ($logs as $log)
                     <li class="relative pb-8">
                         <span class="absolute -left-[1.75rem] top-1.5 size-3 border-2 border-brand-cream bg-brand-coral ring-1 ring-ink-950/20"></span>
-                        <time class="text-xs font-bold uppercase tracking-wider text-ink-950/50">{{ $log->occurred_at->format('d M Y, H:i') }}</time>
+                        <time class="text-xs font-bold uppercase tracking-wider text-ink-950/50">{{ $log->occurred_at->timezone(config('app.display_timezone'))->format('d/m/Y H:i') }} {{ config('app.display_timezone_label') }}</time>
                         <p class="mt-1 text-lg font-bold text-ink-950">{{ $eventLabels[$log->event_type] ?? $log->event_type }}</p>
                         <a href="{{ route('literatures.show', $log->readingList->literature) }}" class="font-semibold text-brand-coral hover:underline">{{ $log->readingList->literature->title }}</a>
                         @if ($log->progress_value !== null)

@@ -113,10 +113,12 @@ class LiteratureController extends Controller
     private function present(Literature $literature): array
     {
         $authorNames = $literature->authors->pluck('name');
+        $displayTitle = $literature->original_title ?? $literature->title;
 
         return [
             'slug' => $literature->slug,
-            'title' => $literature->title,
+            'title' => $displayTitle,
+            'edition_title' => $displayTitle === $literature->title ? null : $literature->title,
             'year' => $literature->publication_year === null ? 'Tahun belum tersedia' : (string) $literature->publication_year,
             'type' => $literature->type,
             'type_label' => self::TYPES[$literature->type] ?? Str::headline($literature->type),
@@ -125,6 +127,8 @@ class LiteratureController extends Controller
             'source' => $literature->apiSource->name,
             'tagline' => $literature->tagline ?? 'Informasi ringkas belum tersedia.',
             'synopsis' => $literature->synopsis ?? 'Sinopsis belum tersedia dari sumber metadata.',
+            'synopsis_source_name' => $literature->synopsis_source_name,
+            'synopsis_source_url' => $literature->synopsis_source_url,
             'publisher' => $literature->publisher ?? 'Belum tersedia',
             'language' => $literature->language ?? 'Belum tersedia',
             'format' => $literature->format ?? self::TYPES[$literature->type] ?? Str::headline($literature->type),
@@ -132,7 +136,7 @@ class LiteratureController extends Controller
             'identifier' => $literature->identifier ?? $literature->external_id,
             'cover_url' => $literature->cover_url,
             'theme' => $literature->theme,
-            'initials' => $this->initials($literature->title),
+            'initials' => $this->initials($displayTitle),
         ];
     }
 

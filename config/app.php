@@ -67,6 +67,10 @@ return [
 
     'timezone' => 'UTC',
 
+    'display_timezone' => env('APP_DISPLAY_TIMEZONE', 'Asia/Makassar'),
+
+    'display_timezone_label' => env('APP_DISPLAY_TIMEZONE_LABEL', 'WITA'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration

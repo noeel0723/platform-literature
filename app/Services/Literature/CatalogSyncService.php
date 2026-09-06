@@ -146,10 +146,17 @@ final class CatalogSyncService
             'external_id' => $item->externalId,
             'slug' => $literature->exists ? $literature->slug : $this->uniqueSlug($source, $item),
             'title' => $item->title,
+            'original_title' => $item->originalTitle ?? $literature->original_title,
             'type' => $item->type,
             'publication_year' => $item->publicationYear ?? $literature->publication_year,
             'tagline' => $item->tagline ?? $literature->tagline,
             'synopsis' => $item->synopsis ?? $literature->synopsis,
+            'synopsis_source_name' => $item->synopsis !== null
+                ? $item->synopsisSourceName
+                : $literature->synopsis_source_name,
+            'synopsis_source_url' => $item->synopsis !== null
+                ? $item->synopsisSourceUrl
+                : $literature->synopsis_source_url,
             'publisher' => $item->publisher ?? $literature->publisher,
             'language' => $item->language ?? $literature->language,
             'format' => $item->format ?? $literature->format,

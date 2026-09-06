@@ -6,6 +6,7 @@ use App\Exceptions\LiteratureSourceUnavailable;
 use App\Services\Literature\GoogleBooksAdapter;
 use App\Services\Literature\NormalizedLiterature;
 use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -71,6 +72,64 @@ class GoogleBooksAdapterTest extends TestCase
         $this->assertSame('book', $book->type);
         $this->assertSame('Buku', $book->format);
         $this->assertSame('https://books.google.com/thumbnail.jpg', $book->coverUrl);
+    }
+
+    public function test_localized_volume_is_enriched_without_overwriting_its_edition_title(): void
+    {
+        $this->configureGoogleBooks();
+        config()->set([
+            'services.work_metadata.wikidata_url' => 'https://www.wikidata.org/w/api.php',
+            'services.work_metadata.wikipedia_summary_url' => 'https://{language}.wikipedia.org/api/rest_v1/page/summary/{title}',
+            'services.work_metadata.user_agent' => 'LiteratureSocialDiscovery/1.0 tests',
+        ]);
+        Cache::flush();
+        Http::preventStrayRequests();
+        Http::fake(function (Request $request) {
+            if (str_starts_with($request->url(), 'https://www.googleapis.com/books/v1/volumes')) {
+                return Http::response(['items' => [[
+                    'id' => 'localized-volume',
+                    'volumeInfo' => [
+                        'title' => 'Harry Potter dan Relikui Kematian',
+                        'authors' => ['J. K. Rowling'],
+                        'language' => 'id',
+                        'printType' => 'BOOK',
+                    ],
+                ]]]);
+            }
+
+            if (str_starts_with($request->url(), 'https://www.wikidata.org/w/api.php') && $request['action'] === 'wbsearchentities') {
+                return Http::response(['search' => [[
+                    'id' => 'Q46758',
+                    'description' => 'fantasy novel by J. K. Rowling',
+                    'match' => ['text' => 'Harry Potter dan Relikui Kematian'],
+                ]]]);
+            }
+
+            if (str_starts_with($request->url(), 'https://www.wikidata.org/w/api.php')) {
+                return Http::response(['entities' => ['Q46758' => [
+                    'claims' => ['P1476' => [[
+                        'rank' => 'normal',
+                        'mainsnak' => ['datavalue' => ['value' => ['text' => 'Harry Potter and the Deathly Hallows']]],
+                    ]]],
+                    'sitelinks' => ['idwiki' => ['title' => 'Harry Potter dan Relikui Kematian']],
+                ]]]);
+            }
+
+            return Http::response([
+                'extract' => 'Ringkasan karya yang dilengkapi.',
+                'content_urls' => ['desktop' => [
+                    'page' => 'https://id.wikipedia.org/wiki/Harry_Potter_dan_Relikui_Kematian',
+                ]],
+            ]);
+        });
+
+        $book = app(GoogleBooksAdapter::class)->search('Harry Potter')->first();
+
+        $this->assertSame('Harry Potter dan Relikui Kematian', $book->title);
+        $this->assertSame('Harry Potter and the Deathly Hallows', $book->originalTitle);
+        $this->assertSame('Ringkasan karya yang dilengkapi.', $book->synopsis);
+        $this->assertSame('Wikipedia ID', $book->synopsisSourceName);
+        Http::assertSentCount(4);
     }
 
     public function test_novel_search_uses_a_fiction_subject_and_classifies_ambiguous_results_as_novels(): void

@@ -20,6 +20,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'publication_year',
     'tagline',
     'synopsis',
+    'synopsis_source_name',
+    'synopsis_source_url',
     'publisher',
     'language',
     'format',

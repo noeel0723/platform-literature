@@ -22,5 +22,8 @@ final readonly class NormalizedLiterature
         public ?string $format,
         public ?string $identifier,
         public ?string $coverUrl,
+        public ?string $originalTitle = null,
+        public ?string $synopsisSourceName = null,
+        public ?string $synopsisSourceUrl = null,
     ) {}
 }

@@ -12,6 +12,8 @@ use InvalidArgumentException;
 
 final class GoogleBooksAdapter
 {
+    public function __construct(private WorkMetadataEnricher $metadataEnricher) {}
+
     /** @return Collection<int, NormalizedLiterature> */
     public function search(string $query, int $limit = 6, string $requestedType = 'all'): Collection
     {
@@ -101,23 +103,31 @@ final class GoogleBooksAdapter
         }
 
         $categories = $this->stringList(Arr::get($item, 'volumeInfo.categories'));
+        $authors = $this->stringList(Arr::get($item, 'volumeInfo.authors'));
+        $language = $this->cleanText(Arr::get($item, 'volumeInfo.language'));
         $synopsis = $this->cleanText(Arr::get($item, 'volumeInfo.description'));
+        $enrichment = $language !== null && ($synopsis === null || $language !== 'en')
+            ? $this->metadataEnricher->find($title, $authors, $language, $synopsis === null)
+            : new WorkMetadata;
         $literatureType = $this->literatureType($title, $categories, $synopsis, $requestedType);
 
         return new NormalizedLiterature(
             externalId: $externalId,
             title: $title,
             type: $literatureType,
-            authors: $this->stringList(Arr::get($item, 'volumeInfo.authors')),
+            authors: $authors,
             categories: $categories,
             publicationYear: $publicationYear,
-            tagline: $this->cleanText(Arr::get($item, 'volumeInfo.subtitle')),
-            synopsis: $synopsis,
+            tagline: $this->cleanText(Arr::get($item, 'volumeInfo.subtitle')) ?? $enrichment->tagline,
+            synopsis: $synopsis ?? $enrichment->synopsis,
             publisher: $this->cleanText(Arr::get($item, 'volumeInfo.publisher')),
-            language: $this->cleanText(Arr::get($item, 'volumeInfo.language')),
+            language: $language,
             format: $this->format(Arr::get($item, 'volumeInfo.printType'), $literatureType),
             identifier: $this->identifier(Arr::get($item, 'volumeInfo.industryIdentifiers')),
             coverUrl: $this->coverUrl(Arr::get($item, 'volumeInfo.imageLinks')),
+            originalTitle: $enrichment->originalTitle,
+            synopsisSourceName: $synopsis === null ? $enrichment->synopsisSourceName : null,
+            synopsisSourceUrl: $synopsis === null ? $enrichment->synopsisSourceUrl : null,
         );
     }
 

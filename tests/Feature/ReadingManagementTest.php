@@ -7,6 +7,7 @@ use App\Models\ReadingList;
 use App\Models\ReadingLog;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class ReadingManagementTest extends TestCase
@@ -134,5 +135,25 @@ class ReadingManagementTest extends TestCase
             ->assertOk()
             ->assertSee('My Private Reading')
             ->assertDontSee('Another Private Reading');
+    }
+
+    public function test_diary_displays_utc_activity_in_the_configured_local_timezone(): void
+    {
+        config()->set([
+            'app.display_timezone' => 'Asia/Makassar',
+            'app.display_timezone_label' => 'WITA',
+        ]);
+        $user = User::factory()->create();
+        $readingList = ReadingList::factory()
+            ->for($user)
+            ->for(Literature::factory())
+            ->create();
+        ReadingLog::factory()->for($readingList)->create([
+            'occurred_at' => Carbon::parse('2026-09-06 04:30:00', 'UTC'),
+        ]);
+
+        $this->actingAs($user)->get(route('diary.index'))
+            ->assertOk()
+            ->assertSee('06/09/2026 12:30 WITA');
     }
 }

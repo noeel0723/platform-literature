@@ -126,7 +126,15 @@ final class AniListAdapter
             format: $this->format(Arr::get($item, 'format'), $countryOfOrigin),
             identifier: "ANILIST:{$externalId}",
             coverUrl: $coverUrl,
+            originalTitle: $this->originalTitle($item, $title),
         );
+    }
+
+    private function originalTitle(array $item, string $displayTitle): ?string
+    {
+        $nativeTitle = $this->cleanText(Arr::get($item, 'title.native'));
+
+        return $nativeTitle !== null && $nativeTitle !== $displayTitle ? $nativeTitle : null;
     }
 
     /** @return list<string> */

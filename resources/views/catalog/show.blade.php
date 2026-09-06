@@ -43,6 +43,9 @@
                         <span>{{ $literature['year'] }}</span>
                     </div>
                     <h1 class="mt-4 font-serif text-5xl font-bold leading-none tracking-tight text-ink-950 sm:text-6xl">{{ $literature['title'] }}</h1>
+                    @if ($literature['edition_title'])
+                        <p class="mt-3 text-sm text-ink-950/55">Judul edisi: <span class="font-semibold text-ink-950/75">{{ $literature['edition_title'] }}</span></p>
+                    @endif
                     <p class="mt-4 text-lg text-ink-950/60">Oleh <span class="font-semibold text-ink-950">{{ $literature['author'] }}</span></p>
                     <p class="mt-7 max-w-2xl text-lg font-medium uppercase leading-7 tracking-[0.08em] text-ink-950/70">{{ $literature['tagline'] }}</p>
                     <p class="mt-5 max-w-2xl text-base leading-8 text-ink-950/70">{{ $literature['synopsis'] }}</p>
@@ -84,6 +87,13 @@
                 <p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">Tentang karya</p>
                 <h2 class="mt-3 font-serif text-3xl font-bold text-ink-950">Ringkasan metadata</h2>
                 <p class="mt-5 max-w-3xl text-base leading-8 text-ink-950/70">{{ $literature['synopsis'] }}</p>
+                @if ($literature['synopsis_source_name'] && $literature['synopsis_source_url'])
+                    <p class="mt-4 text-xs leading-5 text-ink-950/50">
+                        Ringkasan pelengkap dari
+                        <a href="{{ $literature['synopsis_source_url'] }}" target="_blank" rel="noopener noreferrer" class="font-semibold underline decoration-brand-coral underline-offset-4">{{ $literature['synopsis_source_name'] }}</a>
+                        dengan lisensi <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer" class="underline underline-offset-4">CC BY-SA</a>.
+                    </p>
+                @endif
 
                 <div id="authors" class="mt-10 border-t border-ink-950/10 pt-7">
                     <h3 class="text-sm font-bold uppercase tracking-[0.18em] text-ink-950/60">Pengarang dan kreator</h3>
