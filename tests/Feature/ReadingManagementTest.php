@@ -242,4 +242,19 @@ class ReadingManagementTest extends TestCase
             ->assertSeeText('4.5 / 5')
             ->assertDontSeeText('Someone Else Rating');
     }
+
+    public function test_diary_contains_only_activity_history_and_not_the_readlist_collection(): void
+    {
+        $user = User::factory()->create();
+        $savedLiterature = Literature::factory()->create(['title' => 'Private Saved Title']);
+        ReadingList::factory()->for($user)->for($savedLiterature)->create(['status' => 'want_to_read']);
+
+        $this->actingAs($user)->get(route('diary.index'))
+            ->assertOk()
+            ->assertSeeText('Activity history')
+            ->assertSee('data-diary-activity-history', false)
+            ->assertDontSeeText('Private Saved Title')
+            ->assertDontSeeText('Want to read')
+            ->assertDontSee('<h2 class="font-serif text-3xl font-bold text-ink-950">Readlist</h2>', false);
+    }
 }

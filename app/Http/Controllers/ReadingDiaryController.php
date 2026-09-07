@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ReadingList;
 use App\Models\ReadingLog;
 use App\Models\Review;
 use Illuminate\Http\Request;
@@ -12,12 +11,6 @@ class ReadingDiaryController extends Controller
 {
     public function index(Request $request): View
     {
-        $readingLists = $request->user()
-            ->readingLists()
-            ->with(['literature.apiSource', 'progress'])
-            ->latest('updated_at')
-            ->get();
-
         $logs = ReadingLog::query()
             ->whereHas('readingList', fn ($query) => $query->whereBelongsTo($request->user()))
             ->with('readingList.literature')
@@ -60,9 +53,7 @@ class ReadingDiaryController extends Controller
             ->values();
 
         return view('diary.index', [
-            'readingLists' => $readingLists,
             'activities' => $activities,
-            'statusLabels' => ReadingList::STATUS_LABELS,
         ]);
     }
 }

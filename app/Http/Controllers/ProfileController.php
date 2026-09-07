@@ -23,7 +23,15 @@ class ProfileController extends Controller
                 'followers',
                 'following',
                 'readingLists as completed_literature_count' => fn ($query) => $query->where('status', 'completed'),
+                'readingLists as readlist_count' => fn ($query) => $query->where('status', 'want_to_read'),
             ]);
+
+        $readlistPreview = $user->readingLists()
+            ->where('status', 'want_to_read')
+            ->with('literature.authors')
+            ->latest('updated_at')
+            ->limit(4)
+            ->get();
 
         $recentReviews = $user->reviews()
             ->whereNull('hidden_at')
@@ -41,7 +49,7 @@ class ProfileController extends Controller
 
         $isFollowing = request()->user()?->isFollowing($user) ?? false;
 
-        return view('profiles.show', compact('user', 'recentReviews', 'recentCompletions', 'isFollowing'));
+        return view('profiles.show', compact('user', 'readlistPreview', 'recentReviews', 'recentCompletions', 'isFollowing'));
     }
 
     public function edit(Request $request): View

@@ -50,6 +50,8 @@ class ProfileManagementTest extends TestCase
             ->assertSeeText('Member since '.$user->created_at->format('F Y'))
             ->assertSee('data-favorite-literature-grid', false)
             ->assertSee('data-favorite-author-grid', false)
+            ->assertSee('data-profile-readlist-preview', false)
+            ->assertSee('href="'.route('profiles.readlist', $user).'"', false)
             ->assertSeeInOrder(['First Favorite', 'Second Favorite'])
             ->assertSeeInOrder(['First Author', 'Second Author'])
             ->assertDontSeeText('Edit profile')

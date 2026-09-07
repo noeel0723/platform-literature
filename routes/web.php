@@ -11,6 +11,7 @@ use App\Http\Controllers\LiteratureController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReadingDiaryController;
 use App\Http\Controllers\ReadingListController;
+use App\Http\Controllers\ReadlistController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReviewController;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +21,7 @@ Route::get('/catalog', [LiteratureController::class, 'index'])->name('literature
 Route::get('/literatures/{literature}', [LiteratureController::class, 'show'])->name('literatures.show');
 Route::get('/members/{user}/followers', [ProfileController::class, 'followers'])->name('profiles.followers');
 Route::get('/members/{user}/following', [ProfileController::class, 'following'])->name('profiles.following');
+Route::get('/members/{user}/readlist', ReadlistController::class)->name('profiles.readlist');
 Route::get('/members/{user}', [ProfileController::class, 'show'])->name('profiles.show');
 
 Route::middleware('guest')->group(function (): void {

@@ -83,6 +83,7 @@
                 @if ($isOwner)
                     <a href="{{ route('diary.index') }}" class="py-4 transition hover:text-brand-coral">Diary</a>
                 @endif
+                <a href="{{ route('profiles.readlist', $user) }}" class="py-4 transition hover:text-brand-coral">Readlist</a>
                 <a href="#favorites" class="py-4 transition hover:text-brand-coral">Favorites</a>
                 <a href="#recent-reviews" class="py-4 transition hover:text-brand-coral">Reviews</a>
                 <a href="#recently-completed" class="py-4 transition hover:text-brand-coral">Completed</a>
@@ -90,14 +91,15 @@
         </div>
     </section>
 
-    <section id="favorites" class="mx-auto max-w-7xl scroll-mt-24 px-5 py-14 sm:px-8 lg:px-10 lg:py-20">
-        <div>
+    <section id="favorites" class="mx-auto grid max-w-7xl scroll-mt-24 gap-12 px-5 py-14 sm:px-8 lg:grid-cols-[minmax(0,1fr)_300px] lg:px-10 lg:py-20">
+        <div class="min-w-0">
+            <div>
             <div class="flex items-end justify-between border-b border-ink-950/15 pb-3">
                 <div><p class="text-xs font-bold uppercase tracking-[0.18em] text-brand-coral">Personal shelf</p><h2 class="mt-2 font-serif text-3xl font-bold text-ink-950">Favorite Literature</h2></div>
                 <span class="text-sm text-ink-950/50">Up to four</span>
             </div>
 
-            <div data-favorite-literature-grid class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-5">
+            <div data-favorite-literature-grid class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
                 @forelse ($user->favoriteLiteratures as $literature)
                     <article class="group min-w-0">
                         <a href="{{ route('literatures.show', $literature) }}" class="block">
@@ -119,13 +121,13 @@
             </div>
         </div>
 
-        <div class="mt-14">
+            <div class="mt-12">
             <div class="flex items-end justify-between border-b border-ink-950/15 pb-3">
                 <div><p class="text-xs font-bold uppercase tracking-[0.18em] text-brand-coral">Creative voices</p><h2 class="mt-2 font-serif text-3xl font-bold text-ink-950">Favorite Authors</h2></div>
                 <span class="text-sm text-ink-950/50">Up to four</span>
             </div>
 
-            <ol data-favorite-author-grid class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-5">
+            <ol data-favorite-author-grid class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
                 @forelse ($user->favoriteAuthors as $author)
                     @php
                         $authorInitials = Str::of($author->name)
@@ -155,7 +157,46 @@
                     <li class="col-span-full border border-dashed border-ink-950/20 p-7 text-ink-950/55">No favorite authors have been selected.</li>
                 @endforelse
             </ol>
+            </div>
         </div>
+
+        <aside class="min-w-0 lg:border-l lg:border-ink-950/10 lg:pl-8" aria-labelledby="profile-readlist-heading" data-profile-readlist-preview>
+            <div class="flex items-end justify-between border-b border-ink-950/15 pb-3">
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-[0.18em] text-brand-coral">Saved shelf</p>
+                    <h2 id="profile-readlist-heading" class="mt-2 font-serif text-3xl font-bold text-ink-950">Readlist</h2>
+                </div>
+                <span class="text-sm text-ink-950/50">{{ $user->readlist_count }}</span>
+            </div>
+
+            @if ($readlistPreview->isEmpty())
+                <div class="mt-6 border border-dashed border-ink-950/20 bg-white/25 p-6 text-sm leading-6 text-ink-950/55">No literature has been saved to this Readlist.</div>
+            @else
+                <div class="mt-6 grid grid-cols-4 gap-1.5 overflow-hidden">
+                    @foreach ($readlistPreview as $item)
+                        <a href="{{ route('literatures.show', $item->literature) }}" class="group relative block aspect-[2/3] overflow-hidden border border-ink-950/10 bg-brand-sky/20" title="{{ $item->literature->original_title ?? $item->literature->title }}">
+                            @if ($item->literature->cover_url)
+                                <img src="{{ $item->literature->cover_url }}" alt="Cover of {{ $item->literature->original_title ?? $item->literature->title }}" class="size-full object-cover transition duration-200 group-hover:scale-105" loading="lazy">
+                            @else
+                                <span class="grid size-full place-items-center px-1 text-center font-serif text-sm font-bold text-ink-950">{{ Str::upper(Str::substr($item->literature->original_title ?? $item->literature->title, 0, 2)) }}</span>
+                            @endif
+                        </a>
+                    @endforeach
+                </div>
+            @endif
+
+            <a href="{{ route('profiles.readlist', $user) }}" class="mt-5 flex items-center justify-between border border-ink-950/15 bg-ink-950 px-4 py-3 text-sm font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">
+                <span>View full Readlist</span>
+                <span aria-hidden="true">→</span>
+            </a>
+
+            @if ($isOwner)
+                <a href="{{ route('diary.index') }}" class="mt-3 flex items-center justify-between border border-ink-950/15 bg-brand-cream/70 px-4 py-3 text-sm font-bold text-ink-950 transition hover:border-brand-coral">
+                    <span>Open activity Diary</span>
+                    <span aria-hidden="true">→</span>
+                </a>
+            @endif
+        </aside>
     </section>
 
     <section class="border-t border-ink-950/10 bg-white/20">
