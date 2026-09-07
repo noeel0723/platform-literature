@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Activity;
+use App\Models\Literature;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 
 class HomeController extends Controller
@@ -11,29 +13,63 @@ class HomeController extends Controller
     public function __invoke(Request $request): View
     {
         $viewer = $request->user();
-        $visibleUserIds = $viewer === null
-            ? null
-            : $viewer->following()->pluck('users.id')->push($viewer->id)->unique();
+        $friendIds = $viewer?->following()
+            ->whereNull('deactivated_at')
+            ->pluck('users.id') ?? collect();
 
-        $activities = Activity::query()
-            ->with(['user', 'literature.authors', 'review'])
-            ->whereHas('user', fn ($users) => $users->whereNull('deactivated_at'))
-            ->where(function ($query): void {
-                $query
-                    ->whereNotIn('type', [Activity::TYPE_RATED, Activity::TYPE_REVIEWED])
-                    ->orWhereHas('review', fn ($reviews) => $reviews->whereNull('hidden_at'));
-            })
-            ->when(
-                $visibleUserIds !== null,
-                fn ($query) => $query->whereIn('user_id', $visibleUserIds),
-            )
-            ->orderByDesc('occurred_at')
-            ->orderByDesc('id')
-            ->paginate(18);
+        $activities = collect();
+        $popularLiteratures = collect();
+
+        if ($friendIds->isNotEmpty()) {
+            $activities = Activity::query()
+                ->with(['user', 'literature.authors', 'review'])
+                ->whereIn('user_id', $friendIds)
+                ->whereIn('type', [
+                    Activity::TYPE_COMPLETED,
+                    Activity::TYPE_RATED,
+                    Activity::TYPE_REVIEWED,
+                ])
+                ->where(function (Builder $query): void {
+                    $query
+                        ->where('type', Activity::TYPE_COMPLETED)
+                        ->orWhereHas('review', fn (Builder $reviews) => $reviews->whereNull('hidden_at'));
+                })
+                ->orderByDesc('occurred_at')
+                ->orderByDesc('id')
+                ->limit(40)
+                ->get()
+                ->unique(fn (Activity $activity): string => $activity->user_id.'-'.$activity->literature_id)
+                ->take(6)
+                ->values();
+
+            $popularLiteratures = Literature::query()
+                ->with(['authors', 'readingLists' => function ($readingLists) use ($friendIds): void {
+                    $readingLists
+                        ->whereIn('user_id', $friendIds)
+                        ->whereIn('status', ['reading', 'completed'])
+                        ->with('user')
+                        ->latest('updated_at');
+                }])
+                ->withCount(['readingLists as friends_count' => function (Builder $readingLists) use ($friendIds): void {
+                    $readingLists
+                        ->whereIn('user_id', $friendIds)
+                        ->whereIn('status', ['reading', 'completed']);
+                }])
+                ->whereHas('readingLists', function (Builder $readingLists) use ($friendIds): void {
+                    $readingLists
+                        ->whereIn('user_id', $friendIds)
+                        ->whereIn('status', ['reading', 'completed']);
+                })
+                ->orderByDesc('friends_count')
+                ->orderByDesc('updated_at')
+                ->limit(6)
+                ->get();
+        }
 
         return view('home', [
             'activities' => $activities,
-            'feedLabel' => $viewer === null ? 'Community activity' : 'You and readers you follow',
+            'popularLiteratures' => $popularLiteratures,
+            'viewer' => $viewer,
         ]);
     }
 }

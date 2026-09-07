@@ -1,115 +1,149 @@
 <x-app-shell title="Home">
-    <section class="border-b border-ink-950/10 bg-white/20">
-        <div class="mx-auto max-w-5xl px-5 py-12 sm:px-8 sm:py-16 lg:px-10">
-            <p class="text-xs font-bold uppercase tracking-[0.28em] text-brand-coral">Home</p>
-            <div class="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                    <h1 class="font-serif text-5xl font-bold tracking-tight text-ink-950 sm:text-6xl">Activity Feed</h1>
-                    <p class="mt-3 max-w-2xl text-base leading-7 text-ink-950/65">Follow what the Literahaven community is reading, finishing, rating, and reviewing.</p>
-                </div>
-                <p class="text-xs font-bold uppercase tracking-[0.18em] text-ink-950/50">{{ $feedLabel }}</p>
+    <section class="bg-white/15">
+        <div class="mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-14 lg:px-10">
+            <div class="border-b border-ink-950/15 pb-8">
+                <p class="text-xs font-bold uppercase tracking-[0.28em] text-brand-coral">Your social shelf</p>
+                <h1 class="mt-3 font-serif text-4xl font-bold tracking-tight text-ink-950 sm:text-5xl">
+                    @auth
+                        Welcome back, {{ $viewer->name }}.
+                    @else
+                        Welcome to Literahaven.
+                    @endauth
+                </h1>
+                <p class="mt-3 max-w-2xl leading-7 text-ink-950/60">
+                    @auth
+                        Here is what your friends have been reading and reviewing lately.
+                    @else
+                        Sign in and follow other readers to build your personal activity feed.
+                    @endauth
+                </p>
             </div>
-        </div>
-    </section>
 
-    <section aria-labelledby="activity-feed-heading">
-        <div class="mx-auto max-w-5xl px-5 py-10 sm:px-8 lg:px-10">
-            <h2 id="activity-feed-heading" class="sr-only">Recent activity</h2>
-
-            @if ($activities->isEmpty())
-                <div class="border border-ink-950/15 bg-white/25 px-6 py-16 text-center sm:px-10">
-                    <div class="mx-auto grid size-14 place-items-center rounded-full bg-ink-950 text-2xl text-brand-cream" aria-hidden="true">✦</div>
-                    <h3 class="mt-5 font-serif text-3xl font-bold text-ink-950">Your feed is quiet for now.</h3>
-                    <p class="mx-auto mt-3 max-w-xl leading-7 text-ink-950/60">
-                        @auth
-                            Your own reading updates and new activity from readers you follow will appear here.
-                        @else
-                            Public reading updates will appear here as the community starts sharing activity.
-                        @endauth
-                    </p>
-                    <a href="{{ route('literatures.index') }}" class="mt-7 inline-flex items-center bg-ink-950 px-5 py-3 text-sm font-bold uppercase tracking-wider text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Browse the catalog</a>
+            <section class="mt-9" aria-labelledby="friends-activity-heading">
+                <div class="flex items-end justify-between gap-4 border-b border-ink-950/15 pb-3">
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">Activity feed</p>
+                        <h2 id="friends-activity-heading" class="mt-1 font-serif text-2xl font-bold text-ink-950">New from Friends</h2>
+                    </div>
+                    <span class="text-xs font-bold uppercase tracking-[0.16em] text-ink-950/45">Latest 6</span>
                 </div>
-            @else
-                <div class="space-y-5">
-                    @foreach ($activities as $activity)
-                        @php
-                            $displayTitle = $activity->literature->original_title ?? $activity->literature->title;
-                            $authorNames = $activity->literature->authors->pluck('name')->implode(' & ');
-                            $rating = data_get($activity->metadata, 'rating');
-                            $reviewExcerpt = data_get($activity->metadata, 'review_excerpt');
-                            $containsSpoiler = (bool) data_get($activity->metadata, 'contains_spoiler', false);
-                            $isReread = (bool) data_get($activity->metadata, 'reread', false);
-                            $action = match ($activity->type) {
-                                \App\Models\Activity::TYPE_STARTED_READING => $isReread ? 'started reading again' : 'started reading',
-                                \App\Models\Activity::TYPE_COMPLETED => 'finished reading',
-                                \App\Models\Activity::TYPE_RATED => 'rated',
-                                \App\Models\Activity::TYPE_REVIEWED => 'reviewed',
-                                default => 'updated',
-                            };
-                        @endphp
 
-                        <article class="grid gap-5 border border-ink-950/15 bg-white/30 p-5 shadow-[6px_6px_0_rgba(5,22,46,0.07)] sm:grid-cols-[5rem_minmax(0,1fr)] sm:p-6">
-                            <a href="{{ route('literatures.show', $activity->literature) }}" class="block w-20 shrink-0 overflow-hidden border border-ink-950/15 bg-brand-sky/30" aria-label="View {{ $displayTitle }}">
-                                @if ($activity->literature->cover_url)
-                                    <img src="{{ $activity->literature->cover_url }}" alt="Cover of {{ $displayTitle }}" class="aspect-[2/3] h-full w-full object-cover" loading="lazy">
-                                @else
-                                    <span class="grid aspect-[2/3] place-items-center px-2 text-center font-serif text-lg font-bold text-ink-950">{{ Str::upper(Str::substr($displayTitle, 0, 2)) }}</span>
-                                @endif
-                            </a>
+                @if ($activities->isEmpty())
+                    <div class="mt-5 border border-dashed border-ink-950/20 bg-white/25 px-6 py-12 text-center">
+                        <p class="font-serif text-2xl font-bold text-ink-950">No new activity from friends yet.</p>
+                        <p class="mx-auto mt-2 max-w-xl leading-7 text-ink-950/60">
+                            @auth
+                                Follow readers from their profile. Their completed reads, ratings, and reviews will appear here.
+                            @else
+                                Log in to see completed reads, ratings, and reviews from readers you follow.
+                            @endauth
+                        </p>
+                        <a href="{{ auth()->check() ? route('literatures.index') : route('login') }}" class="mt-6 inline-flex bg-ink-950 px-5 py-3 text-xs font-bold uppercase tracking-wider text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">
+                            {{ auth()->check() ? 'Explore literature' : 'Log in' }}
+                        </a>
+                    </div>
+                @else
+                    <div class="mt-5 grid grid-cols-2 gap-x-4 gap-y-7 sm:grid-cols-3 lg:grid-cols-6">
+                        @foreach ($activities as $activity)
+                            @php
+                                $displayTitle = $activity->literature->original_title ?? $activity->literature->title;
+                                $rating = data_get($activity->metadata, 'rating');
+                                $action = match ($activity->type) {
+                                    \App\Models\Activity::TYPE_COMPLETED => 'Completed',
+                                    \App\Models\Activity::TYPE_RATED => 'Rated',
+                                    \App\Models\Activity::TYPE_REVIEWED => 'Reviewed',
+                                    default => 'Updated',
+                                };
+                            @endphp
 
-                            <div class="min-w-0">
-                                <div class="flex items-start gap-3">
-                                    <a href="{{ route('profiles.show', $activity->user) }}" class="mt-0.5 grid size-10 shrink-0 place-items-center overflow-hidden rounded-full border border-ink-950/15 bg-brand-sky/45 font-bold text-ink-950" aria-label="View {{ $activity->user->name }}'s profile">
-                                        @if ($activity->user->avatarUrl())
-                                            <img src="{{ $activity->user->avatarUrl() }}" alt="" class="h-full w-full object-cover">
-                                        @else
-                                            {{ Str::upper(Str::substr($activity->user->name, 0, 1)) }}
-                                        @endif
-                                    </a>
-
-                                    <div class="min-w-0 flex-1">
-                                        <p class="leading-6 text-ink-950/70">
-                                            <a href="{{ route('profiles.show', $activity->user) }}" class="font-bold text-ink-950 underline decoration-transparent underline-offset-4 transition hover:decoration-brand-coral">{{ $activity->user->name }}</a>
-                                            <span>{{ $action }}</span>
-                                        </p>
-                                        <a href="{{ route('literatures.show', $activity->literature) }}" class="mt-1 block truncate font-serif text-2xl font-bold text-ink-950 transition hover:text-brand-coral">{{ $displayTitle }}</a>
-                                        @if ($authorNames !== '')
-                                            <p class="mt-1 truncate text-sm text-ink-950/55">by {{ $authorNames }}</p>
-                                        @endif
-                                    </div>
-
-                                    <time datetime="{{ $activity->occurred_at->utc()->toIso8601String() }}" data-local-datetime class="hidden shrink-0 text-xs font-bold uppercase tracking-wider text-ink-950/45 md:block">{{ $activity->occurred_at->utc()->format('M j, Y, g:i A') }} (UTC)</time>
-                                </div>
-
-                                @if ($rating !== null)
-                                    <div class="mt-4 flex flex-wrap items-center gap-3 border-t border-ink-950/10 pt-4">
-                                        <span class="text-xl tracking-[0.08em] text-brand-coral" aria-hidden="true">★★★★★</span>
-                                        <span class="text-sm font-bold text-ink-950">{{ number_format((float) $rating, 1) }} / 5</span>
-                                        <span class="sr-only">Rated {{ number_format((float) $rating, 1) }} out of 5</span>
-                                    </div>
-                                @endif
-
-                                @if ($reviewExcerpt)
-                                    @if ($containsSpoiler)
-                                        <details class="mt-4 border-l-2 border-brand-coral pl-4">
-                                            <summary class="cursor-pointer text-sm font-bold text-ink-950">Review contains spoilers — reveal</summary>
-                                            <p class="mt-3 leading-7 text-ink-950/70">{{ $reviewExcerpt }}</p>
-                                        </details>
+                            <article class="min-w-0" data-friend-activity>
+                                <a href="{{ route('literatures.show', $activity->literature) }}" class="group relative block overflow-hidden border border-ink-950/15 bg-brand-sky/25 shadow-[4px_4px_0_rgba(5,22,46,0.08)]">
+                                    @if ($activity->literature->cover_url)
+                                        <img src="{{ $activity->literature->cover_url }}" alt="Cover of {{ $displayTitle }}" class="aspect-[2/3] w-full object-cover transition duration-300 group-hover:scale-[1.025]" loading="lazy">
                                     @else
-                                        <p class="mt-4 border-l-2 border-brand-coral pl-4 leading-7 text-ink-950/70">{{ $reviewExcerpt }}</p>
+                                        <span class="grid aspect-[2/3] place-items-center px-3 text-center font-serif text-3xl font-bold text-ink-950">{{ Str::upper(Str::substr($displayTitle, 0, 2)) }}</span>
                                     @endif
-                                @endif
 
-                                <time datetime="{{ $activity->occurred_at->utc()->toIso8601String() }}" data-local-datetime class="mt-4 block text-xs font-bold uppercase tracking-wider text-ink-950/45 md:hidden">{{ $activity->occurred_at->utc()->format('M j, Y, g:i A') }} (UTC)</time>
-                            </div>
-                        </article>
-                    @endforeach
+                                    <span class="absolute left-2 top-2 bg-ink-950/90 px-2 py-1 text-[0.65rem] font-bold uppercase tracking-wider text-brand-cream">{{ $action }}</span>
+                                    <span class="absolute inset-x-0 bottom-0 flex items-center gap-2 bg-gradient-to-t from-ink-950 via-ink-950/90 to-transparent px-3 pb-3 pt-10 text-brand-cream">
+                                        <span class="grid size-7 shrink-0 place-items-center overflow-hidden rounded-full border border-brand-cream/60 bg-brand-sky font-bold text-ink-950">
+                                            @if ($activity->user->avatarUrl())
+                                                <img src="{{ $activity->user->avatarUrl() }}" alt="" class="h-full w-full object-cover">
+                                            @else
+                                                {{ Str::upper(Str::substr($activity->user->name, 0, 1)) }}
+                                            @endif
+                                        </span>
+                                        <span class="truncate text-xs font-bold">{{ $activity->user->name }}</span>
+                                    </span>
+                                </a>
+
+                                <a href="{{ route('literatures.show', $activity->literature) }}" class="mt-3 block truncate font-bold text-ink-950 transition hover:text-brand-coral">{{ $displayTitle }}</a>
+                                <div class="mt-1 flex min-w-0 items-center justify-between gap-2 text-xs text-ink-950/55">
+                                    @if ($rating !== null)
+                                        <span class="shrink-0 font-bold text-brand-coral">★ {{ number_format((float) $rating, 1) }}</span>
+                                    @else
+                                        <span class="truncate">{{ $action }}</span>
+                                    @endif
+                                    <time datetime="{{ $activity->occurred_at->utc()->toIso8601String() }}" data-local-datetime class="truncate text-right">{{ $activity->occurred_at->utc()->format('M j, Y') }} (UTC)</time>
+                                </div>
+                            </article>
+                        @endforeach
+                    </div>
+                @endif
+            </section>
+
+            <section class="mt-14" aria-labelledby="popular-friends-heading">
+                <div class="flex items-end justify-between gap-4 border-b border-ink-950/15 pb-3">
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">Shared discoveries</p>
+                        <h2 id="popular-friends-heading" class="mt-1 font-serif text-2xl font-bold text-ink-950">Popular with Friends</h2>
+                    </div>
+                    <span class="text-xs font-bold uppercase tracking-[0.16em] text-ink-950/45">Most read</span>
                 </div>
 
-                @if ($activities->hasPages())
-                    <div class="mt-10">{{ $activities->links() }}</div>
+                @if ($popularLiteratures->isEmpty())
+                    <div class="mt-5 border border-dashed border-ink-950/20 bg-white/25 px-6 py-10 text-center text-ink-950/60">
+                        Literature your friends are reading or have completed will appear here.
+                    </div>
+                @else
+                    <div class="mt-5 grid grid-cols-2 gap-x-4 gap-y-7 sm:grid-cols-3 lg:grid-cols-6">
+                        @foreach ($popularLiteratures as $literature)
+                            @php
+                                $displayTitle = $literature->original_title ?? $literature->title;
+                                $friends = $literature->readingLists;
+                            @endphp
+
+                            <article class="min-w-0" data-popular-with-friends>
+                                <a href="{{ route('literatures.show', $literature) }}" class="group relative block overflow-hidden border border-ink-950/15 bg-brand-sky/25 shadow-[4px_4px_0_rgba(5,22,46,0.08)]">
+                                    @if ($literature->cover_url)
+                                        <img src="{{ $literature->cover_url }}" alt="Cover of {{ $displayTitle }}" class="aspect-[2/3] w-full object-cover transition duration-300 group-hover:scale-[1.025]" loading="lazy">
+                                    @else
+                                        <span class="grid aspect-[2/3] place-items-center px-3 text-center font-serif text-3xl font-bold text-ink-950">{{ Str::upper(Str::substr($displayTitle, 0, 2)) }}</span>
+                                    @endif
+
+                                    <span class="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-ink-950 via-ink-950/90 to-transparent px-3 pb-3 pt-10 text-brand-cream">
+                                        <span class="flex -space-x-2" aria-hidden="true">
+                                            @foreach ($friends->take(3) as $readingList)
+                                                <span class="grid size-7 place-items-center overflow-hidden rounded-full border-2 border-ink-950 bg-brand-sky text-[0.65rem] font-bold text-ink-950">
+                                                    @if ($readingList->user->avatarUrl())
+                                                        <img src="{{ $readingList->user->avatarUrl() }}" alt="" class="h-full w-full object-cover">
+                                                    @else
+                                                        {{ Str::upper(Str::substr($readingList->user->name, 0, 1)) }}
+                                                    @endif
+                                                </span>
+                                            @endforeach
+                                        </span>
+                                        <span class="text-xs font-bold">{{ $literature->friends_count }}</span>
+                                    </span>
+                                </a>
+
+                                <a href="{{ route('literatures.show', $literature) }}" class="mt-3 block truncate font-bold text-ink-950 transition hover:text-brand-coral">{{ $displayTitle }}</a>
+                                <p class="mt-1 text-xs text-ink-950/55">Read by {{ $literature->friends_count }} {{ Str::plural('friend', $literature->friends_count) }}</p>
+                            </article>
+                        @endforeach
+                    </div>
                 @endif
-            @endif
+            </section>
         </div>
     </section>
 </x-app-shell>
