@@ -1,5 +1,5 @@
 <x-app-shell title="Home">
-    <section class="bg-white/15">
+    <section>
         <div class="mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-14 lg:px-10">
             <div class="border-b border-ink-950/15 pb-8">
                 <p class="text-xs font-bold uppercase tracking-[0.28em] text-brand-coral">Your social shelf</p>
@@ -38,7 +38,7 @@
                                 Log in to see completed reads, ratings, and reviews from readers you follow.
                             @endauth
                         </p>
-                        <a href="{{ auth()->check() ? route('literatures.index') : route('login') }}" class="mt-6 inline-flex bg-ink-950 px-5 py-3 text-xs font-bold uppercase tracking-wider text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">
+                        <a href="{{ auth()->check() ? route('literatures.index') : route('login') }}" class="mt-6 inline-flex bg-ink-950 px-5 py-3 text-xs font-bold uppercase tracking-wider text-brand-cream transition hover:bg-brand-coral hover:text-brand-cream">
                             {{ auth()->check() ? 'Explore literature' : 'Log in' }}
                         </a>
                     </div>
@@ -57,7 +57,7 @@
                             @endphp
 
                             <article class="min-w-0" data-friend-activity>
-                                <a href="{{ route('literatures.show', $activity->literature) }}" class="group relative block overflow-hidden border border-ink-950/15 bg-brand-sky/25 shadow-[4px_4px_0_rgba(5,22,46,0.08)]">
+                                <a href="{{ route('literatures.show', $activity->literature) }}" class="group relative block overflow-hidden border border-ink-950/15 bg-brand-sky/25 shadow-[0_8px_24px_rgba(47,58,85,0.08)]">
                                     @if ($activity->literature->cover_url)
                                         <img src="{{ $activity->literature->cover_url }}" alt="Cover of {{ $displayTitle }}" class="aspect-[2/3] w-full object-cover transition duration-300 group-hover:scale-[1.025]" loading="lazy">
                                     @else
@@ -114,7 +114,7 @@
                             @endphp
 
                             <article class="min-w-0" data-popular-with-friends>
-                                <a href="{{ route('literatures.show', $literature) }}" class="group relative block overflow-hidden border border-ink-950/15 bg-brand-sky/25 shadow-[4px_4px_0_rgba(5,22,46,0.08)]">
+                                <a href="{{ route('literatures.show', $literature) }}" class="group relative block overflow-hidden border border-ink-950/15 bg-brand-sky/25 shadow-[0_8px_24px_rgba(47,58,85,0.08)]">
                                     @if ($literature->cover_url)
                                         <img src="{{ $literature->cover_url }}" alt="Cover of {{ $displayTitle }}" class="aspect-[2/3] w-full object-cover transition duration-300 group-hover:scale-[1.025]" loading="lazy">
                                     @else

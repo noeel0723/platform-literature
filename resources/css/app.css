@@ -9,14 +9,20 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
     --font-serif: Georgia, Cambria, 'Times New Roman', serif;
 
-    --color-brand-cream: #ffe1d7;
-    --color-brand-sky: #84affb;
-    --color-brand-coral: #ff6648;
+    --color-brand-plate: #f5f6f3;
+    --color-brand-stem: #6e6f73;
+    --color-brand-blueberry: #2f3a55;
+    --color-brand-berry: #5c6b8a;
+    --color-brand-yogurt: #e7e2de;
 
-    --color-ink-950: #071226;
-    --color-ink-900: #0b1c35;
-    --color-ink-800: #10284a;
-    --color-ink-700: #173662;
+    --color-brand-cream: #f5f6f3;
+    --color-brand-sky: #e7e2de;
+    --color-brand-coral: #5c6b8a;
+
+    --color-ink-950: #2f3a55;
+    --color-ink-900: #39445f;
+    --color-ink-800: #46516d;
+    --color-ink-700: #5c6b8a;
 }
 
 @layer base {
@@ -25,31 +31,42 @@
     }
 
     body {
-        background-image:
-            radial-gradient(circle at 15% 10%, rgb(255 255 255 / 0.55), transparent 28rem),
-            radial-gradient(circle at 85% 28%, rgb(255 102 72 / 0.1), transparent 24rem);
+        background-color: var(--color-brand-plate);
     }
 
     button,
     input,
-    select {
+    select,
+    textarea {
         font: inherit;
+    }
+
+    input,
+    select,
+    textarea {
+        color: var(--color-brand-blueberry);
+    }
+
+    ::selection {
+        background: var(--color-brand-berry);
+        color: var(--color-brand-plate);
+    }
+
+    :focus-visible {
+        outline-color: var(--color-brand-berry);
     }
 }
 
 @layer components {
     .catalog-grid {
-        background-image:
-            linear-gradient(rgb(7 18 38 / 0.045) 1px, transparent 1px),
-            linear-gradient(90deg, rgb(7 18 38 / 0.045) 1px, transparent 1px);
-        background-size: 40px 40px;
+        background-color: color-mix(in srgb, var(--color-brand-yogurt) 28%, var(--color-brand-plate));
     }
 
     .poster-shine::after {
         position: absolute;
         inset: 0;
         content: '';
-        background: linear-gradient(120deg, transparent 35%, rgb(255 225 215 / 0.16), transparent 60%);
+        background: linear-gradient(120deg, transparent 35%, rgb(245 246 243 / 0.16), transparent 60%);
         transform: translateX(-120%);
         transition: transform 500ms ease;
     }
@@ -59,8 +76,8 @@
     }
 
     .review-dialog::backdrop {
-        background: rgb(7 18 38 / 0.78);
-        backdrop-filter: blur(5px);
+        background: rgb(47 58 85 / 0.7);
+        backdrop-filter: blur(4px);
     }
 }
 

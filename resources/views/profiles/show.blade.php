@@ -14,7 +14,7 @@
         <div class="mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:px-10 lg:py-12">
             <div class="grid gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(460px,.85fr)] lg:items-center">
                 <div class="flex min-w-0 flex-col gap-6 sm:flex-row sm:items-center">
-                    <div class="grid size-28 shrink-0 place-items-center overflow-hidden rounded-full border-4 border-brand-cream bg-ink-950 font-serif text-3xl font-bold text-brand-cream shadow-xl sm:size-32">
+                    <div class="grid size-28 shrink-0 place-items-center overflow-hidden rounded-full border-4 border-brand-cream bg-ink-950 font-serif text-3xl font-bold text-brand-cream shadow-[0_10px_28px_rgba(47,58,85,0.10)] sm:size-32">
                         @if ($user->avatarUrl())
                             <img src="{{ $user->avatarUrl() }}" alt="{{ $user->name }}'s profile photo" class="size-full object-cover">
                         @else
@@ -28,7 +28,7 @@
                                 <p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">Reader profile</p>
                                 <h1 class="mt-2 truncate font-serif text-4xl font-bold leading-none text-ink-950 sm:text-5xl">{{ $user->name }}</h1>
                                 @if ($isOwner)
-                                    <a href="{{ route('profiles.edit') }}" class="mt-3 inline-block w-fit border border-ink-950/20 bg-brand-cream/60 px-4 py-2 text-sm font-bold text-ink-950 transition hover:border-brand-coral hover:bg-brand-coral">Edit profile</a>
+                                    <a href="{{ route('profiles.edit') }}" class="mt-3 inline-block w-fit border border-ink-950/20 bg-brand-cream/60 px-4 py-2 text-sm font-bold text-ink-950 transition hover:border-brand-coral hover:bg-brand-coral hover:text-brand-cream">Edit profile</a>
                                 @endif
                                 <p class="mt-3 font-semibold text-ink-950/55">&#64;{{ $user->username }}</p>
                             </div>
@@ -37,11 +37,11 @@
                                     <form action="{{ $isFollowing ? route('profiles.follow.destroy', $user) : route('profiles.follow.store', $user) }}" method="POST">
                                         @csrf
                                         @if ($isFollowing) @method('DELETE') @endif
-                                        <button class="w-fit px-4 py-2.5 text-sm font-bold transition {{ $isFollowing ? 'border border-ink-950/20 bg-brand-cream/60 text-ink-950 hover:border-brand-coral' : 'bg-ink-950 text-brand-cream hover:bg-brand-coral hover:text-ink-950' }}">{{ $isFollowing ? 'Following' : 'Follow' }}</button>
+                                        <button class="w-fit px-4 py-2.5 text-sm font-bold transition {{ $isFollowing ? 'border border-ink-950/20 bg-brand-cream/60 text-ink-950 hover:border-brand-coral' : 'bg-ink-950 text-brand-cream hover:bg-brand-coral hover:text-brand-cream' }}">{{ $isFollowing ? 'Following' : 'Follow' }}</button>
                                     </form>
                                     <x-report-form target-type="user" :target-id="$user->id" label="Report profile" />
                                 @elseif (! $isOwner)
-                                    <a href="{{ route('login') }}" class="w-fit bg-ink-950 px-4 py-2.5 text-sm font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Log in to follow</a>
+                                    <a href="{{ route('login') }}" class="w-fit bg-ink-950 px-4 py-2.5 text-sm font-bold text-brand-cream transition hover:bg-brand-coral hover:text-brand-cream">Log in to follow</a>
                                 @endif
                             </div>
                         </div>
@@ -102,7 +102,7 @@
                 @forelse ($user->favoriteLiteratures as $literature)
                     <article class="group min-w-0">
                         <a href="{{ route('literatures.show', $literature) }}" class="block">
-                            <div class="relative aspect-[2/3] overflow-hidden border border-ink-950/15 bg-brand-sky/20 shadow-lg transition duration-200 group-hover:-translate-y-1 group-hover:border-brand-coral group-hover:shadow-xl">
+                            <div class="relative aspect-[2/3] overflow-hidden border border-ink-950/15 bg-brand-sky/20 shadow-[0_8px_24px_rgba(47,58,85,0.08)] transition duration-200 group-hover:-translate-y-1 group-hover:border-brand-coral">
                                 @if ($literature->cover_url)
                                     <img src="{{ $literature->cover_url }}" alt="Cover of {{ $literature->original_title ?? $literature->title }}" class="size-full object-cover">
                                 @else
@@ -139,7 +139,7 @@
                     @endphp
                     <li class="group min-w-0">
                         <article>
-                            <div class="relative aspect-[4/5] overflow-hidden border border-ink-950/15 bg-brand-sky/30 shadow-lg transition duration-200 group-hover:-translate-y-1 group-hover:border-brand-coral group-hover:shadow-xl">
+                            <div class="relative aspect-[4/5] overflow-hidden border border-ink-950/15 bg-brand-sky/30 shadow-[0_8px_24px_rgba(47,58,85,0.08)] transition duration-200 group-hover:-translate-y-1 group-hover:border-brand-coral">
                                 @if ($author->image_url)
                                     <img src="{{ $author->image_url }}" alt="Portrait of {{ $author->name }}" class="size-full object-cover">
                                 @else
@@ -184,7 +184,7 @@
                 </div>
             @endif
 
-            <a href="{{ route('profiles.readlist', $user) }}" class="mt-5 flex items-center justify-between border border-ink-950/15 bg-ink-950 px-4 py-3 text-sm font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">
+            <a href="{{ route('profiles.readlist', $user) }}" class="mt-5 flex items-center justify-between border border-ink-950/15 bg-ink-950 px-4 py-3 text-sm font-bold text-brand-cream transition hover:bg-brand-coral hover:text-brand-cream">
                 <span>View full Readlist</span>
                 <span aria-hidden="true">→</span>
             </a>

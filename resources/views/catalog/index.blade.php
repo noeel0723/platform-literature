@@ -14,7 +14,7 @@
                     @endif
                     <label for="catalog-page-search" class="sr-only">Find literature</label>
                     <input id="catalog-page-search" name="q" value="{{ $query }}" placeholder="Find literature..." class="min-w-0 flex-1 bg-transparent px-5 py-4 text-ink-950 outline-none placeholder:text-ink-950/40 focus:bg-white/50">
-                    <button type="submit" class="grid w-14 shrink-0 place-items-center bg-ink-950 text-brand-cream transition hover:bg-brand-coral hover:text-ink-950" aria-label="Search catalog">
+                    <button type="submit" class="grid w-14 shrink-0 place-items-center bg-ink-950 text-brand-cream transition hover:bg-brand-coral hover:text-brand-cream" aria-label="Search catalog">
                         <svg aria-hidden="true" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
                     </button>
                 </form>
@@ -67,7 +67,7 @@
             <div class="border border-ink-950/10 bg-white/35 px-6 py-14 text-center">
                 <p class="font-serif text-2xl font-bold text-ink-950">No matching titles found.</p>
                 <p class="mt-2 text-ink-950/60">Try another keyword or choose a different format.</p>
-                <a href="{{ route('literatures.index') }}" class="mt-6 inline-block bg-ink-950 px-5 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Clear search</a>
+                <a href="{{ route('literatures.index') }}" class="mt-6 inline-block bg-ink-950 px-5 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-brand-cream">Clear search</a>
             </div>
         @else
             <div class="grid grid-cols-2 gap-x-4 gap-y-9 sm:gap-x-6 lg:grid-cols-4 lg:gap-x-7" data-catalog-results>

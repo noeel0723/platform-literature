@@ -10,7 +10,7 @@
                 <div class="flex flex-wrap gap-3">
                     <a href="{{ route('profiles.show', $user) }}" class="border border-ink-950/20 bg-brand-cream/70 px-5 py-3 text-sm font-bold text-ink-950 transition hover:border-brand-coral">Back to profile</a>
                     @if (auth()->id() === $user->id)
-                        <a href="{{ route('literatures.index') }}" class="bg-ink-950 px-5 py-3 text-sm font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Find literature</a>
+                        <a href="{{ route('literatures.index') }}" class="bg-ink-950 px-5 py-3 text-sm font-bold text-brand-cream transition hover:bg-brand-coral hover:text-brand-cream">Find literature</a>
                     @endif
                 </div>
             </div>
@@ -38,7 +38,7 @@
                     @php($literature = $item->literature)
                     <article class="group min-w-0" data-readlist-item>
                         <a href="{{ route('literatures.show', $literature) }}" class="block">
-                            <div class="relative aspect-[2/3] overflow-hidden border border-ink-950/15 bg-brand-sky/20 shadow-[4px_4px_0_rgba(5,22,46,0.08)] transition duration-200 group-hover:-translate-y-1 group-hover:border-brand-coral">
+                            <div class="relative aspect-[2/3] overflow-hidden border border-ink-950/15 bg-brand-sky/20 shadow-[0_8px_24px_rgba(47,58,85,0.08)] transition duration-200 group-hover:-translate-y-1 group-hover:border-brand-coral">
                                 @if ($literature->cover_url)
                                     <img src="{{ $literature->cover_url }}" alt="Cover of {{ $literature->original_title ?? $literature->title }}" class="size-full object-cover" loading="lazy">
                                 @else

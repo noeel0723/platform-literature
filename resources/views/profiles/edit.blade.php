@@ -81,7 +81,7 @@
                 </fieldset>
             </div>
 
-            <div class="flex flex-col-reverse gap-3 border-t border-ink-950/10 pt-6 sm:flex-row sm:justify-end"><a href="{{ route('profiles.show', $user) }}" class="border border-ink-950/20 px-6 py-3 text-center font-bold text-ink-950 transition hover:border-brand-coral">Cancel</a><button class="bg-ink-950 px-7 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Save profile</button></div>
+            <div class="flex flex-col-reverse gap-3 border-t border-ink-950/10 pt-6 sm:flex-row sm:justify-end"><a href="{{ route('profiles.show', $user) }}" class="border border-ink-950/20 px-6 py-3 text-center font-bold text-ink-950 transition hover:border-brand-coral">Cancel</a><button class="bg-ink-950 px-7 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-brand-cream">Save profile</button></div>
         </form>
     </section>
 </x-app-shell>

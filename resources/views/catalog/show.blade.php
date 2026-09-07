@@ -27,7 +27,7 @@
             </a>
 
             <div class="mt-24 grid gap-8 md:grid-cols-[220px_1fr] lg:mt-40 lg:grid-cols-[250px_minmax(0,1fr)_300px] lg:items-end">
-                <div class="relative aspect-[2/3] overflow-hidden border border-ink-950/20 bg-linear-to-br {{ $coverTheme }} shadow-2xl">
+                <div class="relative aspect-[2/3] overflow-hidden border border-ink-950/20 bg-linear-to-br {{ $coverTheme }} shadow-[0_14px_36px_rgba(47,58,85,0.12)]">
                     @if ($literature['cover_url'] !== null)
                         <img src="{{ $literature['cover_url'] }}" alt="Cover of {{ $literature['title'] }}" class="absolute inset-0 size-full object-cover">
                         <div class="absolute inset-0 bg-linear-to-t from-ink-950/80 via-transparent to-ink-950/25"></div>
@@ -48,7 +48,7 @@
 
                 <div class="self-end pb-2">
                     <div class="flex flex-wrap items-center gap-3 text-sm font-semibold uppercase tracking-wider text-ink-950/60">
-                        <span class="bg-brand-coral px-2.5 py-1 text-ink-950">{{ $literature['type_label'] }}</span>
+                        <span class="bg-brand-coral px-2.5 py-1 text-brand-cream">{{ $literature['type_label'] }}</span>
                         <span>{{ $literature['year'] }}</span>
                     </div>
                     <h1 class="mt-4 font-serif text-5xl font-bold leading-none tracking-tight text-ink-950 sm:text-6xl">{{ $literature['title'] }}</h1>
@@ -60,7 +60,7 @@
                     <p class="mt-5 max-w-2xl text-base leading-8 text-ink-950/75">{{ $literature['synopsis'] }}</p>
                 </div>
 
-                <aside class="self-end overflow-hidden border border-ink-950/15 bg-brand-cream/90 shadow-xl backdrop-blur-md md:col-span-2 lg:col-span-1 lg:mb-2" aria-label="Your literature actions">
+                <aside class="self-end overflow-hidden border border-ink-950/15 bg-brand-cream/95 shadow-[0_12px_32px_rgba(47,58,85,0.08)] backdrop-blur-md md:col-span-2 lg:col-span-1 lg:mb-2" aria-label="Your literature actions">
                     <div data-community-rating class="border-b border-ink-950/10 p-5 text-center">
                         <p class="text-xs font-bold uppercase tracking-[0.2em] text-ink-950/55">Community rating</p>
                         <div class="mt-3 flex items-center justify-center gap-3">
@@ -91,7 +91,7 @@
                                 </button>
                             </form>
 
-                            <button type="button" data-dialog-open="review-dialog" class="px-2 py-5 text-center font-bold text-ink-950 transition hover:bg-brand-coral">
+                            <button type="button" data-dialog-open="review-dialog" class="px-2 py-5 text-center font-bold text-ink-950 transition hover:bg-brand-coral hover:text-brand-cream">
                                 <span class="block text-3xl leading-none" aria-hidden="true">★</span>
                                 <span class="mt-2 block text-xs sm:text-sm">{{ $currentReview ? 'Edit Review' : 'Rate & Review' }}</span>
                             </button>
@@ -131,7 +131,7 @@
                     @else
                         <div class="p-5">
                             <p class="text-sm leading-6 text-ink-950/65">Log in to rate, review, and track this literature.</p>
-                            <a href="{{ route('login') }}" class="mt-4 block bg-ink-950 px-4 py-3 text-center font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Log in</a>
+                            <a href="{{ route('login') }}" class="mt-4 block bg-ink-950 px-4 py-3 text-center font-bold text-brand-cream transition hover:bg-brand-coral hover:text-brand-cream">Log in</a>
                         </div>
                     @endauth
                 </aside>
@@ -314,14 +314,14 @@
                         </label>
                     @endif
 
-                    <button class="bg-ink-950 px-5 py-3.5 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950 sm:col-span-2">Save to Readlist</button>
+                    <button class="bg-ink-950 px-5 py-3.5 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-brand-cream sm:col-span-2">Save to Readlist</button>
                 </form>
             @else
                 <div class="border border-ink-950/15 bg-brand-cream/65 p-7 sm:p-9">
                     <p class="font-serif text-2xl font-bold text-ink-950">Log in to track your reading</p>
                     <p class="mt-3 leading-7 text-ink-950/65">The catalog remains public. An account keeps your status and progress private to you.</p>
                     <div class="mt-6 flex flex-wrap gap-3">
-                        <a href="{{ route('login') }}" class="bg-ink-950 px-5 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Log in</a>
+                        <a href="{{ route('login') }}" class="bg-ink-950 px-5 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-brand-cream">Log in</a>
                         <a href="{{ route('register') }}" class="border border-ink-950/20 px-5 py-3 font-bold text-ink-950 transition hover:border-brand-coral">Create account</a>
                     </div>
                 </div>
@@ -346,9 +346,9 @@
                         <p class="mt-1 text-xs font-bold uppercase tracking-wider text-ink-950/50">{{ $reviews->count() }} {{ Str::plural('rating', $reviews->count()) }}</p>
                     </div>
                     @auth
-                        <button type="button" data-dialog-open="review-dialog" class="bg-ink-950 px-5 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">{{ $currentReview ? 'Edit your review' : 'Rate or review' }}</button>
+                        <button type="button" data-dialog-open="review-dialog" class="bg-ink-950 px-5 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-brand-cream">{{ $currentReview ? 'Edit your review' : 'Rate or review' }}</button>
                     @else
-                        <a href="{{ route('login') }}" class="bg-ink-950 px-5 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Log in to review</a>
+                        <a href="{{ route('login') }}" class="bg-ink-950 px-5 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-brand-cream">Log in to review</a>
                     @endauth
                 </div>
             </div>
@@ -376,7 +376,7 @@
                                         <form action="{{ $reviewIsLiked ? route('reviews.likes.destroy', $review) : route('reviews.likes.store', $review) }}" method="POST">
                                             @csrf
                                             @if ($reviewIsLiked) @method('DELETE') @endif
-                                            <button class="border px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition {{ $reviewIsLiked ? 'border-brand-coral bg-brand-coral text-ink-950' : 'border-ink-950/20 text-ink-950 hover:border-brand-coral' }}" aria-pressed="{{ $reviewIsLiked ? 'true' : 'false' }}">{{ $reviewIsLiked ? 'Liked' : 'Like' }}</button>
+                                            <button class="border px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition {{ $reviewIsLiked ? 'border-brand-coral bg-brand-coral text-brand-cream' : 'border-ink-950/20 text-ink-950 hover:border-brand-coral' }}" aria-pressed="{{ $reviewIsLiked ? 'true' : 'false' }}">{{ $reviewIsLiked ? 'Liked' : 'Like' }}</button>
                                         </form>
                                         @if (auth()->id() !== $review->user_id)
                                             <x-report-form target-type="review" :target-id="$review->id" />
@@ -404,7 +404,7 @@
     </section>
 
     @auth
-        <dialog id="review-dialog" data-review-dialog data-auto-open="{{ $errors->has('rating') || $errors->has('body') ? 'true' : 'false' }}" class="review-dialog m-auto max-h-[90vh] w-[min(920px,calc(100%_-_2rem))] overflow-y-auto border border-ink-950/20 bg-brand-cream p-0 text-ink-950 shadow-2xl">
+        <dialog id="review-dialog" data-review-dialog data-auto-open="{{ $errors->has('rating') || $errors->has('body') ? 'true' : 'false' }}" class="review-dialog m-auto max-h-[90vh] w-[min(920px,calc(100%_-_2rem))] overflow-y-auto border border-ink-950/20 bg-brand-cream p-0 text-ink-950 shadow-[0_18px_48px_rgba(47,58,85,0.18)]">
             <div class="sticky top-0 z-10 flex items-center justify-between border-b border-ink-950/10 bg-ink-950 px-5 py-4 text-brand-cream sm:px-7">
                 <div>
                     <p class="text-xs font-bold uppercase tracking-[0.18em] text-brand-sky">Your reading experience</p>
@@ -418,7 +418,7 @@
                 @method('PUT')
 
                 <div>
-                    <div class="aspect-[2/3] overflow-hidden border border-ink-950/15 bg-linear-to-br {{ $coverTheme }} shadow-lg">
+                    <div class="aspect-[2/3] overflow-hidden border border-ink-950/15 bg-linear-to-br {{ $coverTheme }} shadow-[0_8px_24px_rgba(47,58,85,0.10)]">
                         @if ($literature['cover_url'] !== null)
                             <img src="{{ $literature['cover_url'] }}" alt="Cover of {{ $literature['title'] }}" class="size-full object-cover">
                         @else
@@ -466,7 +466,7 @@
                             <button type="submit" form="delete-review-form" class="border border-red-700/30 px-5 py-3 font-bold text-red-800 transition hover:border-red-700 hover:bg-red-700 hover:text-white sm:mr-auto">Delete review</button>
                         @endif
                         <button type="button" data-dialog-close class="border border-ink-950/20 px-5 py-3 font-bold text-ink-950 transition hover:border-brand-coral">Cancel</button>
-                        <button class="bg-ink-950 px-6 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">{{ $currentReview ? 'Update review' : 'Publish review' }}</button>
+                        <button class="bg-ink-950 px-6 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-brand-cream">{{ $currentReview ? 'Update review' : 'Publish review' }}</button>
                     </div>
                 </div>
             </form>
@@ -519,13 +519,13 @@
                                 This discussion contains spoilers. Hide the opening post until readers reveal it.
                             </label>
 
-                            <button class="bg-ink-950 px-5 py-3.5 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Start discussion</button>
+                            <button class="bg-ink-950 px-5 py-3.5 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-brand-cream">Start discussion</button>
                         </form>
                     @else
                         <div class="border border-ink-950/15 bg-brand-cream/70 p-7">
                             <p class="font-serif text-2xl font-bold text-ink-950">Join the discussion</p>
                             <p class="mt-3 leading-7 text-ink-950/65">Log in to start a discussion, leave a comment, or reply to another reader.</p>
-                            <a href="{{ route('login') }}" class="mt-6 inline-block bg-ink-950 px-5 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Log in</a>
+                            <a href="{{ route('login') }}" class="mt-6 inline-block bg-ink-950 px-5 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-brand-cream">Log in</a>
                         </div>
                     @endauth
                 </div>
@@ -548,7 +548,7 @@
                                     <form action="{{ $discussionIsLiked ? route('discussions.likes.destroy', $discussion) : route('discussions.likes.store', $discussion) }}" method="POST">
                                         @csrf
                                         @if ($discussionIsLiked) @method('DELETE') @endif
-                                        <button class="border px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition {{ $discussionIsLiked ? 'border-brand-coral bg-brand-coral text-ink-950' : 'border-ink-950/20 text-ink-950 hover:border-brand-coral' }}" aria-pressed="{{ $discussionIsLiked ? 'true' : 'false' }}">{{ $discussionIsLiked ? 'Liked' : 'Like' }}</button>
+                                        <button class="border px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition {{ $discussionIsLiked ? 'border-brand-coral bg-brand-coral text-brand-cream' : 'border-ink-950/20 text-ink-950 hover:border-brand-coral' }}" aria-pressed="{{ $discussionIsLiked ? 'true' : 'false' }}">{{ $discussionIsLiked ? 'Liked' : 'Like' }}</button>
                                     </form>
                                     @if (auth()->id() !== $discussion->user_id)
                                         <x-report-form target-type="discussion" :target-id="$discussion->id" />
@@ -619,7 +619,7 @@
                                                             <input name="comment_contains_spoiler" type="checkbox" value="1" class="size-4 accent-brand-coral">
                                                             This reply contains spoilers
                                                         </label>
-                                                        <button class="w-fit bg-ink-950 px-4 py-2 text-sm font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Publish reply</button>
+                                                        <button class="w-fit bg-ink-950 px-4 py-2 text-sm font-bold text-brand-cream transition hover:bg-brand-coral hover:text-brand-cream">Publish reply</button>
                                                     </form>
                                                 </details>
                                             @endauth
@@ -639,7 +639,7 @@
                                                 <input name="comment_contains_spoiler" type="checkbox" value="1" class="size-4 accent-brand-coral">
                                                 This comment contains spoilers
                                             </label>
-                                            <button class="w-fit bg-ink-950 px-4 py-2 text-sm font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Publish comment</button>
+                                            <button class="w-fit bg-ink-950 px-4 py-2 text-sm font-bold text-brand-cream transition hover:bg-brand-coral hover:text-brand-cream">Publish comment</button>
                                         </div>
                                     </form>
                                 @endauth

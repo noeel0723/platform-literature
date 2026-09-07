@@ -13,7 +13,7 @@
 
 <article class="group min-w-0" data-literature-card>
     <a href="{{ route('literatures.show', $literature['slug']) }}" class="block focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-coral focus-visible:ring-offset-4 focus-visible:ring-offset-brand-cream">
-        <div class="poster-shine relative aspect-[2/3] overflow-hidden border border-ink-950/15 bg-linear-to-br {{ $posterTheme }} shadow-[0_20px_50px_rgba(7,18,38,0.16)] transition duration-300 group-hover:-translate-y-1 group-hover:border-brand-coral">
+        <div class="poster-shine relative aspect-[2/3] overflow-hidden border border-ink-950/15 bg-linear-to-br {{ $posterTheme }} shadow-[0_10px_28px_rgba(47,58,85,0.10)] transition duration-300 group-hover:-translate-y-1 group-hover:border-brand-coral">
             @if ($literature['cover_url'] !== null)
                 <img src="{{ $literature['cover_url'] }}" alt="Cover of {{ $literature['title'] }}" class="absolute inset-0 size-full object-cover" loading="lazy">
                 <div class="absolute inset-0 bg-linear-to-t from-ink-950/80 via-transparent to-ink-950/25"></div>

@@ -60,7 +60,7 @@
                     <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
                         <div class="min-w-0">
                             <div class="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-[0.14em]">
-                                <span class="bg-brand-coral px-2.5 py-1 text-ink-950">{{ $reasonLabels[$report->reason] ?? Str::headline($report->reason) }}</span>
+                                <span class="bg-brand-coral px-2.5 py-1 text-brand-cream">{{ $reasonLabels[$report->reason] ?? Str::headline($report->reason) }}</span>
                                 <span class="border border-ink-950/15 px-2.5 py-1 text-ink-950/60">{{ $targetType }}</span>
                                 <span class="border border-ink-950/15 px-2.5 py-1 text-ink-950/60">{{ $statusLabels[$report->status] ?? Str::headline($report->status) }}</span>
                             </div>
