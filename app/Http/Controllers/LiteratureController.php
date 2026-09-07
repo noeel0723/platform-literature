@@ -61,27 +61,33 @@ class LiteratureController extends Controller
             : implode(' and ', array_unique($unavailableSources))
                 .' cannot be reached right now. Results from the local catalog are still available.';
 
-        $literatures = Literature::query()
-            ->with(['apiSource', 'authors', 'categories'])
-            ->when($query !== '', function (Builder $builder) use ($query): void {
-                $builder->where(function (Builder $search) use ($query): void {
-                    $search
-                        ->where('title', 'like', "%{$query}%")
-                        ->orWhere('original_title', 'like', "%{$query}%")
-                        ->orWhereHas('authors', function (Builder $authors) use ($query): void {
-                            $authors->where('name', 'like', "%{$query}%");
-                        })
-                        ->orWhereHas('categories', function (Builder $categories) use ($query): void {
-                            $categories->where('name', 'like', "%{$query}%");
-                        });
-                });
-            })
-            ->when($selectedType !== '', function (Builder $builder) use ($selectedType): void {
-                $builder->where('type', $selectedType);
-            })
-            ->orderBy('id')
-            ->get()
-            ->map(fn (Literature $literature): array => $this->present($literature));
+        $literatures = collect();
+
+        if ($query !== '' || $selectedType !== '') {
+            $literatures = Literature::query()
+                ->with(['apiSource', 'authors', 'categories'])
+                ->when($query !== '', function (Builder $builder) use ($query): void {
+                    $builder->where(function (Builder $search) use ($query): void {
+                        $search
+                            ->where('title', 'like', "%{$query}%")
+                            ->orWhere('original_title', 'like', "%{$query}%")
+                            ->orWhereHas('authors', function (Builder $authors) use ($query): void {
+                                $authors->where('name', 'like', "%{$query}%");
+                            })
+                            ->orWhereHas('categories', function (Builder $categories) use ($query): void {
+                                $categories->where('name', 'like', "%{$query}%");
+                            });
+                    });
+                })
+                ->when($selectedType !== '', function (Builder $builder) use ($selectedType): void {
+                    $builder->where('type', $selectedType);
+                })
+                ->latest('updated_at')
+                ->latest('id')
+                ->limit(4)
+                ->get()
+                ->map(fn (Literature $literature): array => $this->present($literature));
+        }
 
         return view('catalog.index', [
             'literatures' => $literatures,

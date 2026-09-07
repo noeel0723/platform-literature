@@ -16,7 +16,7 @@ class LiteratureCatalogTest extends TestCase
 {
     use LazilyRefreshDatabase;
 
-    public function test_catalog_page_renders_increment_one_interface(): void
+    public function test_catalog_page_starts_with_search_instead_of_loading_the_entire_database(): void
     {
         $this->createLiterature(
             [
@@ -33,14 +33,58 @@ class LiteratureCatalogTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertSeeText('One shelf for every story')
+            ->assertSeeText('Literature Catalog')
+            ->assertSeeText('Search the catalog')
             ->assertSeeText('Literahaven')
-            ->assertSeeText('Bumi Manusia')
-            ->assertSeeText('Google Books');
+            ->assertDontSeeText('Bumi Manusia')
+            ->assertDontSeeText('Metadata sources')
+            ->assertDontSeeText('Current scope')
+            ->assertDontSeeText('Increments 1-3 / Catalog, reading, and reviews');
+    }
+
+    public function test_catalog_only_displays_the_four_newest_search_matches(): void
+    {
+        $this->configureGoogleBooks();
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://www.googleapis.com/books/v1/volumes*' => Http::response(['items' => []]),
+        ]);
+
+        $source = ApiSource::factory()->create([
+            'key' => 'google-books',
+            'name' => 'Google Books',
+        ]);
+
+        foreach (range(1, 5) as $position) {
+            Literature::factory()->for($source)->create([
+                'title' => "Search Match {$position}",
+                'slug' => "search-match-{$position}",
+                'type' => 'book',
+                'updated_at' => now()->subMinutes(6 - $position),
+            ]);
+        }
+
+        $response = $this->get(route('literatures.index', [
+            'q' => 'Search Match',
+            'type' => 'book',
+        ]))->assertOk();
+
+        $this->assertSame(4, substr_count($response->getContent(), 'data-literature-card'));
+        $response
+            ->assertSeeText('Search Match 5')
+            ->assertSeeText('Search Match 2')
+            ->assertDontSeeText('Search Match 1')
+            ->assertSeeText('Showing 4 of the newest matches');
     }
 
     public function test_catalog_can_be_filtered_by_query_and_type(): void
     {
+        $this->configureGoogleBooks();
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://www.googleapis.com/books/v1/volumes*' => Http::response(['items' => []]),
+        ]);
+
         $this->createLiterature(
             ['title' => 'Bumi Manusia', 'slug' => 'bumi-manusia', 'type' => 'book'],
             'Google Books',
@@ -67,6 +111,8 @@ class LiteratureCatalogTest extends TestCase
     #[TestWith(['Misteri'])]
     public function test_catalog_can_be_searched_by_author_or_category(string $query): void
     {
+        config()->set('services.comic_vine.key', null);
+
         $this->createLiterature(
             ['title' => 'Watchmen', 'slug' => 'watchmen', 'type' => 'western-comic'],
             'Comic Vine',

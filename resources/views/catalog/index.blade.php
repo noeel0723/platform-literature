@@ -1,42 +1,54 @@
-<x-app-shell>
+<x-app-shell title="Catalog">
     <section class="catalog-grid border-b border-ink-950/10">
-        <div class="mx-auto min-w-0 max-w-7xl px-5 py-14 sm:px-8 lg:px-10 lg:py-20">
-            <div class="min-w-0 max-w-3xl">
-                <p class="mb-5 text-xs font-bold uppercase tracking-[0.28em] text-brand-coral">Increments 1-3 / Catalog, reading, and reviews</p>
-                <h1 class="max-w-2xl font-serif text-5xl font-bold leading-[0.98] tracking-tight text-ink-950 sm:text-6xl lg:text-7xl">
-                    One shelf for every story.
-                </h1>
-                <p class="mt-7 max-w-xl text-base leading-8 text-ink-950/65 sm:text-lg">
-                    Explore books, novels, Western comics, manga, manhwa, and light novels without switching platforms.
-                    Literahaven brings their metadata together in one clear and consistent catalog.
-                </p>
-                <div class="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-                    <a href="#catalog-title" class="inline-flex items-center gap-2 bg-ink-950 px-5 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">
-                        Explore the catalog <span aria-hidden="true">&darr;</span>
-                    </a>
-                    <p class="text-sm text-ink-950/60">Quick search is always available in the top navigation.</p>
+        <div class="mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:px-10 lg:py-14">
+            <div class="flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-[0.22em] text-brand-coral">Discover your next read</p>
+                    <h1 class="mt-2 font-serif text-5xl font-bold text-ink-950">Literature Catalog</h1>
+                    <p class="mt-3 max-w-xl leading-7 text-ink-950/60">Search books, novels, comics, manga, manhwa, and light novels in one place.</p>
                 </div>
+
+                <form action="{{ route('literatures.index') }}" method="GET" role="search" class="flex w-full max-w-xl overflow-hidden border border-ink-950/20 bg-white/40 lg:w-[32rem]">
+                    @if ($selectedType !== '')
+                        <input type="hidden" name="type" value="{{ $selectedType }}">
+                    @endif
+                    <label for="catalog-page-search" class="sr-only">Find literature</label>
+                    <input id="catalog-page-search" name="q" value="{{ $query }}" placeholder="Find literature..." class="min-w-0 flex-1 bg-transparent px-5 py-4 text-ink-950 outline-none placeholder:text-ink-950/40 focus:bg-white/50">
+                    <button type="submit" class="grid w-14 shrink-0 place-items-center bg-ink-950 text-brand-cream transition hover:bg-brand-coral hover:text-ink-950" aria-label="Search catalog">
+                        <svg aria-hidden="true" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
+                    </button>
+                </form>
+            </div>
+
+            <div class="mt-9 flex flex-col gap-3 border-t border-ink-950/10 pt-5 sm:flex-row sm:items-center">
+                <span class="shrink-0 text-xs font-bold uppercase tracking-[0.2em] text-ink-950/45">Browse by format</span>
+                <nav class="flex gap-2 overflow-x-auto pb-1" aria-label="Literature format filters">
+                    <a href="{{ route('literatures.index', ['q' => $query]) }}" class="whitespace-nowrap border px-3 py-2 text-xs font-semibold uppercase tracking-wider transition {{ $selectedType === '' ? 'border-ink-950 bg-ink-950 text-brand-cream' : 'border-ink-950/20 text-ink-950/70 hover:border-ink-950 hover:bg-brand-sky/25' }}">All</a>
+                    @foreach ($types as $value => $label)
+                        <a href="{{ route('literatures.index', ['q' => $query, 'type' => $value]) }}" class="whitespace-nowrap border px-3 py-2 text-xs font-semibold uppercase tracking-wider transition {{ $selectedType === $value ? 'border-ink-950 bg-ink-950 text-brand-cream' : 'border-ink-950/20 text-ink-950/70 hover:border-ink-950 hover:bg-brand-sky/25' }}">{{ $label }}</a>
+                    @endforeach
+                </nav>
             </div>
         </div>
     </section>
 
-    <section class="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:px-10 lg:py-20" aria-labelledby="catalog-title">
-        <div class="mb-8 flex flex-col gap-5 border-b border-ink-950/15 pb-5 sm:flex-row sm:items-end sm:justify-between">
+    <section class="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:px-10 lg:py-16" aria-labelledby="catalog-results-title">
+        <div class="mb-7 flex flex-col gap-3 border-b border-ink-950/15 pb-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-                <p class="text-xs font-bold uppercase tracking-[0.22em] text-brand-coral">Curated catalog</p>
-                <h2 id="catalog-title" class="mt-2 font-serif text-3xl font-bold text-ink-950">
-                    {{ $query !== '' || $selectedType !== '' ? 'Search results' : 'Start exploring' }}
+                <p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">Latest matches</p>
+                <h2 id="catalog-results-title" class="mt-1 font-serif text-3xl font-bold text-ink-950">
+                    @if ($query !== '')
+                        Results for “{{ $query }}”
+                    @elseif ($selectedType !== '')
+                        Latest {{ $types[$selectedType] ?? 'literature' }}
+                    @else
+                        Search the catalog
+                    @endif
                 </h2>
-                @if ($query !== '' || $selectedType !== '')
-                    <p class="mt-2 text-sm text-ink-950/60">{{ $literatures->count() }} titles match your filters.</p>
-                @endif
             </div>
-            <div class="flex flex-wrap gap-2" aria-label="Format filters">
-                <a href="{{ route('literatures.index', ['q' => $query]) }}" class="border px-3 py-2 text-xs font-semibold uppercase tracking-wider transition {{ $selectedType === '' ? 'border-ink-950 bg-ink-950 text-brand-cream' : 'border-ink-950/20 text-ink-950/75 hover:border-ink-950 hover:bg-brand-sky/25' }}">All</a>
-                @foreach ($types as $value => $label)
-                    <a href="{{ route('literatures.index', ['q' => $query, 'type' => $value]) }}" class="border px-3 py-2 text-xs font-semibold uppercase tracking-wider transition {{ $selectedType === $value ? 'border-ink-950 bg-ink-950 text-brand-cream' : 'border-ink-950/20 text-ink-950/75 hover:border-ink-950 hover:bg-brand-sky/25' }}">{{ $label }}</a>
-                @endforeach
-            </div>
+            @if ($query !== '' || $selectedType !== '')
+                <p class="text-sm text-ink-950/50">Showing {{ $literatures->count() }} of the newest matches</p>
+            @endif
         </div>
 
         @if ($sourceWarning !== null)
@@ -46,65 +58,23 @@
             </div>
         @endif
 
-        @if ($literatures->isEmpty())
+        @if ($query === '' && $selectedType === '')
+            <div class="border border-dashed border-ink-950/20 bg-white/25 px-6 py-14 text-center">
+                <p class="font-serif text-2xl font-bold text-ink-950">What would you like to read next?</p>
+                <p class="mx-auto mt-2 max-w-xl leading-7 text-ink-950/60">Enter a title, author, or genre above. Only the four newest matching works will be displayed.</p>
+            </div>
+        @elseif ($literatures->isEmpty())
             <div class="border border-ink-950/10 bg-white/35 px-6 py-14 text-center">
-                <p class="font-serif text-2xl font-bold text-ink-950">No matching titles yet.</p>
-                <p class="mt-2 text-ink-950/60">Try another keyword or return to all formats.</p>
-                <a href="{{ route('literatures.index') }}" class="mt-6 inline-block bg-ink-950 px-5 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Clear filters</a>
+                <p class="font-serif text-2xl font-bold text-ink-950">No matching titles found.</p>
+                <p class="mt-2 text-ink-950/60">Try another keyword or choose a different format.</p>
+                <a href="{{ route('literatures.index') }}" class="mt-6 inline-block bg-ink-950 px-5 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Clear search</a>
             </div>
         @else
-            <div class="grid grid-cols-2 gap-x-4 gap-y-9 sm:grid-cols-3 sm:gap-x-5 lg:grid-cols-6">
+            <div class="grid grid-cols-2 gap-x-4 gap-y-9 sm:gap-x-6 lg:grid-cols-4 lg:gap-x-7" data-catalog-results>
                 @foreach ($literatures as $literature)
                     <x-literature-card :$literature />
                 @endforeach
             </div>
         @endif
-    </section>
-
-    <section id="sources" class="border-y border-ink-950/10 bg-white/30">
-        <div class="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:px-10 lg:py-20">
-            <div class="max-w-2xl">
-                <p class="text-xs font-bold uppercase tracking-[0.22em] text-brand-coral">Metadata sources</p>
-                <h2 class="mt-3 font-serif text-3xl font-bold text-ink-950 sm:text-4xl">Three sources, one catalog language.</h2>
-                <p class="mt-4 leading-7 text-ink-950/65">The catalog is stored in MySQL, while every API response is normalized into the same internal structure.</p>
-            </div>
-            <div class="mt-9 grid gap-px bg-ink-950/10 md:grid-cols-3">
-                @foreach ([
-                    ['Google Books', 'General books and novels', 'GB', 'Connected / server API key'],
-                    ['Comic Vine', 'Western comics', 'CV', filled(config('services.comic_vine.key')) ? 'Connected / server API key' : 'API key required'],
-                    ['AniList', 'Manga, manhwa, and light novels', 'AL', 'Connected / public data'],
-                ] as [$source, $scope, $code, $status])
-                    <article class="bg-brand-cream/85 p-6 sm:p-8">
-                        <span class="grid size-12 place-items-center bg-brand-sky font-bold text-ink-950">{{ $code }}</span>
-                        <h3 class="mt-6 text-xl font-bold text-ink-950">
-                            @if ($source === 'Comic Vine')
-                                <a href="https://comicvine.gamespot.com/" target="_blank" rel="noreferrer" class="underline decoration-ink-950/20 underline-offset-4 transition hover:decoration-brand-coral">{{ $source }}</a>
-                            @else
-                                {{ $source }}
-                            @endif
-                        </h3>
-                        <p class="mt-2 text-ink-950/60">{{ $scope }}</p>
-                        <p class="mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-brand-coral">{{ $status }}</p>
-                    </article>
-                @endforeach
-            </div>
-        </div>
-    </section>
-
-    <section id="increment" class="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:px-10 lg:py-20">
-        <div class="grid gap-10 lg:grid-cols-[.7fr_1.3fr]">
-            <div>
-                <p class="text-xs font-bold uppercase tracking-[0.22em] text-brand-coral">Current scope</p>
-                <h2 class="mt-3 font-serif text-3xl font-bold text-ink-950">Available in this increment.</h2>
-            </div>
-            <div class="grid gap-4 sm:grid-cols-2">
-                @foreach (['Cross-format search', 'Structured metadata', 'Reader accounts', 'Readlist and progress', 'Personal Diary', 'Ratings and spoiler-aware reviews'] as $feature)
-                    <div class="flex gap-4 border border-ink-950/10 bg-white/35 p-5">
-                        <span class="mt-1 size-2 shrink-0 bg-brand-coral"></span>
-                        <p class="font-semibold text-ink-950">{{ $feature }}</p>
-                    </div>
-                @endforeach
-            </div>
-        </div>
     </section>
 </x-app-shell>
