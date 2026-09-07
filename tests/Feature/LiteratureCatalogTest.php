@@ -16,7 +16,7 @@ class LiteratureCatalogTest extends TestCase
 {
     use LazilyRefreshDatabase;
 
-    public function test_catalog_home_renders_increment_one_interface(): void
+    public function test_catalog_page_renders_increment_one_interface(): void
     {
         $this->createLiterature(
             [
@@ -29,7 +29,7 @@ class LiteratureCatalogTest extends TestCase
             ['Fiksi sejarah'],
         );
 
-        $response = $this->get(route('home'));
+        $response = $this->get(route('literatures.index'));
 
         $response
             ->assertOk()

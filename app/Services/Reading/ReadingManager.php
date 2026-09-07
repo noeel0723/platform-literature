@@ -6,10 +6,13 @@ use App\Models\Literature;
 use App\Models\ReadingList;
 use App\Models\ReadingLog;
 use App\Models\User;
+use App\Services\ActivityRecorder;
 use Illuminate\Support\Facades\DB;
 
 class ReadingManager
 {
+    public function __construct(private readonly ActivityRecorder $activityRecorder) {}
+
     /** @param array<string, mixed> $data */
     public function update(User $user, Literature $literature, array $data): ReadingList
     {
@@ -96,6 +99,14 @@ class ReadingManager
                     'occurred_at' => now(),
                 ]);
             }
+
+            $this->activityRecorder->recordReadingStatus(
+                $user,
+                $literature,
+                $isNew ? null : $previousStatus,
+                $status,
+                $isReread,
+            );
 
             return $readingList->load(['progress', 'logs']);
         });

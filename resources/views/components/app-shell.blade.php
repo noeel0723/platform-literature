@@ -22,7 +22,6 @@
                     <nav class="hidden items-center gap-5 text-xs font-semibold uppercase tracking-[0.14em] text-ink-950/75 xl:flex" aria-label="Main navigation">
                         <a href="{{ route('home') }}" class="whitespace-nowrap transition hover:text-brand-coral">Home</a>
                         <a href="{{ route('literatures.index') }}" class="whitespace-nowrap transition hover:text-brand-coral">Catalog</a>
-                        <a href="{{ route('home') }}#sources" class="whitespace-nowrap transition hover:text-brand-coral">Sources</a>
                         @auth
                             <a href="{{ route('profiles.show', auth()->user()) }}" class="whitespace-nowrap transition hover:text-brand-coral">Profile</a>
                             @if (auth()->user()->isAdmin())
@@ -74,7 +73,6 @@
             <div class="mx-auto grid max-w-7xl gap-1 text-sm font-semibold uppercase tracking-[0.14em] text-ink-950 sm:px-3 lg:px-5">
                 <a href="{{ route('home') }}" class="px-3 py-3 transition hover:bg-brand-sky/25">Home</a>
                 <a href="{{ route('literatures.index') }}" class="px-3 py-3 transition hover:bg-brand-sky/25">Catalog</a>
-                <a href="{{ route('home') }}#sources" class="px-3 py-3 transition hover:bg-brand-sky/25">API Sources</a>
                 @auth
                     <a href="{{ route('profiles.show', auth()->user()) }}" class="px-3 py-3 transition hover:bg-brand-sky/25">My Profile</a>
                     @if (auth()->user()->isAdmin())
@@ -105,7 +103,7 @@
     <footer class="border-t border-ink-950/10">
         <div class="mx-auto flex max-w-7xl flex-col gap-3 px-5 py-9 text-sm text-ink-950/60 sm:px-8 md:flex-row md:justify-between lg:px-10">
             <p>Literahaven</p>
-            <p>Increment 5 - Moderation &amp; Role-Based Access Control.</p>
+            <p>Activity Feed &amp; Social Literature Discovery.</p>
         </div>
     </footer>
 </body>

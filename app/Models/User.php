@@ -44,6 +44,12 @@ class User extends Authenticatable
         return $this->hasMany(Review::class);
     }
 
+    /** @return HasMany<Activity, $this> */
+    public function activities(): HasMany
+    {
+        return $this->hasMany(Activity::class);
+    }
+
     /** @return HasMany<Discussion, $this> */
     public function discussions(): HasMany
     {

@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\DiscussionController;
 use App\Http\Controllers\FollowController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LikeController;
 use App\Http\Controllers\LiteratureController;
 use App\Http\Controllers\ProfileController;
@@ -14,7 +15,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReviewController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', [LiteratureController::class, 'index'])->name('home');
+Route::get('/', HomeController::class)->name('home');
 Route::get('/catalog', [LiteratureController::class, 'index'])->name('literatures.index');
 Route::get('/literatures/{literature}', [LiteratureController::class, 'show'])->name('literatures.show');
 Route::get('/members/{user}/followers', [ProfileController::class, 'followers'])->name('profiles.followers');
