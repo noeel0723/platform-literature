@@ -10,16 +10,21 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
 
-#[Fillable(['name', 'username', 'email', 'location', 'bio', 'avatar_path', 'password'])]
+#[Fillable(['name', 'username', 'email', 'location', 'bio', 'avatar_path', 'password', 'role', 'deactivated_at', 'deactivated_by'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
+    public const ROLE_USER = 'user';
+
+    public const ROLE_ADMIN = 'admin';
 
     /** @return HasMany<ReadingList, $this> */
     public function readingLists(): HasMany
@@ -55,6 +60,18 @@ class User extends Authenticatable
     public function likes(): HasMany
     {
         return $this->hasMany(Like::class);
+    }
+
+    /** @return HasMany<Report, $this> */
+    public function submittedReports(): HasMany
+    {
+        return $this->hasMany(Report::class, 'reporter_id');
+    }
+
+    /** @return MorphMany<Report, $this> */
+    public function reports(): MorphMany
+    {
+        return $this->morphMany(Report::class, 'reportable');
     }
 
     /** @return BelongsToMany<Literature, $this> */
@@ -94,6 +111,16 @@ class User extends Authenticatable
         return $this->following()->whereKey($user->getKey())->exists();
     }
 
+    public function isAdmin(): bool
+    {
+        return $this->role === self::ROLE_ADMIN;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->deactivated_at === null;
+    }
+
     public function avatarUrl(): ?string
     {
         return $this->avatar_path === null
@@ -115,6 +142,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'deactivated_at' => 'datetime',
             'password' => 'hashed',
         ];
     }

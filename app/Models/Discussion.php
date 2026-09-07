@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-#[Fillable(['user_id', 'literature_id', 'title', 'body', 'contains_spoiler'])]
+#[Fillable(['user_id', 'literature_id', 'title', 'body', 'contains_spoiler', 'hidden_at', 'hidden_by'])]
 class Discussion extends Model
 {
     /** @use HasFactory<DiscussionFactory> */
@@ -39,6 +39,7 @@ class Discussion extends Model
     {
         return $this->hasMany(Comment::class)
             ->whereNull('parent_id')
+            ->whereNull('hidden_at')
             ->oldest();
     }
 
@@ -48,9 +49,18 @@ class Discussion extends Model
         return $this->morphMany(Like::class, 'likeable');
     }
 
+    /** @return MorphMany<Report, $this> */
+    public function reports(): MorphMany
+    {
+        return $this->morphMany(Report::class, 'reportable');
+    }
+
     protected static function booted(): void
     {
-        static::deleting(fn (Discussion $discussion) => $discussion->likes()->delete());
+        static::deleting(function (Discussion $discussion): void {
+            $discussion->likes()->delete();
+            $discussion->reports()->delete();
+        });
     }
 
     /** @return array<string, string> */
@@ -58,6 +68,7 @@ class Discussion extends Model
     {
         return [
             'contains_spoiler' => 'boolean',
+            'hidden_at' => 'datetime',
         ];
     }
 }

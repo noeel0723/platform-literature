@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\ModerationController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\DiscussionController;
@@ -9,6 +10,7 @@ use App\Http\Controllers\LiteratureController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReadingDiaryController;
 use App\Http\Controllers\ReadingListController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReviewController;
 use Illuminate\Support\Facades\Route;
 
@@ -53,4 +55,10 @@ Route::middleware('auth')->group(function (): void {
     Route::put('/profile', [ProfileController::class, 'update'])->name('profiles.update');
     Route::post('/members/{user}/follow', [FollowController::class, 'store'])->name('profiles.follow.store');
     Route::delete('/members/{user}/follow', [FollowController::class, 'destroy'])->name('profiles.follow.destroy');
+    Route::post('/reports', [ReportController::class, 'store'])->name('reports.store');
+
+    Route::prefix('admin')->name('admin.')->middleware('admin')->group(function (): void {
+        Route::get('/moderation', [ModerationController::class, 'index'])->name('moderation.index');
+        Route::patch('/moderation/{report}', [ModerationController::class, 'update'])->name('moderation.update');
+    });
 });

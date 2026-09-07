@@ -25,6 +25,9 @@
                         <a href="{{ route('home') }}#sources" class="whitespace-nowrap transition hover:text-brand-coral">Sources</a>
                         @auth
                             <a href="{{ route('profiles.show', auth()->user()) }}" class="whitespace-nowrap transition hover:text-brand-coral">Profile</a>
+                            @if (auth()->user()->isAdmin())
+                                <a href="{{ route('admin.moderation.index') }}" class="whitespace-nowrap transition hover:text-brand-coral">Moderation</a>
+                            @endif
                         @endauth
                     </nav>
 
@@ -74,6 +77,9 @@
                 <a href="{{ route('home') }}#sources" class="px-3 py-3 transition hover:bg-brand-sky/25">API Sources</a>
                 @auth
                     <a href="{{ route('profiles.show', auth()->user()) }}" class="px-3 py-3 transition hover:bg-brand-sky/25">My Profile</a>
+                    @if (auth()->user()->isAdmin())
+                        <a href="{{ route('admin.moderation.index') }}" class="px-3 py-3 transition hover:bg-brand-sky/25">Moderation</a>
+                    @endif
                     <form action="{{ route('logout') }}" method="POST">
                         @csrf
                         <button class="w-full px-3 py-3 text-left transition hover:bg-brand-sky/25">Log out</button>
@@ -90,13 +96,16 @@
         @if (session('success'))
             <div class="border-b border-ink-950/10 bg-ink-950 px-5 py-3 text-center text-sm font-semibold text-brand-cream" role="status">{{ session('success') }}</div>
         @endif
+        @error('report')
+            <div class="border-b border-red-800/20 bg-red-50 px-5 py-3 text-center text-sm font-semibold text-red-800" role="alert">{{ $message }}</div>
+        @enderror
         {{ $slot }}
     </main>
 
     <footer class="border-t border-ink-950/10">
         <div class="mx-auto flex max-w-7xl flex-col gap-3 px-5 py-9 text-sm text-ink-950/60 sm:px-8 md:flex-row md:justify-between lg:px-10">
             <p>Literahaven</p>
-            <p>Increment 3 - Social Cataloging &amp; Identity.</p>
+            <p>Increment 5 - Moderation &amp; Role-Based Access Control.</p>
         </div>
     </footer>
 </body>

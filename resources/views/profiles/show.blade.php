@@ -38,6 +38,7 @@
                                         @if ($isFollowing) @method('DELETE') @endif
                                         <button class="w-fit px-4 py-2.5 text-sm font-bold transition {{ $isFollowing ? 'border border-ink-950/20 bg-brand-cream/60 text-ink-950 hover:border-brand-coral' : 'bg-ink-950 text-brand-cream hover:bg-brand-coral hover:text-ink-950' }}">{{ $isFollowing ? 'Following' : 'Follow' }}</button>
                                     </form>
+                                    <x-report-form target-type="user" :target-id="$user->id" label="Report profile" />
                                 @else
                                     <a href="{{ route('login') }}" class="w-fit bg-ink-950 px-4 py-2.5 text-sm font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Log in to follow</a>
                                 @endif

@@ -104,6 +104,7 @@ class LiteratureController extends Controller
             'outgoingRelations.relatedLiterature.authors',
             'outgoingRelations.relatedLiterature.categories',
             'reviews' => fn ($reviews) => $reviews
+                ->whereNull('hidden_at')
                 ->with([
                     'user',
                     'likes' => fn ($likes) => $likes->where('user_id', $userId),
@@ -119,13 +120,17 @@ class LiteratureController extends Controller
             ->whereBelongsTo($literature)
             ->first();
         $discussions = $literature->discussions()
+            ->whereNull('hidden_at')
             ->with([
                 'user',
                 'likes' => fn ($likes) => $likes->where('user_id', $userId),
                 'topLevelComments.user',
                 'topLevelComments.replies.user',
             ])
-            ->withCount(['comments', 'likes'])
+            ->withCount([
+                'comments' => fn ($comments) => $comments->whereNull('hidden_at'),
+                'likes',
+            ])
             ->latest()
             ->limit(20)
             ->get();
@@ -175,7 +180,7 @@ class LiteratureController extends Controller
             'currentReview' => $currentReview,
             'averageRating' => $literature->reviews->avg('rating'),
             'discussions' => $discussions,
-            'discussionCount' => $literature->discussions()->count(),
+            'discussionCount' => $literature->discussions()->whereNull('hidden_at')->count(),
             'relationshipGroups' => $relationshipGroups,
             'authorDiscoveries' => $authorDiscoveries,
         ]);

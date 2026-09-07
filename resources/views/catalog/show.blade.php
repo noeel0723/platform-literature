@@ -378,6 +378,9 @@
                                             @if ($reviewIsLiked) @method('DELETE') @endif
                                             <button class="border px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition {{ $reviewIsLiked ? 'border-brand-coral bg-brand-coral text-ink-950' : 'border-ink-950/20 text-ink-950 hover:border-brand-coral' }}" aria-pressed="{{ $reviewIsLiked ? 'true' : 'false' }}">{{ $reviewIsLiked ? 'Liked' : 'Like' }}</button>
                                         </form>
+                                        @if (auth()->id() !== $review->user_id)
+                                            <x-report-form target-type="review" :target-id="$review->id" />
+                                        @endif
                                     @endauth
                                 </div>
 
@@ -547,6 +550,9 @@
                                         @if ($discussionIsLiked) @method('DELETE') @endif
                                         <button class="border px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition {{ $discussionIsLiked ? 'border-brand-coral bg-brand-coral text-ink-950' : 'border-ink-950/20 text-ink-950 hover:border-brand-coral' }}" aria-pressed="{{ $discussionIsLiked ? 'true' : 'false' }}">{{ $discussionIsLiked ? 'Liked' : 'Like' }}</button>
                                     </form>
+                                    @if (auth()->id() !== $discussion->user_id)
+                                        <x-report-form target-type="discussion" :target-id="$discussion->id" />
+                                    @endif
                                 @endauth
                             </div>
 
@@ -575,6 +581,12 @@
                                                 <p class="mt-3 whitespace-pre-line leading-7 text-ink-950/70">{{ $comment->body }}</p>
                                             @endif
 
+                                            @auth
+                                                @if (auth()->id() !== $comment->user_id)
+                                                    <div class="mt-3"><x-report-form target-type="comment" :target-id="$comment->id" /></div>
+                                                @endif
+                                            @endauth
+
                                             @foreach ($comment->replies as $reply)
                                                 <div class="mt-4 ml-4 border-l border-ink-950/15 pl-4">
                                                     <div class="flex flex-wrap items-center justify-between gap-2">
@@ -587,6 +599,11 @@
                                                     @else
                                                         <p class="mt-2 whitespace-pre-line text-sm leading-6 text-ink-950/70">{{ $reply->body }}</p>
                                                     @endif
+                                                    @auth
+                                                        @if (auth()->id() !== $reply->user_id)
+                                                            <div class="mt-2"><x-report-form target-type="comment" :target-id="$reply->id" label="Report reply" /></div>
+                                                        @endif
+                                                    @endauth
                                                 </div>
                                             @endforeach
 

@@ -18,14 +18,15 @@ class ProfileController extends Controller
         $user->load(['favoriteLiteratures.authors', 'favoriteAuthors'])
             ->loadCount([
                 'readingLists',
-                'reviews',
-                'discussions',
+                'reviews' => fn ($query) => $query->whereNull('hidden_at'),
+                'discussions' => fn ($query) => $query->whereNull('hidden_at'),
                 'followers',
                 'following',
                 'readingLists as completed_literature_count' => fn ($query) => $query->where('status', 'completed'),
             ]);
 
         $recentReviews = $user->reviews()
+            ->whereNull('hidden_at')
             ->with('literature')
             ->latest('updated_at')
             ->limit(4)

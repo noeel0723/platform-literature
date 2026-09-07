@@ -36,7 +36,12 @@ class AuthController extends Controller
 
     public function login(LoginRequest $request): RedirectResponse
     {
-        if (! Auth::attempt($request->safe()->only(['email', 'password']), $request->boolean('remember'))) {
+        $credentials = [
+            ...$request->safe()->only(['email', 'password']),
+            'deactivated_at' => null,
+        ];
+
+        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
             throw ValidationException::withMessages([
                 'email' => 'The email address or password is incorrect.',
             ]);
