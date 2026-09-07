@@ -43,6 +43,16 @@ return [
         'timeout' => (int) env('GOOGLE_BOOKS_TIMEOUT', 8),
     ],
 
+    'knowledge_graph' => [
+        'base_url' => env('GOOGLE_KNOWLEDGE_GRAPH_BASE_URL', 'https://kgsearch.googleapis.com/v1/entities:search'),
+        'key' => env('GOOGLE_KNOWLEDGE_GRAPH_API_KEY') ?: env('GOOGLE_BOOKS_API_KEY'),
+        'language' => env('GOOGLE_KNOWLEDGE_GRAPH_LANGUAGE', 'en'),
+        'candidate_limit' => (int) env('GOOGLE_KNOWLEDGE_GRAPH_CANDIDATE_LIMIT', 5),
+        'cache_days' => (int) env('GOOGLE_KNOWLEDGE_GRAPH_CACHE_DAYS', 30),
+        'connect_timeout' => (int) env('GOOGLE_KNOWLEDGE_GRAPH_CONNECT_TIMEOUT', 3),
+        'timeout' => (int) env('GOOGLE_KNOWLEDGE_GRAPH_TIMEOUT', 8),
+    ],
+
     'work_metadata' => [
         'wikidata_url' => env('WIKIDATA_API_URL', 'https://www.wikidata.org/w/api.php'),
         'content_language' => env('WORK_METADATA_CONTENT_LANGUAGE', 'en'),

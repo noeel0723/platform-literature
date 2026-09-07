@@ -13,6 +13,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable([
     'api_source_id',
     'external_id',
+    'knowledge_graph_id',
+    'knowledge_graph_types',
+    'knowledge_graph_url',
+    'knowledge_graph_score',
     'slug',
     'title',
     'original_title',
@@ -100,6 +104,8 @@ class Literature extends Model
     protected function casts(): array
     {
         return [
+            'knowledge_graph_types' => 'array',
+            'knowledge_graph_score' => 'float',
             'publication_year' => 'integer',
         ];
     }

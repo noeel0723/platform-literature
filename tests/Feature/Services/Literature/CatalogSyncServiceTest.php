@@ -152,6 +152,54 @@ class CatalogSyncServiceTest extends TestCase
         ]);
     }
 
+    public function test_sync_persists_knowledge_graph_identity_and_missing_metadata(): void
+    {
+        $this->configureAniList();
+        $this->configureKnowledgeGraph();
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://graphql.anilist.co*' => Http::response([
+                'data' => [
+                    'Page' => [
+                        'media' => [[...$this->manga(), 'description' => null]],
+                    ],
+                ],
+            ]),
+            'https://kgsearch.googleapis.com/v1/entities:search*' => Http::response([
+                'itemListElement' => [[
+                    'resultScore' => 825.25,
+                    'result' => [
+                        '@id' => 'kg:/m/0fma',
+                        '@type' => ['Thing', 'Book'],
+                        'name' => 'Fullmetal Alchemist',
+                        'description' => 'Japanese manga series by Hiromu Arakawa',
+                        'detailedDescription' => [
+                            'articleBody' => 'Two brothers search for the Philosopher’s Stone after a failed alchemical ritual.',
+                            'url' => 'https://en.wikipedia.org/wiki/Fullmetal_Alchemist',
+                        ],
+                    ],
+                ]],
+            ]),
+        ]);
+
+        app(CatalogSyncService::class)->syncAniList('Fullmetal Alchemist', 'manga');
+
+        $this->assertDatabaseHas('literatures', [
+            'external_id' => '5114',
+            'knowledge_graph_id' => 'kg:/m/0fma',
+            'knowledge_graph_url' => 'https://en.wikipedia.org/wiki/Fullmetal_Alchemist',
+            'knowledge_graph_score' => 825.25,
+            'tagline' => 'Japanese manga series by Hiromu Arakawa',
+            'synopsis' => 'Two brothers search for the Philosopher’s Stone after a failed alchemical ritual.',
+            'synopsis_source_name' => 'Google Knowledge Graph',
+        ]);
+        $this->assertSame(
+            ['Thing', 'Book'],
+            Literature::query()->where('external_id', '5114')->firstOrFail()->knowledge_graph_types,
+        );
+        Http::assertSentCount(2);
+    }
+
     public function test_repeated_comic_vine_sync_updates_one_comic_without_duplicates(): void
     {
         $this->configureComicVine();
@@ -215,6 +263,19 @@ class CatalogSyncServiceTest extends TestCase
             'services.comic_vine.cache_minutes' => 30,
             'services.comic_vine.connect_timeout' => 1,
             'services.comic_vine.timeout' => 2,
+        ]);
+    }
+
+    private function configureKnowledgeGraph(): void
+    {
+        config()->set([
+            'services.knowledge_graph.base_url' => 'https://kgsearch.googleapis.com/v1/entities:search',
+            'services.knowledge_graph.key' => 'test-knowledge-graph-key',
+            'services.knowledge_graph.language' => 'en',
+            'services.knowledge_graph.candidate_limit' => 5,
+            'services.knowledge_graph.cache_days' => 30,
+            'services.knowledge_graph.connect_timeout' => 1,
+            'services.knowledge_graph.timeout' => 2,
         ]);
     }
 

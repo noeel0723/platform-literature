@@ -18,6 +18,7 @@ final class CatalogSyncService
         private GoogleBooksAdapter $googleBooks,
         private AniListAdapter $aniList,
         private ComicVineAdapter $comicVine,
+        private KnowledgeGraphEnricher $knowledgeGraph,
     ) {}
 
     public function syncGoogleBooks(string $query, string $literatureType = 'all'): int
@@ -89,12 +90,17 @@ final class CatalogSyncService
             return 0;
         }
 
+        $enrichedItems = $items->map(fn (NormalizedLiterature $item): array => [
+            'item' => $item,
+            'entity' => $this->knowledgeGraph->find($item->title, $item->authors),
+        ]);
+
         return DB::transaction(function () use (
             $sourceKey,
             $sourceName,
             $baseUrl,
             $supportedTypes,
-            $items,
+            $enrichedItems,
         ): int {
             $source = ApiSource::query()->updateOrCreate(
                 ['key' => $sourceKey],
@@ -106,16 +112,19 @@ final class CatalogSyncService
                 ],
             );
 
-            foreach ($items as $item) {
-                $this->persist($source, $item);
+            foreach ($enrichedItems as $enrichedItem) {
+                $this->persist($source, $enrichedItem['item'], $enrichedItem['entity']);
             }
 
-            return $items->count();
+            return $enrichedItems->count();
         });
     }
 
-    private function persist(ApiSource $source, NormalizedLiterature $item): Literature
-    {
+    private function persist(
+        ApiSource $source,
+        NormalizedLiterature $item,
+        ?KnowledgeGraphEntity $entity = null,
+    ): Literature {
         $literature = Literature::query()
             ->whereBelongsTo($source)
             ->where('external_id', $item->externalId)
@@ -142,22 +151,32 @@ final class CatalogSyncService
 
         $literature ??= new Literature;
 
+        $usesKnowledgeGraphSynopsis = $item->synopsis === null && $entity?->detailedDescription !== null;
+
         $literature->fill([
             'api_source_id' => $source->id,
             'external_id' => $item->externalId,
+            'knowledge_graph_id' => $entity?->id ?? $literature->knowledge_graph_id,
+            'knowledge_graph_types' => $entity?->types ?? $literature->knowledge_graph_types,
+            'knowledge_graph_url' => $entity?->sourceUrl ?? $entity?->officialUrl ?? $literature->knowledge_graph_url,
+            'knowledge_graph_score' => $entity?->score ?? $literature->knowledge_graph_score,
             'slug' => $literature->exists ? $literature->slug : $this->uniqueSlug($source, $item),
             'title' => $item->title,
             'original_title' => $item->originalTitle ?? $literature->original_title,
             'type' => $item->type,
             'publication_year' => $item->publicationYear ?? $literature->publication_year,
-            'tagline' => $item->tagline ?? $literature->tagline,
-            'synopsis' => $item->synopsis ?? $literature->synopsis,
+            'tagline' => $item->tagline ?? $entity?->description ?? $literature->tagline,
+            'synopsis' => $item->synopsis ?? $entity?->detailedDescription ?? $literature->synopsis,
             'synopsis_source_name' => $item->synopsis !== null
                 ? $item->synopsisSourceName
-                : $literature->synopsis_source_name,
+                : ($usesKnowledgeGraphSynopsis
+                    ? 'Google Knowledge Graph'
+                    : $literature->synopsis_source_name),
             'synopsis_source_url' => $item->synopsis !== null
                 ? $item->synopsisSourceUrl
-                : $literature->synopsis_source_url,
+                : ($usesKnowledgeGraphSynopsis
+                    ? $entity?->sourceUrl ?? $entity?->officialUrl
+                    : $literature->synopsis_source_url),
             'publisher' => $item->publisher ?? $literature->publisher,
             'language' => $item->language ?? $literature->language,
             'format' => $item->format ?? $literature->format,
