@@ -57,6 +57,8 @@ class ProfileManagementTest extends TestCase
             ->assertDontSee('data-profile-stat="tracked"', false)
             ->assertDontSee('data-profile-stat="discussions"', false)
             ->assertSee('href="'.route('profiles.readlist', $user).'"', false)
+            ->assertSee('href="'.route('profiles.reviews', $user).'"', false)
+            ->assertSee('data-profile-subnav', false)
             ->assertSeeInOrder(['First Favorite', 'Second Favorite'])
             ->assertSeeInOrder(['First Author', 'Second Author'])
             ->assertDontSeeText('Edit profile')

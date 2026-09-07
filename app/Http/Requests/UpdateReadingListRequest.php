@@ -32,6 +32,7 @@ class UpdateReadingListRequest extends FormRequest
             'progress_unit' => ['required_with:progress_value,progress_total', Rule::in(['page', 'chapter', 'percent'])],
             'note' => ['nullable', 'string', 'max:1000'],
             'reread' => ['nullable', 'boolean'],
+            'return_to' => ['nullable', Rule::in(['readlist'])],
         ];
     }
 

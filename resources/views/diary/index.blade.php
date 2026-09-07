@@ -1,37 +1,9 @@
 <x-app-shell title="Personal Diary">
-    @php
-        $reader = auth()->user();
-        $initials = Str::of($reader->name)
-            ->squish()
-            ->explode(' ')
-            ->filter()
-            ->take(2)
-            ->map(fn (string $word): string => Str::upper(Str::substr($word, 0, 1)))
-            ->implode('');
-    @endphp
+    @php($reader = auth()->user())
 
     <section class="catalog-grid border-b border-ink-950/10">
         <div class="mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-10">
-            <nav class="flex flex-col border border-ink-950/10 bg-brand-cream/70 sm:flex-row sm:items-center" aria-label="Diary profile navigation">
-                <a href="{{ route('profiles.show', $reader) }}" class="flex shrink-0 items-center gap-3 border-b border-ink-950/10 px-4 py-3 font-bold text-ink-950 sm:border-b-0 sm:border-r">
-                    <span class="grid size-9 place-items-center overflow-hidden rounded-full bg-ink-950 font-serif text-sm text-brand-cream">
-                        @if ($reader->avatarUrl())
-                            <img src="{{ $reader->avatarUrl() }}" alt="" class="size-full object-cover">
-                        @else
-                            {{ $initials ?: 'LH' }}
-                        @endif
-                    </span>
-                    <span>{{ $reader->name }}</span>
-                </a>
-                <div class="flex flex-1 gap-6 overflow-x-auto px-5 text-sm font-bold text-ink-950/60 sm:justify-center">
-                    <a href="{{ route('profiles.show', $reader) }}" class="py-4 transition hover:text-brand-coral">Profile</a>
-                    <a href="{{ route('diary.index') }}" class="border-b-2 border-brand-coral py-4 text-ink-950" aria-current="page">Diary</a>
-                    <a href="{{ route('profiles.show', $reader) }}#recent-reviews" class="py-4 transition hover:text-brand-coral">Reviews</a>
-                    <a href="{{ route('profiles.readlist', $reader) }}" class="py-4 transition hover:text-brand-coral">Readlist</a>
-                    <a href="{{ route('profiles.show', $reader) }}#favorites" class="py-4 transition hover:text-brand-coral">Favorites</a>
-                    <a href="{{ route('profiles.show', $reader) }}#recently-completed" class="py-4 transition hover:text-brand-coral">Completed</a>
-                </div>
-            </nav>
+            <x-profile-subnav :user="$reader" current="diary" />
         </div>
     </section>
 

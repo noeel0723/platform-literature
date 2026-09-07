@@ -70,4 +70,49 @@ class ReadlistPageTest extends TestCase
         $response->assertOk();
         $this->assertSame(24, substr_count($response->getContent(), 'data-readlist-item'));
     }
+
+    public function test_owner_sees_quick_add_suggestions_without_already_tracked_literature(): void
+    {
+        $user = User::factory()->create();
+        $available = Literature::factory()->create(['title' => 'Available Next Read']);
+        $alreadyTracked = Literature::factory()->create(['title' => 'Already Reading']);
+        ReadingList::factory()->for($user)->for($alreadyTracked)->create(['status' => 'reading']);
+
+        $this->actingAs($user)
+            ->get(route('profiles.readlist', $user))
+            ->assertOk()
+            ->assertSee('data-readlist-add-panel', false)
+            ->assertSee('data-readlist-suggestion-search', false)
+            ->assertSee('data-suggestion-literature-id="'.$available->id.'"', false)
+            ->assertDontSee('data-suggestion-literature-id="'.$alreadyTracked->id.'"', false);
+    }
+
+    public function test_quick_add_saves_literature_and_returns_to_the_readlist(): void
+    {
+        $user = User::factory()->create();
+        $literature = Literature::factory()->create();
+
+        $this->actingAs($user)
+            ->put(route('reading-list.update', $literature), [
+                'status' => 'want_to_read',
+                'return_to' => 'readlist',
+            ])
+            ->assertRedirect(route('profiles.readlist', $user));
+
+        $this->assertDatabaseHas('reading_lists', [
+            'user_id' => $user->id,
+            'literature_id' => $literature->id,
+            'status' => 'want_to_read',
+        ]);
+    }
+
+    public function test_public_reader_does_not_see_another_users_quick_add_form(): void
+    {
+        $user = User::factory()->create();
+
+        $this->get(route('profiles.readlist', $user))
+            ->assertOk()
+            ->assertDontSee('data-readlist-add-panel', false)
+            ->assertDontSee('data-readlist-suggestion-search', false);
+    }
 }

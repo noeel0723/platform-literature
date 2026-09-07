@@ -54,6 +54,31 @@ document.querySelectorAll('[data-spoiler-reveal]').forEach((button) => {
     });
 });
 
+document.querySelectorAll('[data-readlist-suggestion-search]').forEach((input) => {
+    const panel = input.closest('[data-readlist-add-panel]');
+
+    if (!(input instanceof HTMLInputElement) || !panel) {
+        return;
+    }
+
+    const suggestions = Array.from(panel.querySelectorAll('[data-readlist-suggestion]'));
+    const emptyState = panel.querySelector('[data-readlist-no-results]');
+
+    input.addEventListener('input', () => {
+        const query = input.value.trim().toLocaleLowerCase();
+        let visibleCount = 0;
+
+        suggestions.forEach((suggestion) => {
+            const isVisible = (suggestion.dataset.searchText ?? '').includes(query);
+
+            suggestion.classList.toggle('hidden', !isVisible);
+            visibleCount += isVisible ? 1 : 0;
+        });
+
+        emptyState?.classList.toggle('hidden', visibleCount > 0 || suggestions.length === 0);
+    });
+});
+
 document.querySelectorAll('[data-dialog-open]').forEach((button) => {
     button.addEventListener('click', () => {
         const dialog = document.getElementById(button.dataset.dialogOpen);

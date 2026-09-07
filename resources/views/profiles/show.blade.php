@@ -77,16 +77,7 @@
 
             @error('user') <p class="mt-5 text-sm font-semibold text-red-700">{{ $message }}</p> @enderror
 
-            <nav class="mt-8 flex gap-6 overflow-x-auto border border-ink-950/10 bg-brand-cream/55 px-5 text-sm font-bold text-ink-950/60" aria-label="Profile navigation">
-                <a href="#profile-overview" class="border-b-2 border-brand-coral py-4 text-ink-950" aria-current="page">Profile</a>
-                @if ($isOwner)
-                    <a href="{{ route('diary.index') }}" class="py-4 transition hover:text-brand-coral">Diary</a>
-                @endif
-                <a href="{{ route('profiles.readlist', $user) }}" class="py-4 transition hover:text-brand-coral">Readlist</a>
-                <a href="#favorites" class="py-4 transition hover:text-brand-coral">Favorites</a>
-                <a href="#recent-reviews" class="py-4 transition hover:text-brand-coral">Reviews</a>
-                <a href="#recently-completed" class="py-4 transition hover:text-brand-coral">Completed</a>
-            </nav>
+            <x-profile-subnav :$user current="profile" class="mt-8" />
         </div>
     </section>
 
