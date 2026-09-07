@@ -25,6 +25,26 @@ document.querySelectorAll('[data-local-datetime]').forEach((element) => {
     element.setAttribute('title', `Displayed in your local time zone: ${readerTimeZone}`);
 });
 
+const localDatePartFormatters = {
+    month: new Intl.DateTimeFormat('en', { month: 'short' }),
+    day: new Intl.DateTimeFormat('en', { day: '2-digit' }),
+    year: new Intl.DateTimeFormat('en', { year: 'numeric' }),
+};
+
+document.querySelectorAll('[data-local-date-part]').forEach((element) => {
+    const date = new Date(element.getAttribute('datetime'));
+    const part = element.dataset.localDatePart;
+    const formatter = localDatePartFormatters[part];
+
+    if (Number.isNaN(date.getTime()) || !formatter) {
+        return;
+    }
+
+    const value = formatter.format(date);
+    element.textContent = part === 'month' ? value.toUpperCase() : value;
+    element.setAttribute('title', `${localDateTimeFormatter.format(date)} (${readerTimeZone})`);
+});
+
 document.querySelectorAll('[data-spoiler-reveal]').forEach((button) => {
     button.addEventListener('click', () => {
         const spoiler = document.getElementById(button.getAttribute('aria-controls'));
@@ -59,7 +79,9 @@ document.querySelectorAll('[data-review-dialog]').forEach((dialog) => {
         }
     });
 
-    if (dialog.dataset.autoOpen === 'true') {
+    const reviewWasRequested = new URLSearchParams(window.location.search).get('review') === 'edit';
+
+    if (dialog.dataset.autoOpen === 'true' || reviewWasRequested) {
         dialog.showModal();
     }
 });

@@ -12,7 +12,7 @@
 
     <section id="profile-overview" data-profile-header class="catalog-grid border-b border-ink-950/10">
         <div class="mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:px-10 lg:py-12">
-            <div class="grid gap-8 lg:grid-cols-[minmax(0,1.35fr)_minmax(360px,.65fr)] lg:items-center">
+            <div class="grid gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(460px,.85fr)] lg:items-center">
                 <div class="flex min-w-0 flex-col gap-6 sm:flex-row sm:items-center">
                     <div class="grid size-28 shrink-0 place-items-center overflow-hidden rounded-full border-4 border-brand-cream bg-ink-950 font-serif text-3xl font-bold text-brand-cream shadow-xl sm:size-32">
                         @if ($user->avatarUrl())
@@ -24,22 +24,23 @@
 
                     <div class="min-w-0 flex-1">
                         <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                            <div class="min-w-0">
+                            <div class="min-w-0 flex-1">
                                 <p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">Reader profile</p>
                                 <h1 class="mt-2 truncate font-serif text-4xl font-bold leading-none text-ink-950 sm:text-5xl">{{ $user->name }}</h1>
-                                <p class="mt-2 font-semibold text-ink-950/55">&#64;{{ $user->username }}</p>
+                                @if ($isOwner)
+                                    <a href="{{ route('profiles.edit') }}" class="mt-3 inline-block w-fit border border-ink-950/20 bg-brand-cream/60 px-4 py-2 text-sm font-bold text-ink-950 transition hover:border-brand-coral hover:bg-brand-coral">Edit profile</a>
+                                @endif
+                                <p class="mt-3 font-semibold text-ink-950/55">&#64;{{ $user->username }}</p>
                             </div>
                             <div class="flex shrink-0 flex-wrap gap-3">
-                                @if ($isOwner)
-                                    <a href="{{ route('profiles.edit') }}" class="w-fit border border-ink-950/20 bg-brand-cream/60 px-4 py-2.5 text-sm font-bold text-ink-950 transition hover:border-brand-coral hover:bg-brand-coral">Edit profile</a>
-                                @elseif (auth()->check())
+                                @if (! $isOwner && auth()->check())
                                     <form action="{{ $isFollowing ? route('profiles.follow.destroy', $user) : route('profiles.follow.store', $user) }}" method="POST">
                                         @csrf
                                         @if ($isFollowing) @method('DELETE') @endif
                                         <button class="w-fit px-4 py-2.5 text-sm font-bold transition {{ $isFollowing ? 'border border-ink-950/20 bg-brand-cream/60 text-ink-950 hover:border-brand-coral' : 'bg-ink-950 text-brand-cream hover:bg-brand-coral hover:text-ink-950' }}">{{ $isFollowing ? 'Following' : 'Follow' }}</button>
                                     </form>
                                     <x-report-form target-type="user" :target-id="$user->id" label="Report profile" />
-                                @else
+                                @elseif (! $isOwner)
                                     <a href="{{ route('login') }}" class="w-fit bg-ink-950 px-4 py-2.5 text-sm font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Log in to follow</a>
                                 @endif
                             </div>
@@ -66,13 +67,11 @@
                     </div>
                 </div>
 
-                <dl class="grid grid-cols-3 gap-px overflow-hidden border border-ink-950/10 bg-ink-950/10 text-center">
-                    <div class="bg-brand-cream/85 p-4"><dd class="font-serif text-2xl font-bold text-ink-950">{{ $user->reading_lists_count }}</dd><dt class="mt-1 text-[0.65rem] font-bold uppercase tracking-wider text-ink-950/50">Tracked</dt></div>
-                    <div class="bg-brand-cream/85 p-4"><dd class="font-serif text-2xl font-bold text-ink-950">{{ $user->completed_literature_count }}</dd><dt class="mt-1 text-[0.65rem] font-bold uppercase tracking-wider text-ink-950/50">Completed</dt></div>
-                    <div class="bg-brand-cream/85 p-4"><dd class="font-serif text-2xl font-bold text-ink-950">{{ $user->reviews_count }}</dd><dt class="mt-1 text-[0.65rem] font-bold uppercase tracking-wider text-ink-950/50">Reviews</dt></div>
-                    <div class="bg-brand-cream/85 p-4"><dd class="font-serif text-2xl font-bold text-ink-950">{{ $user->discussions_count }}</dd><dt class="mt-1 text-[0.65rem] font-bold uppercase tracking-wider text-ink-950/50">Discussions</dt></div>
-                    <div class="bg-brand-cream/85"><a href="{{ route('profiles.following', $user) }}" class="block p-4 transition hover:bg-brand-sky/35"><dd class="font-serif text-2xl font-bold text-ink-950">{{ $user->following_count }}</dd><dt class="mt-1 text-[0.65rem] font-bold uppercase tracking-wider text-ink-950/50">Following</dt></a></div>
-                    <div class="bg-brand-cream/85"><a href="{{ route('profiles.followers', $user) }}" class="block p-4 transition hover:bg-brand-sky/35"><dd class="font-serif text-2xl font-bold text-ink-950">{{ $user->followers_count }}</dd><dt class="mt-1 text-[0.65rem] font-bold uppercase tracking-wider text-ink-950/50">Followers</dt></a></div>
+                <dl data-profile-stats class="grid grid-cols-2 gap-px overflow-hidden border border-ink-950/10 bg-ink-950/10 text-center sm:grid-cols-4">
+                    <div data-profile-stat="literature" class="bg-brand-cream/85 p-4"><dd class="font-serif text-2xl font-bold text-ink-950">{{ $user->completed_literature_count }}</dd><dt class="mt-1 text-[0.65rem] font-bold uppercase tracking-wider text-ink-950/50">Literature</dt></div>
+                    <div data-profile-stat="reviews" class="bg-brand-cream/85 p-4"><dd class="font-serif text-2xl font-bold text-ink-950">{{ $user->reviews_count }}</dd><dt class="mt-1 text-[0.65rem] font-bold uppercase tracking-wider text-ink-950/50">Reviews</dt></div>
+                    <div data-profile-stat="following" class="bg-brand-cream/85"><a href="{{ route('profiles.following', $user) }}" class="block p-4 transition hover:bg-brand-sky/35"><dd class="font-serif text-2xl font-bold text-ink-950">{{ $user->following_count }}</dd><dt class="mt-1 text-[0.65rem] font-bold uppercase tracking-wider text-ink-950/50">Following</dt></a></div>
+                    <div data-profile-stat="followers" class="bg-brand-cream/85"><a href="{{ route('profiles.followers', $user) }}" class="block p-4 transition hover:bg-brand-sky/35"><dd class="font-serif text-2xl font-bold text-ink-950">{{ $user->followers_count }}</dd><dt class="mt-1 text-[0.65rem] font-bold uppercase tracking-wider text-ink-950/50">Followers</dt></a></div>
                 </dl>
             </div>
 

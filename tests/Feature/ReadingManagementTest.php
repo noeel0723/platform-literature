@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\Literature;
 use App\Models\ReadingList;
-use App\Models\ReadingLog;
 use App\Models\Review;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
@@ -191,33 +190,32 @@ class ReadingManagementTest extends TestCase
         $ownLiterature = Literature::factory()->create(['title' => 'My Private Reading']);
         $otherLiterature = Literature::factory()->create(['title' => 'Another Private Reading']);
 
-        $ownList = ReadingList::factory()->for($user)->for($ownLiterature)->create();
-        $otherList = ReadingList::factory()->for($otherUser)->for($otherLiterature)->create();
-        ReadingLog::factory()->for($ownList)->create();
-        ReadingLog::factory()->for($otherList)->create();
+        $completedWithoutRating = Literature::factory()->create(['title' => 'Completed Without Rating']);
+        ReadingList::factory()->for($user)->for($completedWithoutRating)->create(['status' => 'completed']);
+        Review::factory()->for($user)->for($ownLiterature)->create(['rating' => 4.5]);
+        Review::factory()->for($otherUser)->for($otherLiterature)->create(['rating' => 3.5]);
 
         $this->actingAs($user)->get(route('diary.index'))
             ->assertOk()
             ->assertSee('My Private Reading')
-            ->assertDontSee('Another Private Reading');
+            ->assertDontSee('Another Private Reading')
+            ->assertDontSee('Completed Without Rating');
     }
 
     public function test_diary_exposes_utc_activity_for_browser_localization(): void
     {
         $user = User::factory()->create();
-        $readingList = ReadingList::factory()
-            ->for($user)
-            ->for(Literature::factory())
-            ->create();
-        ReadingLog::factory()->for($readingList)->create([
-            'occurred_at' => Carbon::parse('2026-09-06 04:30:00', 'UTC'),
+        Review::factory()->for($user)->for(Literature::factory())->create([
+            'created_at' => Carbon::parse('2026-09-06 04:30:00', 'UTC'),
+            'updated_at' => Carbon::parse('2026-09-06 04:30:00', 'UTC'),
         ]);
 
         $this->actingAs($user)->get(route('diary.index'))
             ->assertOk()
             ->assertSee('datetime="2026-09-06T04:30:00+00:00"', false)
-            ->assertSee('data-local-datetime', false)
-            ->assertSee('Sep 6, 2026, 4:30 AM (UTC)');
+            ->assertSee('data-local-date-part="month"', false)
+            ->assertSee('data-local-date-part="day"', false)
+            ->assertSee('data-local-date-part="year"', false);
     }
 
     public function test_diary_includes_the_authenticated_users_ratings_and_reviews(): void
@@ -237,9 +235,10 @@ class ReadingManagementTest extends TestCase
 
         $this->actingAs($user)->get(route('diary.index'))
             ->assertOk()
-            ->assertSeeText('Rated and reviewed')
             ->assertSeeText('My Rated Literature')
-            ->assertSeeText('4.5 / 5')
+            ->assertSeeText('4.5')
+            ->assertSeeText('Written')
+            ->assertSee('?review=edit', false)
             ->assertDontSeeText('Someone Else Rating');
     }
 

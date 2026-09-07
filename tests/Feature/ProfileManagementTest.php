@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Author;
-use App\Models\Discussion;
 use App\Models\Literature;
 use App\Models\ReadingList;
 use App\Models\Review;
@@ -38,7 +37,6 @@ class ProfileManagementTest extends TestCase
         ]);
         ReadingList::factory()->for($user)->for(Literature::factory())->create(['status' => 'completed']);
         Review::factory()->for($user)->for(Literature::factory())->create();
-        Discussion::factory()->for($user)->for(Literature::factory())->create();
 
         $this->get(route('profiles.show', $user))
             ->assertOk()
@@ -51,6 +49,13 @@ class ProfileManagementTest extends TestCase
             ->assertSee('data-favorite-literature-grid', false)
             ->assertSee('data-favorite-author-grid', false)
             ->assertSee('data-profile-readlist-preview', false)
+            ->assertSee('data-profile-stats', false)
+            ->assertSee('data-profile-stat="literature"', false)
+            ->assertSee('data-profile-stat="reviews"', false)
+            ->assertSee('data-profile-stat="following"', false)
+            ->assertSee('data-profile-stat="followers"', false)
+            ->assertDontSee('data-profile-stat="tracked"', false)
+            ->assertDontSee('data-profile-stat="discussions"', false)
             ->assertSee('href="'.route('profiles.readlist', $user).'"', false)
             ->assertSeeInOrder(['First Favorite', 'Second Favorite'])
             ->assertSeeInOrder(['First Author', 'Second Author'])
@@ -61,6 +66,7 @@ class ProfileManagementTest extends TestCase
     public function test_owner_profile_is_the_only_navigation_entry_point_to_the_diary(): void
     {
         $user = User::factory()->create([
+            'name' => 'Diary Reader',
             'username' => 'diary_reader',
             'bio' => null,
         ]);
@@ -79,6 +85,7 @@ class ProfileManagementTest extends TestCase
             ->assertOk()
             ->assertSeeText('This reader has not added a bio yet.')
             ->assertSeeText('Edit profile')
+            ->assertSeeInOrder(['Diary Reader', 'Edit profile', '&#64;diary_reader'], false)
             ->assertSee('aria-label="Profile navigation"', false)
             ->assertSee('href="'.route('diary.index').'"', false);
     }
