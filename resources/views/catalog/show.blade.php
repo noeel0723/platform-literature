@@ -61,32 +61,72 @@
                 </div>
 
                 <aside class="self-end overflow-hidden border border-ink-950/15 bg-brand-cream/90 shadow-xl backdrop-blur-md md:col-span-2 lg:col-span-1 lg:mb-2" aria-label="Your literature actions">
-                    <div class="border-b border-ink-950/10 p-5 text-center">
+                    <div data-community-rating class="border-b border-ink-950/10 p-5 text-center">
                         <p class="text-xs font-bold uppercase tracking-[0.2em] text-ink-950/55">Community rating</p>
                         <div class="mt-3 flex items-center justify-center gap-3">
                             <x-star-rating :rating="$averageRating ?? 0" />
                             <span class="font-serif text-2xl font-bold text-ink-950">{{ $averageRating ? number_format($averageRating, 1) : '—' }}</span>
                         </div>
+                        <p class="mt-2 text-xs text-ink-950/45">Average from {{ $reviews->count() }} {{ Str::plural('reader', $reviews->count()) }}</p>
                     </div>
 
                     @auth
-                        <div class="grid grid-cols-2 divide-x divide-ink-950/10 border-b border-ink-950/10">
-                            <form action="{{ route('reading-list.update', $literature['slug']) }}" method="POST">
+                        @php($isCompleted = $readingList?->status === 'completed')
+                        @php($isInReadlist = $readingList?->status === 'want_to_read')
+                        <div data-literature-actions class="grid grid-cols-3 divide-x divide-ink-950/10 border-b border-ink-950/10">
+                            <form data-reading-toggle="completed" data-active="{{ $isCompleted ? 'true' : 'false' }}" action="{{ $isCompleted ? route('reading-list.destroy', $literature['slug']) : route('reading-list.update', $literature['slug']) }}" method="POST">
                                 @csrf
-                                @method('PUT')
-                                <input type="hidden" name="status" value="completed">
-                                <button class="size-full px-3 py-5 text-center font-bold text-ink-950 transition {{ $readingList?->status === 'completed' ? 'bg-brand-sky/25' : 'hover:bg-brand-sky/35' }}" aria-pressed="{{ $readingList?->status === 'completed' ? 'true' : 'false' }}" @disabled($readingList?->status === 'completed')>
-                                    <svg class="mx-auto size-8 {{ $readingList?->status === 'completed' ? 'text-brand-coral' : 'text-ink-950' }}" aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2">
+                                @if ($isCompleted)
+                                    @method('DELETE')
+                                @else
+                                    @method('PUT')
+                                    <input type="hidden" name="status" value="completed">
+                                @endif
+                                <button class="size-full px-2 py-5 text-center font-bold text-ink-950 transition {{ $isCompleted ? 'bg-brand-sky/30' : 'hover:bg-brand-sky/35' }}" aria-pressed="{{ $isCompleted ? 'true' : 'false' }}" title="{{ $isCompleted ? 'Remove completed status' : 'Mark as completed' }}">
+                                    <svg class="mx-auto size-8 {{ $isCompleted ? 'text-brand-coral' : 'text-ink-950' }}" aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2">
                                         <circle cx="16" cy="16" r="13"></circle>
                                         <path d="m10 16 4 4 8-9"></path>
                                     </svg>
-                                    <span class="mt-1 block text-sm">{{ $readingList?->status === 'completed' ? 'Completed' : 'Mark as read' }}</span>
+                                    <span class="mt-2 block text-xs sm:text-sm">Completed</span>
                                 </button>
                             </form>
-                            <button type="button" data-dialog-open="review-dialog" class="px-3 py-5 text-center font-bold text-ink-950 transition hover:bg-brand-coral">
+
+                            <button type="button" data-dialog-open="review-dialog" class="px-2 py-5 text-center font-bold text-ink-950 transition hover:bg-brand-coral">
                                 <span class="block text-3xl leading-none" aria-hidden="true">★</span>
-                                <span class="mt-2 block text-sm">{{ $currentReview ? 'Edit review' : 'Rate & review' }}</span>
+                                <span class="mt-2 block text-xs sm:text-sm">{{ $currentReview ? 'Edit Review' : 'Rate & Review' }}</span>
                             </button>
+
+                            <form data-reading-toggle="readlist" data-active="{{ $isInReadlist ? 'true' : 'false' }}" action="{{ $isInReadlist ? route('reading-list.destroy', $literature['slug']) : route('reading-list.update', $literature['slug']) }}" method="POST">
+                                @csrf
+                                @if ($isInReadlist)
+                                    @method('DELETE')
+                                @else
+                                    @method('PUT')
+                                    <input type="hidden" name="status" value="want_to_read">
+                                @endif
+                                <button class="size-full px-2 py-5 text-center font-bold text-ink-950 transition {{ $isInReadlist ? 'bg-brand-sky/30' : 'hover:bg-brand-sky/35' }}" aria-pressed="{{ $isInReadlist ? 'true' : 'false' }}" title="{{ $isInReadlist ? 'Remove from Readlist' : 'Add to Readlist' }}">
+                                    <svg class="mx-auto size-8 {{ $isInReadlist ? 'fill-brand-coral text-brand-coral' : 'text-ink-950' }}" aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M9 5h14a2 2 0 0 1 2 2v20l-9-5-9 5V7a2 2 0 0 1 2-2Z"></path>
+                                    </svg>
+                                    <span class="mt-2 block text-xs sm:text-sm">Readlist</span>
+                                </button>
+                            </form>
+                        </div>
+
+                        <div data-your-rating class="border-b border-ink-950/10 p-5 text-center">
+                            <p class="text-xs font-bold uppercase tracking-[0.2em] text-ink-950/55">Your Rating</p>
+                            <div class="mt-3 flex flex-wrap items-center justify-center gap-3">
+                                <div data-star-rating data-rating-input="review-rating" data-rating-dialog="review-dialog" class="flex" role="radiogroup" aria-label="Choose your rating from 0.5 to 5 stars">
+                                    @foreach (range(1, 10) as $halfStep)
+                                        @php($ratingValue = $halfStep / 2)
+                                        <button type="button" data-rating-value="{{ $ratingValue }}" class="h-12 w-5 overflow-hidden text-left text-4xl leading-12 text-ink-950/15 transition focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-coral" role="radio" aria-checked="false" aria-label="{{ number_format($ratingValue, 1) }} out of 5 stars">
+                                            <span class="block w-10 {{ $halfStep % 2 === 0 ? '-translate-x-1/2' : '' }}">&#9733;</span>
+                                        </button>
+                                    @endforeach
+                                </div>
+                                <output data-rating-output for="review-rating" class="min-w-16 text-sm font-bold text-ink-950/60">Choose a rating</output>
+                            </div>
+                            <p class="mt-2 text-xs text-ink-950/45">Hover to preview. Click a star to continue in the review form.</p>
                         </div>
                     @else
                         <div class="p-5">
@@ -94,12 +134,6 @@
                             <a href="{{ route('login') }}" class="mt-4 block bg-ink-950 px-4 py-3 text-center font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Log in</a>
                         </div>
                     @endauth
-
-                    <dl class="grid gap-3 border-t border-ink-950/10 p-5 text-xs">
-                        <div class="flex justify-between gap-4"><dt class="text-ink-950/55">Source</dt><dd class="font-semibold text-ink-950">{{ $literature['source'] }}</dd></div>
-                        <div class="flex justify-between gap-4"><dt class="text-ink-950/55">Format</dt><dd class="font-semibold text-ink-950">{{ $literature['format'] }}</dd></div>
-                        <div class="flex justify-between gap-4"><dt class="text-ink-950/55">Language</dt><dd class="font-semibold text-ink-950">{{ $literature['language'] }}</dd></div>
-                    </dl>
                 </aside>
             </div>
         </div>
@@ -168,7 +202,7 @@
                 <h2 class="mt-3 font-serif text-4xl font-bold text-ink-950">Manage your reading</h2>
                 <p class="mt-4 max-w-md leading-7 text-ink-950/65">Save a status, record your latest page or chapter, and add a short note. Every change is added to your Personal Diary automatically.</p>
                 @auth
-                    <a href="{{ route('diary.index') }}" class="mt-6 inline-flex font-bold text-ink-950 underline decoration-brand-coral decoration-2 underline-offset-4">Open Personal Diary</a>
+                    <a href="{{ route('profiles.show', auth()->user()) }}" class="mt-6 inline-flex font-bold text-ink-950 underline decoration-brand-coral decoration-2 underline-offset-4">Open your profile to access Diary</a>
                 @endauth
             </div>
 
@@ -337,14 +371,14 @@
                     <p class="mt-1 text-sm text-ink-950/55">{{ $literature['author'] }}@if ($literature['year']) &middot; {{ $literature['year'] }} @endif</p>
 
                     <fieldset class="mt-6">
-                        <legend class="text-sm font-bold text-ink-950">Your rating</legend>
+                        <legend class="text-sm font-bold uppercase tracking-[0.16em] text-ink-950">Your Rating</legend>
                         <input id="review-rating" name="rating" type="hidden" required value="{{ old('rating', $currentReview?->rating) }}">
                         <div class="mt-2 flex flex-wrap items-center gap-4">
                             <div data-star-rating data-rating-input="review-rating" class="flex" role="radiogroup" aria-label="Choose a rating from 0.5 to 5 stars">
                                 @foreach (range(1, 10) as $halfStep)
                                     @php($ratingValue = $halfStep / 2)
-                                    <button type="button" data-rating-value="{{ $ratingValue }}" class="h-10 w-4 overflow-hidden text-left text-3xl leading-10 text-ink-950/15 transition focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-coral" role="radio" aria-checked="false" aria-label="{{ number_format($ratingValue, 1) }} out of 5 stars">
-                                        <span class="block w-8 {{ $halfStep % 2 === 0 ? '-translate-x-1/2' : '' }}">&#9733;</span>
+                                    <button type="button" data-rating-value="{{ $ratingValue }}" class="h-14 w-6 overflow-hidden text-left text-5xl leading-14 text-ink-950/15 transition focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-coral" role="radio" aria-checked="false" aria-label="{{ number_format($ratingValue, 1) }} out of 5 stars">
+                                        <span class="block w-12 {{ $halfStep % 2 === 0 ? '-translate-x-1/2' : '' }}">&#9733;</span>
                                     </button>
                                 @endforeach
                             </div>
@@ -365,12 +399,22 @@
                         This review contains spoilers. Hide its text until another reader chooses to reveal it.
                     </label>
 
-                    <div class="mt-7 flex flex-col-reverse gap-3 border-t border-ink-950/10 pt-5 sm:flex-row sm:justify-end">
+                    <div class="mt-7 flex flex-wrap items-center justify-end gap-3 border-t border-ink-950/10 pt-5">
+                        @if ($currentReview)
+                            <button type="submit" form="delete-review-form" class="border border-red-700/30 px-5 py-3 font-bold text-red-800 transition hover:border-red-700 hover:bg-red-700 hover:text-white sm:mr-auto">Delete review</button>
+                        @endif
                         <button type="button" data-dialog-close class="border border-ink-950/20 px-5 py-3 font-bold text-ink-950 transition hover:border-brand-coral">Cancel</button>
                         <button class="bg-ink-950 px-6 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">{{ $currentReview ? 'Update review' : 'Publish review' }}</button>
                     </div>
                 </div>
             </form>
+
+            @if ($currentReview)
+                <form id="delete-review-form" action="{{ route('reviews.destroy', $literature['slug']) }}" method="POST" data-confirm-submit="Delete your rating and review? This action cannot be undone." class="hidden">
+                    @csrf
+                    @method('DELETE')
+                </form>
+            @endif
         </dialog>
     @endauth
 

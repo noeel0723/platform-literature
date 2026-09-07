@@ -1,5 +1,6 @@
 <x-app-shell :title="$user->name">
     @php
+        $isOwner = auth()->id() === $user->id;
         $initials = Str::of($user->name)
             ->squish()
             ->explode(' ')
@@ -9,117 +10,156 @@
             ->implode('');
     @endphp
 
-    <section class="catalog-grid border-b border-ink-950/10">
-        <div class="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:px-10 lg:py-16">
-            <div class="grid gap-7 md:grid-cols-[140px_minmax(0,1fr)] md:items-center">
-                <div class="grid size-32 place-items-center overflow-hidden rounded-full border border-ink-950/15 bg-ink-950 font-serif text-4xl font-bold text-brand-cream shadow-xl sm:size-36">
-                    @if ($user->avatarUrl())
-                        <img src="{{ $user->avatarUrl() }}" alt="{{ $user->name }}'s profile photo" class="size-full object-cover">
-                    @else
-                        {{ $initials ?: 'LH' }}
-                    @endif
-                </div>
-
-                <div class="min-w-0">
-                    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                            <p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">Reader profile</p>
-                            <h1 class="mt-2 font-serif text-5xl font-bold leading-none text-ink-950">{{ $user->name }}</h1>
-                            <p class="mt-2 font-semibold text-ink-950/55">&#64;{{ $user->username }}</p>
-                        </div>
-                        <div class="flex flex-wrap gap-3">
-                            @if (auth()->id() === $user->id)
-                                <a href="{{ route('profiles.edit') }}" class="w-fit border border-ink-950/20 px-5 py-3 text-sm font-bold text-ink-950 transition hover:border-brand-coral hover:bg-brand-coral">Edit profile</a>
-                            @elseif (auth()->check())
-                                <form action="{{ $isFollowing ? route('profiles.follow.destroy', $user) : route('profiles.follow.store', $user) }}" method="POST">
-                                    @csrf
-                                    @if ($isFollowing) @method('DELETE') @endif
-                                    <button class="w-fit px-5 py-3 text-sm font-bold transition {{ $isFollowing ? 'border border-ink-950/20 text-ink-950 hover:border-brand-coral' : 'bg-ink-950 text-brand-cream hover:bg-brand-coral hover:text-ink-950' }}">{{ $isFollowing ? 'Following' : 'Follow' }}</button>
-                                </form>
-                            @else
-                                <a href="{{ route('login') }}" class="w-fit bg-ink-950 px-5 py-3 text-sm font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Log in to follow</a>
-                            @endif
-                        </div>
-                    </div>
-
-                    @if ($user->bio)
-                        <p class="mt-5 max-w-3xl text-lg leading-8 text-ink-950/70">{{ $user->bio }}</p>
-                    @else
-                        <p class="mt-5 text-ink-950/45">This reader has not added a bio yet.</p>
-                    @endif
-
-                    <div class="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink-950/55">
-                        @if ($user->location)
-                            <span><span aria-hidden="true">●</span> {{ $user->location }}</span>
+    <section id="profile-overview" data-profile-header class="catalog-grid border-b border-ink-950/10">
+        <div class="mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:px-10 lg:py-12">
+            <div class="grid gap-8 lg:grid-cols-[minmax(0,1.35fr)_minmax(360px,.65fr)] lg:items-center">
+                <div class="flex min-w-0 flex-col gap-6 sm:flex-row sm:items-center">
+                    <div class="grid size-28 shrink-0 place-items-center overflow-hidden rounded-full border-4 border-brand-cream bg-ink-950 font-serif text-3xl font-bold text-brand-cream shadow-xl sm:size-32">
+                        @if ($user->avatarUrl())
+                            <img src="{{ $user->avatarUrl() }}" alt="{{ $user->name }}'s profile photo" class="size-full object-cover">
+                        @else
+                            {{ $initials ?: 'LH' }}
                         @endif
-                        <span>Member since {{ $user->created_at->format('F Y') }}</span>
+                    </div>
+
+                    <div class="min-w-0 flex-1">
+                        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                            <div class="min-w-0">
+                                <p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">Reader profile</p>
+                                <h1 class="mt-2 truncate font-serif text-4xl font-bold leading-none text-ink-950 sm:text-5xl">{{ $user->name }}</h1>
+                                <p class="mt-2 font-semibold text-ink-950/55">&#64;{{ $user->username }}</p>
+                            </div>
+                            <div class="flex shrink-0 flex-wrap gap-3">
+                                @if ($isOwner)
+                                    <a href="{{ route('profiles.edit') }}" class="w-fit border border-ink-950/20 bg-brand-cream/60 px-4 py-2.5 text-sm font-bold text-ink-950 transition hover:border-brand-coral hover:bg-brand-coral">Edit profile</a>
+                                @elseif (auth()->check())
+                                    <form action="{{ $isFollowing ? route('profiles.follow.destroy', $user) : route('profiles.follow.store', $user) }}" method="POST">
+                                        @csrf
+                                        @if ($isFollowing) @method('DELETE') @endif
+                                        <button class="w-fit px-4 py-2.5 text-sm font-bold transition {{ $isFollowing ? 'border border-ink-950/20 bg-brand-cream/60 text-ink-950 hover:border-brand-coral' : 'bg-ink-950 text-brand-cream hover:bg-brand-coral hover:text-ink-950' }}">{{ $isFollowing ? 'Following' : 'Follow' }}</button>
+                                    </form>
+                                @else
+                                    <a href="{{ route('login') }}" class="w-fit bg-ink-950 px-4 py-2.5 text-sm font-bold text-brand-cream transition hover:bg-brand-coral hover:text-ink-950">Log in to follow</a>
+                                @endif
+                            </div>
+                        </div>
+
+                        @if ($user->bio)
+                            <p class="mt-4 max-w-2xl leading-7 text-ink-950/70">{{ $user->bio }}</p>
+                        @else
+                            <p class="mt-4 max-w-2xl italic leading-7 text-ink-950/45">This reader has not added a bio yet.</p>
+                        @endif
+
+                        <div class="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-ink-950/55">
+                            @if ($user->location)
+                                <span class="inline-flex items-center gap-1.5">
+                                    <svg class="size-4" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>
+                                    {{ $user->location }}
+                                </span>
+                            @endif
+                            <span class="inline-flex items-center gap-1.5">
+                                <svg class="size-4" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z"></path></svg>
+                                Member since {{ $user->created_at->format('F Y') }}
+                            </span>
+                        </div>
                     </div>
                 </div>
+
+                <dl class="grid grid-cols-3 gap-px overflow-hidden border border-ink-950/10 bg-ink-950/10 text-center">
+                    <div class="bg-brand-cream/85 p-4"><dd class="font-serif text-2xl font-bold text-ink-950">{{ $user->reading_lists_count }}</dd><dt class="mt-1 text-[0.65rem] font-bold uppercase tracking-wider text-ink-950/50">Tracked</dt></div>
+                    <div class="bg-brand-cream/85 p-4"><dd class="font-serif text-2xl font-bold text-ink-950">{{ $user->completed_literature_count }}</dd><dt class="mt-1 text-[0.65rem] font-bold uppercase tracking-wider text-ink-950/50">Completed</dt></div>
+                    <div class="bg-brand-cream/85 p-4"><dd class="font-serif text-2xl font-bold text-ink-950">{{ $user->reviews_count }}</dd><dt class="mt-1 text-[0.65rem] font-bold uppercase tracking-wider text-ink-950/50">Reviews</dt></div>
+                    <div class="bg-brand-cream/85 p-4"><dd class="font-serif text-2xl font-bold text-ink-950">{{ $user->discussions_count }}</dd><dt class="mt-1 text-[0.65rem] font-bold uppercase tracking-wider text-ink-950/50">Discussions</dt></div>
+                    <div class="bg-brand-cream/85"><a href="{{ route('profiles.following', $user) }}" class="block p-4 transition hover:bg-brand-sky/35"><dd class="font-serif text-2xl font-bold text-ink-950">{{ $user->following_count }}</dd><dt class="mt-1 text-[0.65rem] font-bold uppercase tracking-wider text-ink-950/50">Following</dt></a></div>
+                    <div class="bg-brand-cream/85"><a href="{{ route('profiles.followers', $user) }}" class="block p-4 transition hover:bg-brand-sky/35"><dd class="font-serif text-2xl font-bold text-ink-950">{{ $user->followers_count }}</dd><dt class="mt-1 text-[0.65rem] font-bold uppercase tracking-wider text-ink-950/50">Followers</dt></a></div>
+                </dl>
             </div>
 
             @error('user') <p class="mt-5 text-sm font-semibold text-red-700">{{ $message }}</p> @enderror
 
-            <dl class="mt-10 grid grid-cols-2 gap-px border border-ink-950/10 bg-ink-950/10 sm:grid-cols-3 lg:grid-cols-6">
-                <div class="bg-brand-cream/90 p-5"><dd class="font-serif text-3xl font-bold text-ink-950">{{ $user->reading_lists_count }}</dd><dt class="mt-1 text-xs font-bold uppercase tracking-wider text-ink-950/50">In Readlist</dt></div>
-                <div class="bg-brand-cream/90 p-5"><dd class="font-serif text-3xl font-bold text-ink-950">{{ $user->completed_literature_count }}</dd><dt class="mt-1 text-xs font-bold uppercase tracking-wider text-ink-950/50">Completed</dt></div>
-                <div class="bg-brand-cream/90 p-5"><dd class="font-serif text-3xl font-bold text-ink-950">{{ $user->reviews_count }}</dd><dt class="mt-1 text-xs font-bold uppercase tracking-wider text-ink-950/50">Reviews</dt></div>
-                <div class="bg-brand-cream/90 p-5"><dd class="font-serif text-3xl font-bold text-ink-950">{{ $user->discussions_count }}</dd><dt class="mt-1 text-xs font-bold uppercase tracking-wider text-ink-950/50">Discussions</dt></div>
-                <div class="bg-brand-cream/90"><a href="{{ route('profiles.following', $user) }}" class="block p-5 transition hover:bg-brand-sky/25"><dd class="font-serif text-3xl font-bold text-ink-950">{{ $user->following_count }}</dd><dt class="mt-1 text-xs font-bold uppercase tracking-wider text-ink-950/50">Following</dt></a></div>
-                <div class="bg-brand-cream/90"><a href="{{ route('profiles.followers', $user) }}" class="block p-5 transition hover:bg-brand-sky/25"><dd class="font-serif text-3xl font-bold text-ink-950">{{ $user->followers_count }}</dd><dt class="mt-1 text-xs font-bold uppercase tracking-wider text-ink-950/50">Followers</dt></a></div>
-            </dl>
+            <nav class="mt-8 flex gap-6 overflow-x-auto border border-ink-950/10 bg-brand-cream/55 px-5 text-sm font-bold text-ink-950/60" aria-label="Profile navigation">
+                <a href="#profile-overview" class="border-b-2 border-brand-coral py-4 text-ink-950" aria-current="page">Profile</a>
+                @if ($isOwner)
+                    <a href="{{ route('diary.index') }}" class="py-4 transition hover:text-brand-coral">Diary</a>
+                @endif
+                <a href="#favorites" class="py-4 transition hover:text-brand-coral">Favorites</a>
+                <a href="#recent-reviews" class="py-4 transition hover:text-brand-coral">Reviews</a>
+                <a href="#recently-completed" class="py-4 transition hover:text-brand-coral">Completed</a>
+            </nav>
         </div>
     </section>
 
-    <section class="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:px-10 lg:py-20">
-        <div class="grid gap-12 lg:grid-cols-[1.35fr_.65fr]">
-            <div>
-                <div class="flex items-end justify-between border-b border-ink-950/15 pb-3">
-                    <div><p class="text-xs font-bold uppercase tracking-[0.18em] text-brand-coral">Personal shelf</p><h2 class="mt-2 font-serif text-3xl font-bold text-ink-950">Favorite literature</h2></div>
-                    <span class="text-sm text-ink-950/50">Up to four</span>
-                </div>
-
-                <div class="mt-6 grid grid-cols-2 gap-5 sm:grid-cols-4">
-                    @forelse ($user->favoriteLiteratures as $literature)
-                        <article class="group min-w-0">
-                            <a href="{{ route('literatures.show', $literature) }}" class="block">
-                                <div class="aspect-[2/3] overflow-hidden border border-ink-950/15 bg-brand-sky/20 shadow-lg transition group-hover:-translate-y-1 group-hover:border-brand-coral">
-                                    @if ($literature->cover_url)
-                                        <img src="{{ $literature->cover_url }}" alt="Cover of {{ $literature->original_title ?? $literature->title }}" class="size-full object-cover">
-                                    @else
-                                        <div class="grid size-full place-items-center p-4 text-center font-serif text-3xl font-bold text-ink-950">{{ Str::upper(Str::substr($literature->title, 0, 2)) }}</div>
-                                    @endif
-                                </div>
-                                <h3 class="mt-3 truncate font-bold text-ink-950 group-hover:text-brand-coral">{{ $literature->original_title ?? $literature->title }}</h3>
-                                <p class="mt-1 truncate text-sm text-ink-950/55">{{ $literature->authors->pluck('name')->implode(' & ') ?: 'Author unavailable' }}</p>
-                            </a>
-                        </article>
-                    @empty
-                        <div class="col-span-full border border-dashed border-ink-950/20 p-7 text-ink-950/55">No favorite literature has been selected.</div>
-                    @endforelse
-                </div>
+    <section id="favorites" class="mx-auto max-w-7xl scroll-mt-24 px-5 py-14 sm:px-8 lg:px-10 lg:py-20">
+        <div>
+            <div class="flex items-end justify-between border-b border-ink-950/15 pb-3">
+                <div><p class="text-xs font-bold uppercase tracking-[0.18em] text-brand-coral">Personal shelf</p><h2 class="mt-2 font-serif text-3xl font-bold text-ink-950">Favorite Literature</h2></div>
+                <span class="text-sm text-ink-950/50">Up to four</span>
             </div>
 
-            <aside>
-                <div class="flex items-end justify-between border-b border-ink-950/15 pb-3">
-                    <div><p class="text-xs font-bold uppercase tracking-[0.18em] text-brand-coral">Creative voices</p><h2 class="mt-2 font-serif text-3xl font-bold text-ink-950">Favorite authors</h2></div>
-                </div>
-                <ol class="mt-6 grid gap-3">
-                    @forelse ($user->favoriteAuthors as $author)
-                        <li class="flex items-center gap-4 border border-ink-950/10 bg-white/35 p-4">
-                            <span class="grid size-10 shrink-0 place-items-center rounded-full bg-brand-sky/35 font-serif text-lg font-bold text-ink-950">{{ $loop->iteration }}</span>
-                            <div class="min-w-0"><p class="truncate font-bold text-ink-950">{{ $author->name }}</p><p class="text-xs uppercase tracking-wider text-ink-950/45">Favorite author</p></div>
-                        </li>
-                    @empty
-                        <li class="border border-dashed border-ink-950/20 p-7 text-ink-950/55">No favorite authors have been selected.</li>
-                    @endforelse
-                </ol>
-            </aside>
+            <div data-favorite-literature-grid class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-5">
+                @forelse ($user->favoriteLiteratures as $literature)
+                    <article class="group min-w-0">
+                        <a href="{{ route('literatures.show', $literature) }}" class="block">
+                            <div class="relative aspect-[2/3] overflow-hidden border border-ink-950/15 bg-brand-sky/20 shadow-lg transition duration-200 group-hover:-translate-y-1 group-hover:border-brand-coral group-hover:shadow-xl">
+                                @if ($literature->cover_url)
+                                    <img src="{{ $literature->cover_url }}" alt="Cover of {{ $literature->original_title ?? $literature->title }}" class="size-full object-cover">
+                                @else
+                                    <div class="grid size-full place-items-center p-4 text-center font-serif text-3xl font-bold text-ink-950">{{ Str::upper(Str::substr($literature->title, 0, 2)) }}</div>
+                                @endif
+                                <span class="absolute left-3 top-3 grid size-8 place-items-center bg-ink-950 text-xs font-bold text-brand-cream">{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
+                            </div>
+                            <h3 class="mt-3 truncate font-bold text-ink-950 transition group-hover:text-brand-coral">{{ $literature->original_title ?? $literature->title }}</h3>
+                            <p class="mt-1 truncate text-sm text-ink-950/55">{{ $literature->authors->pluck('name')->implode(' & ') ?: 'Author unavailable' }}</p>
+                        </a>
+                    </article>
+                @empty
+                    <div class="col-span-full border border-dashed border-ink-950/20 p-7 text-ink-950/55">No favorite literature has been selected.</div>
+                @endforelse
+            </div>
+        </div>
+
+        <div class="mt-14">
+            <div class="flex items-end justify-between border-b border-ink-950/15 pb-3">
+                <div><p class="text-xs font-bold uppercase tracking-[0.18em] text-brand-coral">Creative voices</p><h2 class="mt-2 font-serif text-3xl font-bold text-ink-950">Favorite Authors</h2></div>
+                <span class="text-sm text-ink-950/50">Up to four</span>
+            </div>
+
+            <ol data-favorite-author-grid class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-5">
+                @forelse ($user->favoriteAuthors as $author)
+                    @php
+                        $authorInitials = Str::of($author->name)
+                            ->squish()
+                            ->explode(' ')
+                            ->filter()
+                            ->take(2)
+                            ->map(fn (string $word): string => Str::upper(Str::substr($word, 0, 1)))
+                            ->implode('');
+                    @endphp
+                    <li class="group min-w-0">
+                        <article>
+                            <div class="relative aspect-[4/5] overflow-hidden border border-ink-950/15 bg-brand-sky/30 shadow-lg transition duration-200 group-hover:-translate-y-1 group-hover:border-brand-coral group-hover:shadow-xl">
+                                @if ($author->image_url)
+                                    <img src="{{ $author->image_url }}" alt="Portrait of {{ $author->name }}" class="size-full object-cover">
+                                @else
+                                    <div class="grid size-full place-items-center bg-linear-to-br from-brand-sky/45 to-brand-coral/35 font-serif text-5xl font-bold text-ink-950">{{ $authorInitials ?: 'A' }}</div>
+                                @endif
+                                <div class="absolute inset-x-0 bottom-0 bg-linear-to-t from-ink-950 via-ink-950/80 to-transparent p-4 pt-14 text-brand-cream">
+                                    <p class="truncate font-serif text-xl font-bold">{{ $author->name }}</p>
+                                    <p class="mt-1 text-xs font-bold uppercase tracking-wider text-brand-cream/65">Favorite author {{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</p>
+                                </div>
+                            </div>
+                        </article>
+                    </li>
+                @empty
+                    <li class="col-span-full border border-dashed border-ink-950/20 p-7 text-ink-950/55">No favorite authors have been selected.</li>
+                @endforelse
+            </ol>
         </div>
     </section>
 
     <section class="border-t border-ink-950/10 bg-white/20">
         <div class="mx-auto grid max-w-7xl gap-12 px-5 py-14 sm:px-8 lg:grid-cols-2 lg:px-10 lg:py-20">
-            <div>
+            <div id="recent-reviews" class="scroll-mt-24">
                 <div class="flex items-end justify-between border-b border-ink-950/15 pb-3"><h2 class="font-serif text-3xl font-bold text-ink-950">Recent reviews</h2><span class="text-sm text-ink-950/50">Latest four</span></div>
                 <div class="mt-5 grid gap-4">
                     @forelse ($recentReviews as $review)
@@ -137,7 +177,7 @@
                 </div>
             </div>
 
-            <div>
+            <div id="recently-completed" class="scroll-mt-24">
                 <div class="flex items-end justify-between border-b border-ink-950/15 pb-3"><h2 class="font-serif text-3xl font-bold text-ink-950">Recently completed</h2><span class="text-sm text-ink-950/50">Latest four</span></div>
                 <div class="mt-5 grid gap-3">
                     @forelse ($recentCompletions as $readingList)

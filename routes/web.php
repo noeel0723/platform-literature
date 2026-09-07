@@ -30,8 +30,12 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::put('/literatures/{literature}/reading-list', [ReadingListController::class, 'update'])
         ->name('reading-list.update');
+    Route::delete('/literatures/{literature}/reading-list', [ReadingListController::class, 'destroy'])
+        ->name('reading-list.destroy');
     Route::put('/literatures/{literature}/review', [ReviewController::class, 'update'])
         ->name('reviews.update');
+    Route::delete('/literatures/{literature}/review', [ReviewController::class, 'destroy'])
+        ->name('reviews.destroy');
     Route::post('/literatures/{literature}/discussions', [DiscussionController::class, 'store'])
         ->name('discussions.store');
     Route::post('/discussions/{discussion}/comments', [CommentController::class, 'store'])

@@ -42,13 +42,43 @@ class ProfileManagementTest extends TestCase
 
         $this->get(route('profiles.show', $user))
             ->assertOk()
+            ->assertSee('data-profile-header', false)
             ->assertSeeText('Imanuel Reader')
             ->assertSeeText('@imanuel_reader')
             ->assertSeeText('Makassar, Indonesia')
             ->assertSeeText('I read fantasy novels and graphic narratives.')
+            ->assertSeeText('Member since '.$user->created_at->format('F Y'))
+            ->assertSee('data-favorite-literature-grid', false)
+            ->assertSee('data-favorite-author-grid', false)
             ->assertSeeInOrder(['First Favorite', 'Second Favorite'])
             ->assertSeeInOrder(['First Author', 'Second Author'])
-            ->assertDontSeeText('Edit profile');
+            ->assertDontSeeText('Edit profile')
+            ->assertDontSee(route('diary.index'), false);
+    }
+
+    public function test_owner_profile_is_the_only_navigation_entry_point_to_the_diary(): void
+    {
+        $user = User::factory()->create([
+            'username' => 'diary_reader',
+            'bio' => null,
+        ]);
+        $literature = Literature::factory()->create();
+
+        $this->actingAs($user)->get(route('home'))
+            ->assertOk()
+            ->assertDontSee(route('diary.index'), false);
+
+        $this->actingAs($user)->get(route('literatures.show', $literature))
+            ->assertOk()
+            ->assertSeeText('Open your profile to access Diary')
+            ->assertDontSee('href="'.route('diary.index').'"', false);
+
+        $this->actingAs($user)->get(route('profiles.show', $user))
+            ->assertOk()
+            ->assertSeeText('This reader has not added a bio yet.')
+            ->assertSeeText('Edit profile')
+            ->assertSee('aria-label="Profile navigation"', false)
+            ->assertSee('href="'.route('diary.index').'"', false);
     }
 
     public function test_owner_can_update_identity_and_four_favorites(): void

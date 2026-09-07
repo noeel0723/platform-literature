@@ -64,6 +64,14 @@ document.querySelectorAll('[data-review-dialog]').forEach((dialog) => {
     }
 });
 
+document.querySelectorAll('[data-confirm-submit]').forEach((form) => {
+    form.addEventListener('submit', (event) => {
+        if (!window.confirm(form.dataset.confirmSubmit)) {
+            event.preventDefault();
+        }
+    });
+});
+
 document.querySelectorAll('[data-star-rating]').forEach((ratingGroup) => {
     const input = document.getElementById(ratingGroup.dataset.ratingInput);
     const output = ratingGroup.parentElement?.querySelector('[data-rating-output]');
@@ -72,8 +80,6 @@ document.querySelectorAll('[data-star-rating]').forEach((ratingGroup) => {
     if (!(input instanceof HTMLInputElement)) {
         return;
     }
-
-    let selectedRating = Number(input.value) || 0;
 
     const renderRating = (rating) => {
         ratingButtons.forEach((button) => {
@@ -97,18 +103,24 @@ document.querySelectorAll('[data-star-rating]').forEach((ratingGroup) => {
         button.addEventListener('click', () => {
             const rating = Number(button.dataset.ratingValue);
 
-            selectedRating = rating;
             input.value = rating.toFixed(1);
-            renderRating(rating);
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+
+            const dialog = document.getElementById(ratingGroup.dataset.ratingDialog);
+
+            if (dialog instanceof HTMLDialogElement && !dialog.open) {
+                dialog.showModal();
+            }
         });
     });
 
-    ratingGroup.addEventListener('pointerleave', () => renderRating(selectedRating));
+    input.addEventListener('change', () => renderRating(Number(input.value) || 0));
+    ratingGroup.addEventListener('pointerleave', () => renderRating(Number(input.value) || 0));
     ratingGroup.addEventListener('focusout', (event) => {
         if (!ratingGroup.contains(event.relatedTarget)) {
-            renderRating(selectedRating);
+            renderRating(Number(input.value) || 0);
         }
     });
 
-    renderRating(selectedRating);
+    renderRating(Number(input.value) || 0);
 });

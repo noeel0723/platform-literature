@@ -6,6 +6,7 @@ use App\Http\Requests\UpsertReviewRequest;
 use App\Models\Literature;
 use App\Services\Reading\ReadingManager;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class ReviewController extends Controller
@@ -32,5 +33,16 @@ class ReviewController extends Controller
 
         return redirect()->to(route('literatures.show', $literature).'#reviews')
             ->with('success', 'Your review has been saved and this literature is marked as completed.');
+    }
+
+    public function destroy(Request $request, Literature $literature): RedirectResponse
+    {
+        $request->user()->reviews()
+            ->whereBelongsTo($literature)
+            ->first()
+            ?->delete();
+
+        return redirect()->to(route('literatures.show', $literature).'#reviews')
+            ->with('success', 'Your review has been deleted.');
     }
 }

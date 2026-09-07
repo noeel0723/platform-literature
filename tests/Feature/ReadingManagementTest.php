@@ -23,6 +23,8 @@ class ReadingManagementTest extends TestCase
         $this->put(route('reading-list.update', $literature), [
             'status' => 'reading',
         ])->assertRedirect(route('login'));
+        $this->delete(route('reading-list.destroy', $literature))
+            ->assertRedirect(route('login'));
     }
 
     public function test_user_can_add_a_literature_and_record_progress(): void
@@ -106,6 +108,64 @@ class ReadingManagementTest extends TestCase
         $this->assertSame(1, $readingList->reread_count);
         $this->assertSame(0, $readingList->progress?->current_value);
         $this->assertDatabaseHas('reading_logs', ['event_type' => 'reread']);
+    }
+
+    public function test_user_can_cancel_an_active_reading_status(): void
+    {
+        $user = User::factory()->create();
+        $literature = Literature::factory()->create();
+        ReadingList::factory()->for($user)->for($literature)->create(['status' => 'completed']);
+
+        $this->actingAs($user)->get(route('literatures.show', $literature))
+            ->assertOk()
+            ->assertSee('data-reading-toggle="completed" data-active="true"', false)
+            ->assertSee('title="Remove completed status"', false);
+
+        $this->actingAs($user)
+            ->delete(route('reading-list.destroy', $literature))
+            ->assertRedirect(route('literatures.show', $literature))
+            ->assertSessionHas('success', 'This literature has been removed from your reading activity.');
+
+        $this->assertDatabaseCount('reading_lists', 0);
+    }
+
+    public function test_user_cannot_cancel_another_users_reading_status(): void
+    {
+        $user = User::factory()->create();
+        $readingList = ReadingList::factory()
+            ->for(User::factory())
+            ->for(Literature::factory())
+            ->create(['status' => 'completed']);
+
+        $this->actingAs($user)
+            ->delete(route('reading-list.destroy', $readingList->literature));
+
+        $this->assertDatabaseHas('reading_lists', ['id' => $readingList->id]);
+    }
+
+    public function test_readlist_action_can_be_added_and_cancelled(): void
+    {
+        $user = User::factory()->create();
+        $literature = Literature::factory()->create();
+
+        $this->actingAs($user)->put(route('reading-list.update', $literature), [
+            'status' => 'want_to_read',
+        ]);
+
+        $this->assertDatabaseHas('reading_lists', [
+            'user_id' => $user->id,
+            'literature_id' => $literature->id,
+            'status' => 'want_to_read',
+        ]);
+
+        $this->actingAs($user)->get(route('literatures.show', $literature))
+            ->assertOk()
+            ->assertSee('data-reading-toggle="readlist" data-active="true"', false)
+            ->assertSee('title="Remove from Readlist"', false);
+
+        $this->actingAs($user)->delete(route('reading-list.destroy', $literature));
+
+        $this->assertDatabaseCount('reading_lists', 0);
     }
 
     public function test_progress_cannot_exceed_the_total(): void
