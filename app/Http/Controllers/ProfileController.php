@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateProfileRequest;
+use App\Models\Activity;
 use App\Models\Author;
 use App\Models\Literature;
 use App\Models\User;
@@ -33,21 +34,51 @@ class ProfileController extends Controller
 
         $recentReviews = $user->reviews()
             ->whereNull('hidden_at')
-            ->with('literature')
+            ->with('literature.authors')
+            ->withCount('likes')
             ->latest('updated_at')
             ->limit(4)
             ->get();
 
         $recentCompletions = $user->readingLists()
             ->where('status', 'completed')
-            ->with('literature')
+            ->with([
+                'literature.authors',
+                'literature.reviews' => fn ($reviews) => $reviews
+                    ->whereBelongsTo($user)
+                    ->whereNull('hidden_at'),
+            ])
             ->latest('completed_at')
             ->limit(4)
             ->get();
 
+        $recentActivities = Activity::query()
+            ->visibleToReaders()
+            ->whereBelongsTo($user)
+            ->with(['literature', 'review', 'discussion', 'comment'])
+            ->latest('occurred_at')
+            ->limit(5)
+            ->get();
+
+        $ratingDistribution = $user->reviews()
+            ->whereNull('hidden_at')
+            ->select('rating')
+            ->selectRaw('COUNT(*) as total')
+            ->groupBy('rating')
+            ->pluck('total', 'rating')
+            ->map(fn ($total): int => (int) $total);
+
         $isFollowing = request()->user()?->isFollowing($user) ?? false;
 
-        return view('profiles.show', compact('user', 'readlistPreview', 'recentReviews', 'recentCompletions', 'isFollowing'));
+        return view('profiles.show', compact(
+            'user',
+            'readlistPreview',
+            'recentReviews',
+            'recentCompletions',
+            'recentActivities',
+            'ratingDistribution',
+            'isFollowing',
+        ));
     }
 
     public function edit(Request $request): View

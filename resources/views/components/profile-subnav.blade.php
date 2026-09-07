@@ -32,6 +32,7 @@
     <div class="flex min-w-0 flex-1 gap-6 overflow-x-auto px-5 sm:justify-center" data-profile-subnav-links>
         <a href="{{ route('profiles.show', $user) }}" class="{{ $itemClass }} {{ $current === 'profile' ? $activeClass : $inactiveClass }}" @if ($current === 'profile') aria-current="page" @endif>Profile</a>
         @if ($isOwner)
+            <a href="{{ route('activity.index') }}" class="{{ $itemClass }} {{ $current === 'activity' ? $activeClass : $inactiveClass }}" @if ($current === 'activity') aria-current="page" @endif>Activity</a>
             <a href="{{ route('diary.index') }}" class="{{ $itemClass }} {{ $current === 'diary' ? $activeClass : $inactiveClass }}" @if ($current === 'diary') aria-current="page" @endif>Diary</a>
         @endif
         <a href="{{ route('profiles.reviews', $user) }}" class="{{ $itemClass }} {{ $current === 'reviews' ? $activeClass : $inactiveClass }}" @if ($current === 'reviews') aria-current="page" @endif>Reviews</a>

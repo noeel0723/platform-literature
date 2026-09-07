@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\Admin\ModerationController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CommentController;
@@ -15,9 +16,11 @@ use App\Http\Controllers\ReadingListController;
 use App\Http\Controllers\ReadlistController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\SearchController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
+Route::get('/search', SearchController::class)->name('search.index');
 Route::get('/catalog', [LiteratureController::class, 'index'])->name('literatures.index');
 Route::get('/literatures/{literature}', [LiteratureController::class, 'show'])->name('literatures.show');
 Route::get('/members/{user}/followers', [ProfileController::class, 'followers'])->name('profiles.followers');
@@ -35,6 +38,7 @@ Route::middleware('guest')->group(function (): void {
 
 Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+    Route::get('/activity', ActivityController::class)->name('activity.index');
     Route::put('/literatures/{literature}/reading-list', [ReadingListController::class, 'update'])
         ->name('reading-list.update');
     Route::delete('/literatures/{literature}/reading-list', [ReadingListController::class, 'destroy'])

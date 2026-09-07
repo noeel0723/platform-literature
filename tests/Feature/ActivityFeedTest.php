@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Activity;
+use App\Models\Comment;
+use App\Models\Discussion;
 use App\Models\Literature;
 use App\Models\ReadingList;
 use App\Models\Review;
@@ -196,5 +198,103 @@ class ActivityFeedTest extends TestCase
         $this->actingAs($viewer)->get(route('home'))
             ->assertOk()
             ->assertDontSee('data-friend-activity', false);
+    }
+
+    public function test_activity_page_requires_login_and_combines_the_reader_with_followed_friends(): void
+    {
+        $viewer = User::factory()->create(['name' => 'Activity Owner']);
+        $friend = User::factory()->create(['name' => 'Followed Activity Reader']);
+        $stranger = User::factory()->create(['name' => 'Unrelated Activity Reader']);
+        $viewer->following()->attach($friend);
+
+        Activity::factory()->for($viewer)->for(Literature::factory()->create(['title' => 'Owner Activity']))->create(['type' => Activity::TYPE_COMPLETED]);
+        Activity::factory()->for($friend)->for(Literature::factory()->create(['title' => 'Friend Activity']))->create(['type' => Activity::TYPE_COMPLETED]);
+        Activity::factory()->for($stranger)->for(Literature::factory()->create(['title' => 'Stranger Activity']))->create(['type' => Activity::TYPE_COMPLETED]);
+
+        $this->get(route('activity.index'))->assertRedirect(route('login'));
+
+        $this->actingAs($viewer)->get(route('activity.index'))
+            ->assertOk()
+            ->assertSeeText('Latest Activity')
+            ->assertSeeText('Owner Activity')
+            ->assertSeeText('Friend Activity')
+            ->assertDontSeeText('Stranger Activity')
+            ->assertSee('data-activity-stream', false);
+
+        $this->actingAs($viewer)->get(route('activity.index', ['scope' => 'friends']))
+            ->assertOk()
+            ->assertSeeText('Friend Activity')
+            ->assertDontSeeText('Owner Activity');
+    }
+
+    public function test_readlist_discussion_and_comment_actions_are_recorded_for_the_activity_page(): void
+    {
+        $user = User::factory()->create();
+        $literature = Literature::factory()->create(['title' => 'Shared Activity Story']);
+
+        $this->actingAs($user)->put(route('reading-list.update', $literature), [
+            'status' => 'want_to_read',
+        ])->assertRedirect();
+
+        $this->actingAs($user)->post(route('discussions.store', $literature), [
+            'title' => 'A closer look at the ending',
+            'discussion_body' => 'The final chapter changes how the opening should be understood.',
+        ])->assertRedirect();
+
+        $discussion = Discussion::query()->sole();
+
+        $this->actingAs($user)->post(route('discussions.comments.store', $discussion), [
+            'comment_body' => 'The recurring image supports this interpretation very clearly.',
+        ])->assertRedirect();
+
+        $comment = Comment::query()->sole();
+
+        $this->assertDatabaseHas('activities', [
+            'user_id' => $user->id,
+            'literature_id' => $literature->id,
+            'type' => Activity::TYPE_ADDED_TO_READLIST,
+        ]);
+        $this->assertDatabaseHas('activities', [
+            'discussion_id' => $discussion->id,
+            'type' => Activity::TYPE_DISCUSSION,
+        ]);
+        $this->assertDatabaseHas('activities', [
+            'comment_id' => $comment->id,
+            'type' => Activity::TYPE_COMMENT,
+        ]);
+
+        $this->actingAs($user)->get(route('activity.index', ['scope' => 'you']))
+            ->assertOk()
+            ->assertSeeText('added to Readlist')
+            ->assertSeeText('started a discussion about')
+            ->assertSeeText('commented on a discussion about')
+            ->assertSeeText('A closer look at the ending');
+    }
+
+    public function test_hidden_discussions_and_comments_are_excluded_from_activity(): void
+    {
+        $viewer = User::factory()->create();
+        $friend = User::factory()->create();
+        $viewer->following()->attach($friend);
+        $literature = Literature::factory()->create(['title' => 'Moderated Activity Story']);
+        $discussion = Discussion::factory()->for($friend)->for($literature)->create([
+            'hidden_at' => now(),
+        ]);
+        $comment = Comment::factory()->for($friend)->for($discussion)->create();
+
+        Activity::factory()->for($friend)->for($literature)->create([
+            'discussion_id' => $discussion->id,
+            'type' => Activity::TYPE_DISCUSSION,
+        ]);
+        Activity::factory()->for($friend)->for($literature)->create([
+            'discussion_id' => $discussion->id,
+            'comment_id' => $comment->id,
+            'type' => Activity::TYPE_COMMENT,
+        ]);
+
+        $this->actingAs($viewer)->get(route('activity.index'))
+            ->assertOk()
+            ->assertDontSeeText('Moderated Activity Story')
+            ->assertDontSee('data-activity-item', false);
     }
 }

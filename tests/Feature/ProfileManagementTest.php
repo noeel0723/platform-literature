@@ -89,6 +89,10 @@ class ProfileManagementTest extends TestCase
             ->assertSeeText('Edit profile')
             ->assertSeeInOrder(['Diary Reader', 'Edit profile', '&#64;diary_reader'], false)
             ->assertSee('aria-label="Profile navigation"', false)
+            ->assertSee('href="'.route('activity.index').'"', false)
+            ->assertSee('data-profile-diary-preview', false)
+            ->assertSee('data-profile-ratings', false)
+            ->assertSee('data-profile-activity-preview', false)
             ->assertSee('href="'.route('diary.index').'"', false);
     }
 

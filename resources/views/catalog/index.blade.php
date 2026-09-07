@@ -1,26 +1,7 @@
 <x-app-shell title="Catalog">
     <section class="catalog-grid border-b border-ink-950/10">
-        <div class="mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:px-10 lg:py-14">
-            <div class="flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                    <p class="text-xs font-bold uppercase tracking-[0.22em] text-brand-coral">Discover your next read</p>
-                    <h1 class="mt-2 font-serif text-5xl font-bold text-ink-950">Literature Catalog</h1>
-                    <p class="mt-3 max-w-xl leading-7 text-ink-950/60">Search books, novels, comics, manga, manhwa, and light novels in one place.</p>
-                </div>
-
-                <form action="{{ route('literatures.index') }}" method="GET" role="search" class="flex w-full max-w-xl overflow-hidden border border-ink-950/20 bg-white/40 lg:w-[32rem]">
-                    @if ($selectedType !== '')
-                        <input type="hidden" name="type" value="{{ $selectedType }}">
-                    @endif
-                    <label for="catalog-page-search" class="sr-only">Find literature</label>
-                    <input id="catalog-page-search" name="q" value="{{ $query }}" placeholder="Find literature..." class="min-w-0 flex-1 bg-transparent px-5 py-4 text-ink-950 outline-none placeholder:text-ink-950/40 focus:bg-white/50">
-                    <button type="submit" class="grid w-14 shrink-0 place-items-center bg-ink-950 text-brand-cream transition hover:bg-brand-coral hover:text-brand-cream" aria-label="Search catalog">
-                        <svg aria-hidden="true" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
-                    </button>
-                </form>
-            </div>
-
-            <div class="mt-9 flex flex-col gap-3 border-t border-ink-950/10 pt-5 sm:flex-row sm:items-center">
+        <div class="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-6 sm:px-8 lg:flex-row lg:items-center lg:justify-between lg:px-10">
+            <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
                 <span class="shrink-0 text-xs font-bold uppercase tracking-[0.2em] text-ink-950/45">Browse by format</span>
                 <nav class="flex gap-2 overflow-x-auto pb-1" aria-label="Literature format filters">
                     <a href="{{ route('literatures.index', ['q' => $query]) }}" class="whitespace-nowrap border px-3 py-2 text-xs font-semibold uppercase tracking-wider transition {{ $selectedType === '' ? 'border-ink-950 bg-ink-950 text-brand-cream' : 'border-ink-950/20 text-ink-950/70 hover:border-ink-950 hover:bg-brand-sky/25' }}">All</a>
@@ -29,6 +10,17 @@
                     @endforeach
                 </nav>
             </div>
+
+            <form action="{{ route('literatures.index') }}" method="GET" role="search" class="flex h-10 w-full overflow-hidden rounded-full border border-ink-950/20 bg-white/50 sm:w-72 lg:w-80">
+                @if ($selectedType !== '')
+                    <input type="hidden" name="type" value="{{ $selectedType }}">
+                @endif
+                <label for="catalog-page-search" class="sr-only">Find literature</label>
+                <input id="catalog-page-search" name="q" value="{{ $query }}" placeholder="Find literature..." class="min-w-0 flex-1 bg-transparent px-4 text-sm text-ink-950 outline-none placeholder:text-ink-950/40 focus:bg-white/50">
+                <button type="submit" class="grid size-10 shrink-0 place-items-center bg-ink-950 text-brand-cream transition hover:bg-brand-coral hover:text-brand-cream" aria-label="Search catalog">
+                    <svg aria-hidden="true" class="size-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
+                </button>
+            </form>
         </div>
     </section>
 

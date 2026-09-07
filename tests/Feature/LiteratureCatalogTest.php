@@ -33,9 +33,11 @@ class LiteratureCatalogTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertSeeText('Literature Catalog')
+            ->assertSeeText('Browse by format')
             ->assertSeeText('Search the catalog')
             ->assertSeeText('Literahaven')
+            ->assertDontSeeText('Discover your next read')
+            ->assertDontSeeText('Search books, novels, comics, manga, manhwa, and light novels in one place.')
             ->assertDontSeeText('Bumi Manusia')
             ->assertDontSeeText('Metadata sources')
             ->assertDontSeeText('Current scope')

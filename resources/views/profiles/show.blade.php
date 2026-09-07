@@ -148,9 +148,66 @@
                 @endforelse
             </ol>
             </div>
+
+            <div id="recently-completed" class="mt-12 scroll-mt-24">
+                <div class="flex items-end justify-between border-b border-ink-950/15 pb-3"><h2 class="font-serif text-3xl font-bold text-ink-950">Recently completed</h2><span class="text-sm text-ink-950/50">Latest four</span></div>
+                <div class="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
+                    @forelse ($recentCompletions as $readingList)
+                        <a href="{{ route('literatures.show', $readingList->literature) }}" class="group min-w-0" data-profile-completed-card>
+                            <span class="block aspect-[2/3] overflow-hidden rounded-sm border border-ink-950/15 bg-brand-sky/25 shadow-[0_7px_18px_rgba(47,58,85,0.07)] transition group-hover:-translate-y-1 group-hover:border-brand-coral">
+                                @if ($readingList->literature->cover_url)
+                                    <img src="{{ $readingList->literature->cover_url }}" alt="Cover of {{ $readingList->literature->original_title ?? $readingList->literature->title }}" class="size-full object-cover" loading="lazy">
+                                @else
+                                    <span class="grid size-full place-items-center font-serif text-2xl font-bold text-ink-950">{{ Str::upper(Str::substr($readingList->literature->original_title ?? $readingList->literature->title, 0, 2)) }}</span>
+                                @endif
+                            </span>
+                            <span class="mt-2 block truncate text-sm font-bold text-ink-950 group-hover:text-brand-coral">{{ $readingList->literature->original_title ?? $readingList->literature->title }}</span>
+                            @if ($readingList->literature->reviews->first())
+                                <x-star-rating :rating="$readingList->literature->reviews->first()->rating" size="sm" class="mt-1" />
+                            @else
+                                <span class="mt-1 block text-xs font-bold uppercase tracking-wider text-ink-950/40">Completed</span>
+                            @endif
+                            @if ($readingList->completed_at)
+                                <time datetime="{{ $readingList->completed_at->utc()->toIso8601String() }}" data-local-datetime class="mt-1 block truncate text-xs text-ink-950/40">{{ $readingList->completed_at->utc()->format('M j, Y') }} (UTC)</time>
+                            @endif
+                        </a>
+                    @empty
+                        <div class="col-span-full border border-dashed border-ink-950/20 p-7 text-ink-950/55">No completed literature yet.</div>
+                    @endforelse
+                </div>
+            </div>
+
+            <div id="recent-reviews" class="mt-12 scroll-mt-24">
+                <div class="flex items-end justify-between border-b border-ink-950/15 pb-3"><h2 class="font-serif text-3xl font-bold text-ink-950">Recent reviews</h2><a href="{{ route('profiles.reviews', $user) }}" class="text-xs font-bold uppercase tracking-wider text-brand-coral hover:underline">More</a></div>
+                <div>
+                    @forelse ($recentReviews as $review)
+                        <article class="grid grid-cols-[72px_minmax(0,1fr)] gap-4 border-b border-ink-950/10 py-5 sm:grid-cols-[88px_minmax(0,1fr)] sm:gap-6" data-profile-recent-review>
+                            <a href="{{ route('literatures.show', $review->literature) }}#review-{{ $review->id }}" class="aspect-[2/3] overflow-hidden rounded-sm border border-ink-950/15 bg-brand-sky/25">
+                                @if ($review->literature->cover_url)
+                                    <img src="{{ $review->literature->cover_url }}" alt="Cover of {{ $review->literature->original_title ?? $review->literature->title }}" class="size-full object-cover" loading="lazy">
+                                @else
+                                    <span class="grid size-full place-items-center font-serif text-lg font-bold text-ink-950">{{ Str::upper(Str::substr($review->literature->original_title ?? $review->literature->title, 0, 2)) }}</span>
+                                @endif
+                            </a>
+                            <div class="min-w-0">
+                                <h3 class="font-serif text-2xl font-bold text-ink-950"><a href="{{ route('literatures.show', $review->literature) }}#review-{{ $review->id }}" class="hover:text-brand-coral">{{ $review->literature->original_title ?? $review->literature->title }}</a> @if ($review->literature->publication_year)<span class="font-sans text-sm font-normal text-ink-950/45">{{ $review->literature->publication_year }}</span>@endif</h3>
+                                <div class="mt-2 flex flex-wrap items-center gap-3"><x-star-rating :rating="$review->rating" size="sm" /><time datetime="{{ $review->updated_at->utc()->toIso8601String() }}" data-local-datetime class="text-xs text-ink-950/45">{{ $review->updated_at->utc()->format('M j, Y') }} (UTC)</time></div>
+                                @if ($review->body)
+                                    <p class="mt-3 line-clamp-3 font-serif text-lg leading-7 text-ink-950/65">{{ $review->contains_spoiler ? 'This review contains spoilers.' : $review->body }}</p>
+                                @else
+                                    <p class="mt-3 text-sm italic text-ink-950/45">Rating only.</p>
+                                @endif
+                                <p class="mt-3 text-xs text-ink-950/40">{{ $review->likes_count }} {{ Str::plural('like', $review->likes_count) }}</p>
+                            </div>
+                        </article>
+                    @empty
+                        <div class="border border-dashed border-ink-950/20 p-7 text-ink-950/55">No reviews yet.</div>
+                    @endforelse
+                </div>
+            </div>
         </div>
 
-        <aside class="min-w-0 lg:border-l lg:border-ink-950/10 lg:pl-8" aria-labelledby="profile-readlist-heading" data-profile-readlist-preview>
+        <aside class="min-w-0 lg:sticky lg:top-24 lg:self-start lg:border-l lg:border-ink-950/10 lg:pl-8" aria-labelledby="profile-readlist-heading" data-profile-readlist-preview>
             <div class="flex items-end justify-between border-b border-ink-950/15 pb-3">
                 <div>
                     <p class="text-xs font-bold uppercase tracking-[0.18em] text-brand-coral">Saved shelf</p>
@@ -186,44 +243,77 @@
                     <span aria-hidden="true">→</span>
                 </a>
             @endif
+
+            <section class="mt-9" aria-labelledby="profile-diary-heading" data-profile-diary-preview>
+                <div class="flex items-end justify-between border-b border-ink-950/15 pb-3">
+                    <h2 id="profile-diary-heading" class="font-serif text-2xl font-bold text-ink-950">Diary</h2>
+                    <span class="text-sm text-ink-950/45">{{ $user->reviews_count }}</span>
+                </div>
+                <ol class="mt-3 grid gap-2">
+                    @forelse ($recentReviews as $review)
+                        <li class="flex min-w-0 items-center justify-between gap-3 text-sm">
+                            <a href="{{ route('literatures.show', $review->literature) }}" class="truncate text-ink-950/65 hover:text-brand-coral">{{ $review->literature->original_title ?? $review->literature->title }}</a>
+                            <span class="shrink-0 font-bold text-brand-coral">{{ number_format($review->rating, 1) }}</span>
+                        </li>
+                    @empty
+                        <li class="text-sm text-ink-950/45">No rated literature yet.</li>
+                    @endforelse
+                </ol>
+            </section>
+
+            @php
+                $ratingMaximum = max(1, (int) ($ratingDistribution->max() ?? 0));
+            @endphp
+            <section class="mt-9" aria-labelledby="profile-ratings-heading" data-profile-ratings>
+                <div class="flex items-end justify-between border-b border-ink-950/15 pb-3">
+                    <h2 id="profile-ratings-heading" class="font-serif text-2xl font-bold text-ink-950">Ratings</h2>
+                    <span class="text-sm text-ink-950/45">{{ $user->reviews_count }}</span>
+                </div>
+                <div class="mt-5 flex h-20 items-end gap-1.5" aria-label="Rating distribution from half a star to five stars">
+                    @foreach (range(1, 10) as $slot)
+                        @php
+                            $ratingValue = number_format($slot / 2, 1, '.', '');
+                            $ratingCount = (int) ($ratingDistribution[$ratingValue] ?? 0);
+                            $height = $ratingCount === 0 ? 6 : max(14, (int) round(($ratingCount / $ratingMaximum) * 100));
+                        @endphp
+                        <span class="flex h-full flex-1 items-end" title="{{ $ratingValue }} stars: {{ $ratingCount }}">
+                            <span class="block w-full bg-brand-coral/75" style="height: {{ $height }}%"></span>
+                        </span>
+                    @endforeach
+                </div>
+                <div class="mt-2 flex justify-between text-[0.65rem] font-bold text-ink-950/40"><span>½</span><span>5 ★</span></div>
+            </section>
+
+            <section class="mt-9" aria-labelledby="profile-activity-heading" data-profile-activity-preview>
+                <div class="flex items-end justify-between border-b border-ink-950/15 pb-3">
+                    <h2 id="profile-activity-heading" class="font-serif text-2xl font-bold text-ink-950">Activity</h2>
+                    @if ($isOwner)<a href="{{ route('activity.index') }}" class="text-xs font-bold uppercase tracking-wider text-brand-coral hover:underline">All</a>@endif
+                </div>
+                <ol class="mt-4 border-l border-ink-950/20 pl-4">
+                    @forelse ($recentActivities as $activity)
+                        @php
+                            $activityTitle = $activity->literature->original_title ?? $activity->literature->title;
+                            $activityLabel = match ($activity->type) {
+                                \App\Models\Activity::TYPE_ADDED_TO_READLIST => 'Added to Readlist',
+                                \App\Models\Activity::TYPE_STARTED_READING => 'Started',
+                                \App\Models\Activity::TYPE_COMPLETED => 'Completed',
+                                \App\Models\Activity::TYPE_RATED => 'Rated',
+                                \App\Models\Activity::TYPE_REVIEWED => 'Reviewed',
+                                \App\Models\Activity::TYPE_DISCUSSION => 'Discussed',
+                                \App\Models\Activity::TYPE_COMMENT => 'Commented on',
+                                default => 'Updated',
+                            };
+                        @endphp
+                        <li class="relative pb-4 text-sm last:pb-0 before:absolute before:-left-[1.19rem] before:top-1.5 before:size-2 before:rounded-full before:bg-brand-coral">
+                            <p class="leading-5 text-ink-950/55">{{ $activityLabel }} <a href="{{ route('literatures.show', $activity->literature) }}" class="font-semibold text-ink-950 hover:text-brand-coral">{{ $activityTitle }}</a></p>
+                            <time datetime="{{ $activity->occurred_at->utc()->toIso8601String() }}" data-local-datetime class="mt-1 block text-xs text-ink-950/35">{{ $activity->occurred_at->utc()->format('M j, Y') }} (UTC)</time>
+                        </li>
+                    @empty
+                        <li class="text-sm text-ink-950/45">No activity yet.</li>
+                    @endforelse
+                </ol>
+            </section>
         </aside>
     </section>
 
-    <section class="border-t border-ink-950/10 bg-white/20">
-        <div class="mx-auto grid max-w-7xl gap-12 px-5 py-14 sm:px-8 lg:grid-cols-2 lg:px-10 lg:py-20">
-            <div id="recent-reviews" class="scroll-mt-24">
-                <div class="flex items-end justify-between border-b border-ink-950/15 pb-3"><h2 class="font-serif text-3xl font-bold text-ink-950">Recent reviews</h2><span class="text-sm text-ink-950/50">Latest four</span></div>
-                <div class="mt-5 grid gap-4">
-                    @forelse ($recentReviews as $review)
-                        <article class="border border-ink-950/10 bg-brand-cream/65 p-5">
-                            <div class="flex flex-wrap items-start justify-between gap-3"><a href="{{ route('literatures.show', $review->literature) }}#review-{{ $review->id }}" class="font-bold text-ink-950 hover:text-brand-coral">{{ $review->literature->original_title ?? $review->literature->title }}</a><x-star-rating :rating="$review->rating" size="sm" /></div>
-                            @if ($review->body)
-                                <p class="mt-3 line-clamp-3 leading-7 text-ink-950/65">{{ $review->contains_spoiler ? 'This review contains spoilers.' : $review->body }}</p>
-                            @else
-                                <p class="mt-3 text-sm italic text-ink-950/45">Rating only.</p>
-                            @endif
-                        </article>
-                    @empty
-                        <div class="border border-dashed border-ink-950/20 p-7 text-ink-950/55">No reviews yet.</div>
-                    @endforelse
-                </div>
-            </div>
-
-            <div id="recently-completed" class="scroll-mt-24">
-                <div class="flex items-end justify-between border-b border-ink-950/15 pb-3"><h2 class="font-serif text-3xl font-bold text-ink-950">Recently completed</h2><span class="text-sm text-ink-950/50">Latest four</span></div>
-                <div class="mt-5 grid gap-3">
-                    @forelse ($recentCompletions as $readingList)
-                        <a href="{{ route('literatures.show', $readingList->literature) }}" class="flex items-center justify-between gap-4 border border-ink-950/10 bg-brand-cream/65 p-5 transition hover:border-brand-coral">
-                            <div class="min-w-0"><p class="truncate font-bold text-ink-950">{{ $readingList->literature->original_title ?? $readingList->literature->title }}</p><p class="mt-1 text-xs font-bold uppercase tracking-wider text-ink-950/45">Completed</p></div>
-                            @if ($readingList->completed_at)
-                                <time datetime="{{ $readingList->completed_at->utc()->toIso8601String() }}" data-local-datetime class="shrink-0 text-xs text-ink-950/50">{{ $readingList->completed_at->utc()->format('M j, Y') }} (UTC)</time>
-                            @endif
-                        </a>
-                    @empty
-                        <div class="border border-dashed border-ink-950/20 p-7 text-ink-950/55">No completed literature yet.</div>
-                    @endforelse
-                </div>
-            </div>
-        </div>
-    </section>
 </x-app-shell>

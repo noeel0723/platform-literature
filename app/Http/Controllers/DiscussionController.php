@@ -4,11 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreDiscussionRequest;
 use App\Models\Literature;
+use App\Services\ActivityRecorder;
 use Illuminate\Http\RedirectResponse;
 
 class DiscussionController extends Controller
 {
-    public function store(StoreDiscussionRequest $request, Literature $literature): RedirectResponse
+    public function store(StoreDiscussionRequest $request, Literature $literature, ActivityRecorder $activityRecorder): RedirectResponse
     {
         $data = $request->validated();
 
@@ -18,6 +19,8 @@ class DiscussionController extends Controller
             'body' => trim($data['discussion_body']),
             'contains_spoiler' => (bool) ($data['discussion_contains_spoiler'] ?? false),
         ]);
+
+        $activityRecorder->recordDiscussion($discussion);
 
         return redirect()->to(route('literatures.show', $literature).'#discussion-'.$discussion->id)
             ->with('success', 'Your discussion has been published.');

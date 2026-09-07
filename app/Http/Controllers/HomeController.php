@@ -22,6 +22,7 @@ class HomeController extends Controller
 
         if ($friendIds->isNotEmpty()) {
             $activities = Activity::query()
+                ->visibleToReaders()
                 ->with(['user', 'literature.authors', 'review'])
                 ->whereIn('user_id', $friendIds)
                 ->whereIn('type', [
@@ -29,11 +30,6 @@ class HomeController extends Controller
                     Activity::TYPE_RATED,
                     Activity::TYPE_REVIEWED,
                 ])
-                ->where(function (Builder $query): void {
-                    $query
-                        ->where('type', Activity::TYPE_COMPLETED)
-                        ->orWhereHas('review', fn (Builder $reviews) => $reviews->whereNull('hidden_at'));
-                })
                 ->orderByDesc('occurred_at')
                 ->orderByDesc('id')
                 ->limit(40)

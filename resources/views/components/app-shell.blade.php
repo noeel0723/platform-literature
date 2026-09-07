@@ -30,12 +30,9 @@
                         @endauth
                     </nav>
 
-                    <form action="{{ route('literatures.index') }}" method="GET" role="search" class="flex h-10 w-56 min-w-0 overflow-hidden rounded-full border border-brand-plate/30 bg-brand-plate lg:w-64 xl:w-72">
-                        @if (request()->filled('type'))
-                            <input type="hidden" name="type" value="{{ request('type') }}">
-                        @endif
-                        <label for="catalog-search" class="sr-only">Search by title, author, or genre</label>
-                        <input id="catalog-search" name="q" value="{{ request('q') }}" placeholder="Search literature..." class="min-w-0 flex-1 bg-transparent px-4 text-sm text-ink-950 outline-none placeholder:text-ink-950/45 focus:bg-white/45">
+                    <form action="{{ route('search.index') }}" method="GET" role="search" class="flex h-10 w-56 min-w-0 overflow-hidden rounded-full border border-brand-plate/30 bg-brand-plate lg:w-64 xl:w-72">
+                        <label for="global-search" class="sr-only">Search literature, authors, or readers</label>
+                        <input id="global-search" name="q" value="{{ request()->routeIs('search.index') ? request('q') : '' }}" placeholder="Search Literahaven..." class="min-w-0 flex-1 bg-transparent px-4 text-sm text-ink-950 outline-none placeholder:text-ink-950/45 focus:bg-white/45">
                         <button type="submit" class="grid size-10 shrink-0 place-items-center bg-brand-blueberry text-brand-plate transition hover:bg-brand-berry" aria-label="Search">
                             <svg aria-hidden="true" class="size-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
                         </button>
@@ -58,12 +55,9 @@
                 </button>
             </div>
 
-            <form action="{{ route('literatures.index') }}" method="GET" role="search" class="mb-4 flex h-11 min-w-0 overflow-hidden rounded-full border border-brand-plate/30 bg-brand-plate md:hidden">
-                @if (request()->filled('type'))
-                    <input type="hidden" name="type" value="{{ request('type') }}">
-                @endif
-                <label for="catalog-search-mobile" class="sr-only">Search by title, author, or genre</label>
-                <input id="catalog-search-mobile" name="q" value="{{ request('q') }}" placeholder="Search by title, author, or genre..." class="min-w-0 flex-1 bg-transparent px-4 text-sm text-ink-950 outline-none placeholder:text-ink-950/45 focus:bg-white/45">
+            <form action="{{ route('search.index') }}" method="GET" role="search" class="mb-4 flex h-11 min-w-0 overflow-hidden rounded-full border border-brand-plate/30 bg-brand-plate md:hidden">
+                <label for="global-search-mobile" class="sr-only">Search literature, authors, or readers</label>
+                <input id="global-search-mobile" name="q" value="{{ request()->routeIs('search.index') ? request('q') : '' }}" placeholder="Search literature, authors, or readers..." class="min-w-0 flex-1 bg-transparent px-4 text-sm text-ink-950 outline-none placeholder:text-ink-950/45 focus:bg-white/45">
                 <button type="submit" class="grid w-12 shrink-0 place-items-center bg-brand-blueberry text-brand-plate transition hover:bg-brand-berry" aria-label="Search">
                     <svg aria-hidden="true" class="size-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
                 </button>
