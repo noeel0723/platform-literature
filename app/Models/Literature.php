@@ -73,6 +73,18 @@ class Literature extends Model
         return $this->hasMany(Discussion::class);
     }
 
+    /** @return HasMany<LiteratureRelation, $this> */
+    public function outgoingRelations(): HasMany
+    {
+        return $this->hasMany(LiteratureRelation::class);
+    }
+
+    /** @return HasMany<LiteratureRelation, $this> */
+    public function incomingRelations(): HasMany
+    {
+        return $this->hasMany(LiteratureRelation::class, 'related_literature_id');
+    }
+
     public function getRouteKeyName(): string
     {
         return 'slug';

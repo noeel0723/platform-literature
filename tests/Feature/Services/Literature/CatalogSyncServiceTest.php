@@ -4,6 +4,7 @@ namespace Tests\Feature\Services\Literature;
 
 use App\Models\ApiSource;
 use App\Models\Literature;
+use App\Models\LiteratureRelation;
 use App\Services\Literature\CatalogSyncService;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -105,6 +106,50 @@ class CatalogSyncServiceTest extends TestCase
             'name' => 'AniList',
         ]);
         Http::assertSentCount(2);
+    }
+
+    public function test_anilist_sync_persists_bidirectional_relations_without_duplicates(): void
+    {
+        $this->configureAniList();
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://graphql.anilist.co*' => Http::response([
+                'data' => [
+                    'Page' => [
+                        'media' => [[
+                            ...$this->manga(),
+                            'relations' => [
+                                'edges' => [[
+                                    'relationType' => 'SEQUEL',
+                                    'node' => $this->relatedManga(),
+                                ]],
+                            ],
+                        ]],
+                    ],
+                ],
+            ]),
+        ]);
+
+        app(CatalogSyncService::class)->syncAniList('Fullmetal Alchemist', 'manga');
+        app(CatalogSyncService::class)->syncAniList('Fullmetal Alchemist', 'manga');
+
+        $main = Literature::query()->where('external_id', '5114')->firstOrFail();
+        $sequel = Literature::query()->where('external_id', '15114')->firstOrFail();
+
+        $this->assertDatabaseCount('literatures', 2);
+        $this->assertDatabaseCount('literature_relations', 2);
+        $this->assertDatabaseHas('literature_relations', [
+            'literature_id' => $main->id,
+            'related_literature_id' => $sequel->id,
+            'relation_type' => 'sequel',
+            'source' => 'AniList',
+        ]);
+        $this->assertDatabaseHas('literature_relations', [
+            'literature_id' => $sequel->id,
+            'related_literature_id' => $main->id,
+            'relation_type' => LiteratureRelation::inverseType('sequel'),
+            'source' => 'AniList',
+        ]);
     }
 
     public function test_repeated_comic_vine_sync_updates_one_comic_without_duplicates(): void
@@ -214,6 +259,22 @@ class CatalogSyncServiceTest extends TestCase
                     'node' => ['name' => ['full' => 'Hiromu Arakawa']],
                 ]],
             ],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function relatedManga(): array
+    {
+        return [
+            'id' => 15114,
+            'type' => 'MANGA',
+            'title' => ['english' => 'Fullmetal Alchemist: The Next Chapter'],
+            'description' => 'The story continues.',
+            'startDate' => ['year' => 2002],
+            'genres' => ['Action'],
+            'countryOfOrigin' => 'JP',
+            'coverImage' => ['large' => 'https://s4.anilist.co/related-cover.jpg'],
+            'format' => 'MANGA',
         ];
     }
 

@@ -124,6 +124,47 @@ class AniListAdapterTest extends TestCase
         Http::assertSentCount(1);
     }
 
+    public function test_search_normalizes_literature_relations_and_ignores_anime_nodes(): void
+    {
+        $this->configureAniList();
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://graphql.anilist.co*' => Http::response([
+                'data' => [
+                    'Page' => [
+                        'media' => [[
+                            ...$this->completeManga(),
+                            'relations' => [
+                                'edges' => [
+                                    [
+                                        'relationType' => 'SEQUEL',
+                                        'node' => $this->relatedManga(),
+                                    ],
+                                    [
+                                        'relationType' => 'ADAPTATION',
+                                        'node' => [
+                                            ...$this->relatedManga(),
+                                            'id' => 9999,
+                                            'type' => 'ANIME',
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ]],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $manga = app(AniListAdapter::class)->search('Fullmetal Alchemist', 'manga')->first();
+
+        $this->assertCount(1, $manga->relations);
+        $this->assertSame('sequel', $manga->relations[0]->type);
+        $this->assertSame('Fullmetal Alchemist: The Next Chapter', $manga->relations[0]->literature->title);
+        $this->assertSame('manga', $manga->relations[0]->literature->type);
+        $this->assertSame([], $manga->relations[0]->literature->relations);
+    }
+
     public function test_search_reports_graphql_errors_as_an_unavailable_source(): void
     {
         $this->configureAniList();
@@ -208,6 +249,26 @@ class AniListAdapterTest extends TestCase
                     ],
                 ],
             ],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function relatedManga(): array
+    {
+        return [
+            'id' => 15114,
+            'type' => 'MANGA',
+            'title' => [
+                'english' => 'Fullmetal Alchemist: The Next Chapter',
+                'romaji' => 'Hagane no Renkinjutsushi Next',
+                'native' => 'Hagane no Renkinjutsushi Next',
+            ],
+            'description' => 'The story continues.',
+            'startDate' => ['year' => 2002],
+            'genres' => ['Action'],
+            'countryOfOrigin' => 'JP',
+            'coverImage' => ['large' => 'https://s4.anilist.co/related-cover.jpg'],
+            'format' => 'MANGA',
         ];
     }
 }

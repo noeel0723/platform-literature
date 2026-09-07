@@ -87,7 +87,7 @@ final class AniListAdapter
             ->values();
     }
 
-    private function normalize(mixed $item, string $literatureType): ?NormalizedLiterature
+    private function normalize(mixed $item, string $literatureType, bool $includeRelations = true): ?NormalizedLiterature
     {
         if (! is_array($item)) {
             return null;
@@ -127,7 +127,49 @@ final class AniListAdapter
             identifier: "ANILIST:{$externalId}",
             coverUrl: $coverUrl,
             originalTitle: $this->originalTitle($item, $title),
+            relations: $includeRelations ? $this->relations(Arr::get($item, 'relations.edges')) : [],
         );
+    }
+
+    /** @return list<NormalizedLiteratureRelation> */
+    private function relations(mixed $edges): array
+    {
+        if (! is_array($edges)) {
+            return [];
+        }
+
+        return collect($edges)
+            ->filter(fn (mixed $edge): bool => is_array($edge)
+                && Str::upper((string) Arr::get($edge, 'node.type')) === 'MANGA')
+            ->map(function (array $edge): ?NormalizedLiteratureRelation {
+                $literature = $this->normalize(Arr::get($edge, 'node'), 'all', false);
+
+                if ($literature === null) {
+                    return null;
+                }
+
+                return new NormalizedLiteratureRelation(
+                    type: $this->relationType(Arr::get($edge, 'relationType')),
+                    literature: $literature,
+                );
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    private function relationType(mixed $relationType): string
+    {
+        return match (Str::upper((string) $relationType)) {
+            'SEQUEL' => 'sequel',
+            'PREQUEL' => 'prequel',
+            'SPIN_OFF' => 'spin_off',
+            'ADAPTATION' => 'adaptation',
+            'SOURCE' => 'source',
+            'SIDE_STORY' => 'side_story',
+            'ALTERNATIVE' => 'alternative_version',
+            default => 'related',
+        };
     }
 
     private function originalTitle(array $item, string $displayTitle): ?string
@@ -256,6 +298,32 @@ final class AniListAdapter
                         name {
                           full
                         }
+                      }
+                    }
+                  }
+                  relations {
+                    edges {
+                      relationType(version: 2)
+                      node {
+                        id
+                        type
+                        title {
+                          romaji
+                          english
+                          native
+                        }
+                        description(asHtml: false)
+                        startDate {
+                          year
+                        }
+                        genres
+                        countryOfOrigin
+                        coverImage {
+                          extraLarge
+                          large
+                          medium
+                        }
+                        format
                       }
                     }
                   }

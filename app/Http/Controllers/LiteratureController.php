@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exceptions\LiteratureSourceUnavailable;
 use App\Models\Literature;
+use App\Models\LiteratureRelation;
 use App\Models\ReadingList;
 use App\Services\Literature\CatalogSyncService;
 use Illuminate\Contracts\View\View;
@@ -99,6 +100,9 @@ class LiteratureController extends Controller
             'apiSource',
             'authors',
             'categories',
+            'outgoingRelations.relatedLiterature.apiSource',
+            'outgoingRelations.relatedLiterature.authors',
+            'outgoingRelations.relatedLiterature.categories',
             'reviews' => fn ($reviews) => $reviews
                 ->with([
                     'user',
@@ -125,6 +129,43 @@ class LiteratureController extends Controller
             ->latest()
             ->limit(20)
             ->get();
+        $relationshipGroups = collect(LiteratureRelation::TYPE_LABELS)
+            ->map(function (string $label, string $type) use ($literature): ?array {
+                $relations = $literature->outgoingRelations
+                    ->where('relation_type', $type)
+                    ->filter(fn (LiteratureRelation $relation): bool => $relation->relatedLiterature !== null)
+                    ->unique('related_literature_id');
+
+                if ($relations->isEmpty()) {
+                    return null;
+                }
+
+                return [
+                    'type' => $type,
+                    'label' => $label,
+                    'items' => $relations->map(function (LiteratureRelation $relation): array {
+                        return [
+                            ...$this->present($relation->relatedLiterature),
+                            'relation_source' => $relation->source ?? 'Internal catalog',
+                        ];
+                    })->values(),
+                ];
+            })
+            ->filter()
+            ->values();
+        $authorIds = $literature->authors->pluck('id');
+        $relatedIds = $literature->outgoingRelations->pluck('related_literature_id');
+        $authorDiscoveries = $authorIds->isEmpty()
+            ? collect()
+            : Literature::query()
+                ->with(['apiSource', 'authors', 'categories'])
+                ->where('id', '!=', $literature->id)
+                ->whereNotIn('id', $relatedIds)
+                ->whereHas('authors', fn (Builder $authors) => $authors->whereIn('authors.id', $authorIds))
+                ->orderByDesc('publication_year')
+                ->limit(4)
+                ->get()
+                ->map(fn (Literature $candidate): array => $this->present($candidate));
 
         return view('catalog.show', [
             'literature' => $this->present($literature),
@@ -135,6 +176,8 @@ class LiteratureController extends Controller
             'averageRating' => $literature->reviews->avg('rating'),
             'discussions' => $discussions,
             'discussionCount' => $literature->discussions()->count(),
+            'relationshipGroups' => $relationshipGroups,
+            'authorDiscoveries' => $authorDiscoveries,
         ]);
     }
 

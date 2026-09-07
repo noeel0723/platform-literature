@@ -7,6 +7,7 @@ final readonly class NormalizedLiterature
     /**
      * @param  list<string>  $authors
      * @param  list<string>  $categories
+     * @param  list<NormalizedLiteratureRelation>  $relations
      */
     public function __construct(
         public string $externalId,
@@ -25,5 +26,6 @@ final readonly class NormalizedLiterature
         public ?string $originalTitle = null,
         public ?string $synopsisSourceName = null,
         public ?string $synopsisSourceUrl = null,
+        public array $relations = [],
     ) {}
 }

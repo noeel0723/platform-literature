@@ -145,6 +145,7 @@
             <a href="#authors" class="pb-4 text-ink-950/70 hover:text-brand-coral">Authors</a>
             <a href="#details" class="pb-4 text-ink-950/70 hover:text-brand-coral">Detail</a>
             <a href="#genres" class="pb-4 text-ink-950/70 hover:text-brand-coral">Genre</a>
+            <a href="#relationships" class="pb-4 text-ink-950/70 hover:text-brand-coral">Discovery</a>
             <a href="#readlist" class="pb-4 text-ink-950/70 hover:text-brand-coral">Readlist</a>
             <a href="#reviews" class="pb-4 text-ink-950/70 hover:text-brand-coral">Reviews</a>
             <a href="#discussions" class="pb-4 text-ink-950/70 hover:text-brand-coral">Discussions</a>
@@ -192,6 +193,64 @@
                     <div><dt class="text-ink-950/60">Storage</dt><dd class="mt-1 font-semibold text-ink-950">Internal MySQL catalog</dd></div>
                 </dl>
             </aside>
+        </div>
+    </section>
+
+    <section id="relationships" class="scroll-mt-24 border-t border-ink-950/10 bg-white/20">
+        <div class="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:px-10 lg:py-20">
+            <div class="grid gap-5 border-b border-ink-950/15 pb-7 lg:grid-cols-[1fr_.75fr] lg:items-end">
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">Increment 4 / Literature Discovery</p>
+                    <h2 class="mt-3 font-serif text-4xl font-bold text-ink-950">Relationship Explorer</h2>
+                </div>
+                <p class="max-w-2xl leading-7 text-ink-950/65 lg:justify-self-end">Explore sequels, prequels, adaptations, side stories, and related editions without losing the connection between formats.</p>
+            </div>
+
+            @forelse ($relationshipGroups as $group)
+                <section class="mt-10" aria-labelledby="relationship-{{ $group['type'] }}">
+                    <div class="mb-5 flex items-center justify-between gap-4">
+                        <h3 id="relationship-{{ $group['type'] }}" class="font-serif text-2xl font-bold text-ink-950">{{ $group['label'] }}</h3>
+                        <span class="text-xs font-bold uppercase tracking-[0.16em] text-ink-950/45">{{ $group['items']->count() }} {{ Str::plural('work', $group['items']->count()) }}</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
+                        @foreach ($group['items'] as $relatedLiterature)
+                            <div class="min-w-0">
+                                <div class="mb-2 flex items-center justify-between gap-2 border-l-4 border-brand-coral bg-brand-cream px-3 py-2 text-[0.65rem] font-bold uppercase tracking-[0.13em] text-ink-950">
+                                    <span>{{ $group['label'] }}</span>
+                                    <span class="truncate text-ink-950/45">{{ $relatedLiterature['relation_source'] }}</span>
+                                </div>
+                                <x-literature-card :literature="$relatedLiterature" />
+                            </div>
+                        @endforeach
+                    </div>
+                </section>
+            @empty
+                <div class="mt-9 border border-dashed border-ink-950/20 bg-brand-cream/45 p-7 sm:p-9">
+                    <p class="font-serif text-2xl font-bold text-ink-950">No confirmed relationships yet</p>
+                    <p class="mt-3 max-w-2xl leading-7 text-ink-950/60">Relationship data appears after this work is refreshed from a supported source or linked through internal catalog curation.</p>
+                </div>
+            @endforelse
+
+            <section class="mt-12 border-t border-ink-950/10 pt-9" aria-labelledby="more-by-authors">
+                <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-[0.18em] text-brand-coral">Author discovery</p>
+                        <h3 id="more-by-authors" class="mt-2 font-serif text-3xl font-bold text-ink-950">More by these authors</h3>
+                    </div>
+                    <p class="text-sm text-ink-950/55">Other catalog entries matched by creator identity.</p>
+                </div>
+
+                @if ($authorDiscoveries->isNotEmpty())
+                    <div class="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
+                        @foreach ($authorDiscoveries as $discovery)
+                            <x-literature-card :literature="$discovery" />
+                        @endforeach
+                    </div>
+                @else
+                    <p class="border border-dashed border-ink-950/20 p-6 text-ink-950/60">No other works by the same authors are available in the local catalog yet.</p>
+                @endif
+            </section>
         </div>
     </section>
 

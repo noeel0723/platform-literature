@@ -6,6 +6,7 @@ use App\Models\ApiSource;
 use App\Models\Author;
 use App\Models\Category;
 use App\Models\Literature;
+use App\Models\LiteratureRelation;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -168,8 +169,43 @@ final class CatalogSyncService
 
         $this->syncAuthors($literature, $item->authors);
         $this->syncCategories($literature, $item->categories);
+        $this->syncRelations($source, $literature, $item->relations);
 
         return $literature;
+    }
+
+    /** @param list<NormalizedLiteratureRelation> $relations */
+    private function syncRelations(ApiSource $source, Literature $literature, array $relations): void
+    {
+        foreach ($relations as $relation) {
+            if (! array_key_exists($relation->type, LiteratureRelation::TYPE_LABELS)) {
+                continue;
+            }
+
+            $relatedLiterature = $this->persist($source, $relation->literature);
+
+            if ($relatedLiterature->is($literature)) {
+                continue;
+            }
+
+            LiteratureRelation::query()->updateOrCreate(
+                [
+                    'literature_id' => $literature->id,
+                    'related_literature_id' => $relatedLiterature->id,
+                    'relation_type' => $relation->type,
+                ],
+                ['source' => $source->name],
+            );
+
+            LiteratureRelation::query()->updateOrCreate(
+                [
+                    'literature_id' => $relatedLiterature->id,
+                    'related_literature_id' => $literature->id,
+                    'relation_type' => LiteratureRelation::inverseType($relation->type),
+                ],
+                ['source' => $source->name],
+            );
+        }
     }
 
     /** @param list<string> $authorNames */
