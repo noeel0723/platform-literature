@@ -56,7 +56,7 @@
                                         @endif
                                     </span>
                                     <div class="min-w-0">
-                                        <h3 class="truncate font-serif text-xl font-bold text-ink-950"><a href="{{ route('literatures.index', ['q' => $author->name]) }}" class="hover:text-brand-coral">{{ $author->name }}</a></h3>
+                                        <h3 class="truncate font-serif text-xl font-bold text-ink-950"><a href="{{ route('authors.show', $author) }}" class="hover:text-brand-coral">{{ $author->name }}</a></h3>
                                         <p class="mt-1 text-xs text-ink-950/45">{{ $author->literatures_count }} catalog {{ Str::plural('title', $author->literatures_count) }}</p>
                                         <p class="mt-2 line-clamp-2 text-sm leading-6 text-ink-950/55">{{ $author->literatures->map(fn ($literature) => $literature->original_title ?? $literature->title)->implode(', ') ?: 'No linked literature yet.' }}</p>
                                     </div>

@@ -30,6 +30,7 @@ class KnowledgeGraphEnricherTest extends TestCase
                             'url' => 'https://en.wikipedia.org/wiki/Dune_(novel)',
                         ],
                         'url' => 'https://dunenovels.com/',
+                        'image' => ['contentUrl' => 'https://images.example.test/dune.jpg'],
                     ],
                 ]],
             ]),
@@ -46,6 +47,7 @@ class KnowledgeGraphEnricherTest extends TestCase
         $this->assertSame('https://en.wikipedia.org/wiki/Dune_(novel)', $entity->sourceUrl);
         $this->assertSame('https://dunenovels.com/', $entity->officialUrl);
         $this->assertSame(975.5, $entity->score);
+        $this->assertSame('https://images.example.test/dune.jpg', $entity->imageUrl);
         Http::assertSent(fn ($request): bool => str_starts_with(
             $request->url(),
             'https://kgsearch.googleapis.com/v1/entities:search?',
@@ -90,6 +92,39 @@ class KnowledgeGraphEnricherTest extends TestCase
 
         $this->assertNull($entity);
         Http::assertNothingSent();
+    }
+
+    public function test_author_lookup_returns_person_metadata_and_secure_image_url(): void
+    {
+        $this->configureKnowledgeGraph();
+        Cache::flush();
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://kgsearch.googleapis.com/v1/entities:search*' => Http::response([
+                'itemListElement' => [[
+                    'resultScore' => 870,
+                    'result' => [
+                        '@id' => 'kg:/m/author',
+                        '@type' => ['Thing', 'Person'],
+                        'name' => 'Hiromu Arakawa',
+                        'description' => 'Japanese manga artist',
+                        'detailedDescription' => [
+                            'articleBody' => 'Hiromu Arakawa is a Japanese manga artist.',
+                            'url' => 'https://en.wikipedia.org/wiki/Hiromu_Arakawa',
+                        ],
+                        'image' => ['contentUrl' => 'http://images.example.test/arakawa.jpg'],
+                    ],
+                ]],
+            ]),
+        ]);
+
+        $entity = app(KnowledgeGraphEnricher::class)->findAuthor('Hiromu Arakawa');
+
+        $this->assertNotNull($entity);
+        $this->assertSame('Hiromu Arakawa is a Japanese manga artist.', $entity->detailedDescription);
+        $this->assertSame('https://images.example.test/arakawa.jpg', $entity->imageUrl);
+        Http::assertSent(fn ($request): bool => $request['query'] === 'Hiromu Arakawa author'
+            && $request['types'] === 'Person');
     }
 
     private function configureKnowledgeGraph(): void

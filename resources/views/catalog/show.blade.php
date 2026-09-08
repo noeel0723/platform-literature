@@ -55,7 +55,13 @@
                     @if ($literature['edition_title'])
                         <p class="mt-3 text-sm text-ink-950/55">Edition title: <span class="font-semibold text-ink-950/75">{{ $literature['edition_title'] }}</span></p>
                     @endif
-                    <p class="mt-4 text-lg text-ink-950/60">By <span class="font-semibold text-ink-950">{{ $literature['author'] }}</span></p>
+                    <p class="mt-4 text-lg text-ink-950/60">By
+                        @forelse ($literature['author_links'] as $author)
+                            <a href="{{ $author['url'] }}" class="font-semibold text-ink-950 underline decoration-brand-coral/40 underline-offset-4 transition hover:text-brand-coral">{{ $author['name'] }}</a>@if (! $loop->last)<span class="text-ink-950/35"> &amp; </span>@endif
+                        @empty
+                            <span class="font-semibold text-ink-950">Author unavailable</span>
+                        @endforelse
+                    </p>
                     <p class="mt-7 max-w-2xl text-lg font-medium uppercase leading-7 tracking-[0.08em] text-ink-950/70">{{ $literature['tagline'] }}</p>
                     <p class="mt-5 max-w-2xl text-base leading-8 text-ink-950/75">{{ $literature['synopsis'] }}</p>
                 </div>
@@ -165,8 +171,8 @@
                 <div id="authors" class="mt-10 border-t border-ink-950/10 pt-7">
                     <h3 class="text-sm font-bold uppercase tracking-[0.18em] text-ink-950/60">Authors and creators</h3>
                     <div class="mt-4 flex flex-wrap gap-2">
-                        @foreach ($literature['authors'] as $author)
-                            <span class="bg-brand-sky/25 px-3 py-2 font-semibold text-ink-950">{{ $author }}</span>
+                        @foreach ($literature['author_links'] as $author)
+                            <a href="{{ $author['url'] }}" class="bg-brand-sky/25 px-3 py-2 font-semibold text-ink-950 transition hover:bg-brand-coral hover:text-brand-cream">{{ $author['name'] }}</a>
                         @endforeach
                     </div>
                 </div>

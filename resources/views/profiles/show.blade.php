@@ -128,7 +128,7 @@
                             ->implode('');
                     @endphp
                     <li class="group min-w-0">
-                        <article>
+                        <a href="{{ route('authors.show', $author) }}" class="block focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-coral">
                             <div class="relative aspect-[4/5] overflow-hidden border border-ink-950/15 bg-brand-sky/30 shadow-[0_8px_24px_rgba(47,58,85,0.08)] transition duration-200 group-hover:-translate-y-1 group-hover:border-brand-coral">
                                 @if ($author->image_url)
                                     <img src="{{ $author->image_url }}" alt="Portrait of {{ $author->name }}" class="size-full object-cover">
@@ -140,7 +140,7 @@
                                     <p class="mt-1 text-xs font-bold uppercase tracking-wider text-brand-cream/65">Favorite author {{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</p>
                                 </div>
                             </div>
-                        </article>
+                        </a>
                     </li>
                 @empty
                     <li class="col-span-full border border-dashed border-ink-950/20 p-7 text-ink-950/55">No favorite authors have been selected.</li>

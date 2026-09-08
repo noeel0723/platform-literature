@@ -43,7 +43,7 @@ class MangaDexAdapterTest extends TestCase
         $this->assertSame(['Sports', 'School Life'], $manga->categories);
         $this->assertSame(2012, $manga->publicationYear);
         $this->assertSame('MANGADEX:manga-id', $manga->identifier);
-        $this->assertSame('https://uploads.mangadex.org/covers/manga-id/cover.jpg.512.jpg', $manga->coverUrl);
+        $this->assertSame('https://uploads.mangadex.org/covers/manga-id/cover.jpg', $manga->coverUrl);
         $this->assertSame('A volleyball story.', $manga->synopsis);
         $this->assertSame('ja', $manga->language);
 

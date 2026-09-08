@@ -222,6 +222,13 @@ class LiteratureController extends Controller
             'type_label' => self::TYPES[$literature->type] ?? Str::headline($literature->type),
             'author' => $authorNames->isEmpty() ? 'Author unavailable' : $authorNames->implode(' & '),
             'authors' => $authorNames->all(),
+            'author_links' => $literature->authors
+                ->map(fn ($author): array => [
+                    'name' => $author->name,
+                    'url' => route('authors.show', $author),
+                ])
+                ->values()
+                ->all(),
             'source' => $literature->apiSource->name,
             'tagline' => $metadataIsEnglish ? $literature->tagline ?? 'Short description unavailable.' : 'Short description unavailable in English.',
             'synopsis' => $metadataIsEnglish ? $literature->synopsis ?? 'Synopsis unavailable from the metadata source.' : 'Synopsis unavailable in English.',

@@ -231,7 +231,7 @@ final class MangaDexAdapter
         }
 
         return rtrim((string) config('services.mangadex.covers_url'), '/')
-            ."/{$mangaId}/{$fileName}.512.jpg";
+            ."/{$mangaId}/{$fileName}";
     }
 
     /** @param list<string> $preferredLanguages */

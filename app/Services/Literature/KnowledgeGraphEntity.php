@@ -14,5 +14,7 @@ final readonly class KnowledgeGraphEntity
         public ?string $sourceUrl,
         public ?string $officialUrl,
         public float $score,
+        public ?string $imageUrl = null,
+        public ?string $imageLicenseUrl = null,
     ) {}
 }

@@ -132,7 +132,7 @@ class LiteratureCatalogTest extends TestCase
 
     public function test_literature_detail_renders_catalog_metadata(): void
     {
-        $this->createLiterature(
+        $literature = $this->createLiterature(
             ['title' => 'Watchmen', 'slug' => 'watchmen', 'type' => 'western-comic'],
             'Comic Vine',
             ['Alan Moore', 'Dave Gibbons'],
@@ -145,6 +145,7 @@ class LiteratureCatalogTest extends TestCase
             ->assertOk()
             ->assertSeeText('Watchmen')
             ->assertSeeText('Alan Moore')
+            ->assertSee(route('authors.show', $literature->authors()->where('name', 'Alan Moore')->firstOrFail()), false)
             ->assertSeeText('Comic Vine')
             ->assertDontSeeText('Increment 2')
             ->assertDontSeeText('Manage your reading')

@@ -14,6 +14,11 @@ class Author extends Model
     /** @use HasFactory<AuthorFactory> */
     use HasFactory;
 
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
     /** @return BelongsToMany<Literature, $this> */
     public function literatures(): BelongsToMany
     {

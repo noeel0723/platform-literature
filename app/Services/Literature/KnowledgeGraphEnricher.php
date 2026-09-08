@@ -70,6 +70,75 @@ final class KnowledgeGraphEnricher
             'sourceUrl' => $entity->sourceUrl,
             'officialUrl' => $entity->officialUrl,
             'score' => $entity->score,
+            'imageUrl' => $entity->imageUrl,
+            'imageLicenseUrl' => $entity->imageLicenseUrl,
+        ], now()->addDays((int) config('services.knowledge_graph.cache_days', 30)));
+
+        return $entity;
+    }
+
+    public function findAuthor(string $name): ?KnowledgeGraphEntity
+    {
+        $name = Str::squish($name);
+        $apiKey = trim((string) config('services.knowledge_graph.key'));
+
+        if ($name === '' || $apiKey === '') {
+            return null;
+        }
+
+        $language = $this->normalizedLanguage((string) config('services.knowledge_graph.language', 'en'));
+        $cacheKey = 'knowledge-graph:author:'.sha1($language.'|'.$name);
+        $cached = Cache::get($cacheKey);
+
+        if (is_array($cached)) {
+            return new KnowledgeGraphEntity(...$cached);
+        }
+
+        try {
+            $response = Http::acceptJson()
+                ->connectTimeout((int) config('services.knowledge_graph.connect_timeout', 3))
+                ->timeout((int) config('services.knowledge_graph.timeout', 8))
+                ->get((string) config('services.knowledge_graph.base_url'), [
+                    'query' => "{$name} author",
+                    'languages' => $language,
+                    'types' => 'Person',
+                    'limit' => max(1, min((int) config('services.knowledge_graph.candidate_limit', 5), 20)),
+                    'key' => $apiKey,
+                ]);
+        } catch (ConnectionException) {
+            return null;
+        }
+
+        if ($response->failed()) {
+            return null;
+        }
+
+        $candidate = collect($response->json('itemListElement'))
+            ->filter(fn (mixed $item): bool => $this->isMatchingAuthor($item, $name))
+            ->sortByDesc(fn (array $item): float => (float) Arr::get($item, 'resultScore', 0))
+            ->first();
+
+        if (! is_array($candidate)) {
+            return null;
+        }
+
+        $entity = $this->toEntity($candidate);
+
+        if ($entity === null) {
+            return null;
+        }
+
+        Cache::put($cacheKey, [
+            'id' => $entity->id,
+            'name' => $entity->name,
+            'types' => $entity->types,
+            'description' => $entity->description,
+            'detailedDescription' => $entity->detailedDescription,
+            'sourceUrl' => $entity->sourceUrl,
+            'officialUrl' => $entity->officialUrl,
+            'score' => $entity->score,
+            'imageUrl' => $entity->imageUrl,
+            'imageLicenseUrl' => $entity->imageLicenseUrl,
         ], now()->addDays((int) config('services.knowledge_graph.cache_days', 30)));
 
         return $entity;
@@ -109,6 +178,23 @@ final class KnowledgeGraphEnricher
             || preg_match($literatureTerms, $description) === 1;
     }
 
+    private function isMatchingAuthor(mixed $item, string $name): bool
+    {
+        if (! is_array($item) || ! $this->sameTitle($this->cleanText(Arr::get($item, 'result.name')), $name)) {
+            return false;
+        }
+
+        $types = $this->stringList(Arr::get($item, 'result.@type'));
+        $description = Str::lower(implode(' ', array_filter([
+            $this->cleanText(Arr::get($item, 'result.description')),
+            $this->cleanText(Arr::get($item, 'result.detailedDescription.articleBody')),
+        ])));
+
+        return in_array('Person', $types, true)
+            && (preg_match('/\b(author|writer|novelist|poet|mangaka|manga artist|comic artist|screenwriter|illustrator|creator)\b/u', $description) === 1
+                || $description === '');
+    }
+
     /** @param list<string> $authors */
     private function candidateScore(array $item, array $authors): float
     {
@@ -142,6 +228,8 @@ final class KnowledgeGraphEnricher
             sourceUrl: $this->cleanText(Arr::get($item, 'result.detailedDescription.url')),
             officialUrl: $this->cleanText(Arr::get($item, 'result.url')),
             score: (float) Arr::get($item, 'resultScore', 0),
+            imageUrl: $this->cleanUrl(Arr::get($item, 'result.image.contentUrl')),
+            imageLicenseUrl: $this->cleanUrl(Arr::get($item, 'result.image.license')),
         );
     }
 
@@ -191,5 +279,20 @@ final class KnowledgeGraphEnricher
         $cleaned = Str::squish(html_entity_decode(strip_tags($value)));
 
         return $cleaned === '' ? null : $cleaned;
+    }
+
+    private function cleanUrl(mixed $value): ?string
+    {
+        $url = $this->cleanText($value);
+
+        if ($url === null || filter_var($url, FILTER_VALIDATE_URL) === false) {
+            return null;
+        }
+
+        if (! str_starts_with($url, 'https://') && ! str_starts_with($url, 'http://')) {
+            return null;
+        }
+
+        return preg_replace('#^http://#', 'https://', $url) ?? $url;
     }
 }
