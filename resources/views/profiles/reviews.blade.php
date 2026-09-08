@@ -43,7 +43,7 @@
                             <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-ink-950/50">
                                 <x-star-rating :rating="$review->rating" size="sm" />
                                 <span class="font-bold text-ink-950/65">{{ number_format($review->rating, 1) }}</span>
-                                <time datetime="{{ $review->updated_at->utc()->toIso8601String() }}" data-local-datetime>{{ $review->updated_at->utc()->format('M j, Y') }} (UTC)</time>
+                                <time datetime="{{ $review->updated_at->utc()->toIso8601String() }}" data-local-datetime>{{ $review->updated_at->utc()->format('M j, Y') }}</time>
                             </div>
 
                             @if ($review->body)

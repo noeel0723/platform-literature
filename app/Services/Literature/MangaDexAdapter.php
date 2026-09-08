@@ -129,11 +129,13 @@ final class MangaDexAdapter
             return null;
         }
 
+        $authorDetails = $this->authors(Arr::get($item, 'relationships'));
+
         return new NormalizedLiterature(
             externalId: $externalId,
             title: $title,
             type: $originalLanguage === 'ko' ? 'manhwa' : 'manga',
-            authors: $this->authors(Arr::get($item, 'relationships')),
+            authors: collect($authorDetails)->pluck('name')->all(),
             categories: $this->categories(Arr::get($attributes, 'tags')),
             publicationYear: $this->publicationYear(Arr::get($attributes, 'year')),
             tagline: null,
@@ -144,10 +146,11 @@ final class MangaDexAdapter
             identifier: "MANGADEX:{$externalId}",
             coverUrl: $this->coverUrl($externalId, Arr::get($item, 'relationships')),
             originalTitle: $this->originalTitle($attributes, $originalLanguage, $title),
+            authorDetails: $authorDetails,
         );
     }
 
-    /** @return list<string> */
+    /** @return list<NormalizedAuthor> */
     private function authors(mixed $relationships): array
     {
         if (! is_array($relationships)) {
@@ -159,9 +162,25 @@ final class MangaDexAdapter
                 && in_array(Arr::get($relationship, 'type'), ['author', 'artist'], true))
             ->groupBy(fn (array $relationship): string => (string) Arr::get($relationship, 'type'))
             ->map(fn (Collection $relationships): array => $relationships
-                ->map(fn (array $relationship): ?string => $this->cleanText(Arr::get($relationship, 'attributes.name')))
+                ->map(function (array $relationship): ?NormalizedAuthor {
+                    $name = $this->cleanText(Arr::get($relationship, 'attributes.name'));
+
+                    if ($name === null) {
+                        return null;
+                    }
+
+                    return new NormalizedAuthor(
+                        name: $name,
+                        imageUrl: $this->cleanUrl(Arr::get($relationship, 'attributes.imageUrl')),
+                        biography: $this->localizedText(
+                            Arr::get($relationship, 'attributes.biography'),
+                            ['en'],
+                        ),
+                        sourceUrl: $this->cleanUrl(Arr::get($relationship, 'attributes.website')),
+                    );
+                })
                 ->filter()
-                ->unique()
+                ->unique(fn (NormalizedAuthor $author): string => Str::lower($author->name))
                 ->values()
                 ->all());
 
@@ -285,5 +304,16 @@ final class MangaDexAdapter
         $cleaned = Str::squish(html_entity_decode(strip_tags($value)));
 
         return $cleaned === '' ? null : $cleaned;
+    }
+
+    private function cleanUrl(mixed $value): ?string
+    {
+        $url = $this->cleanText($value);
+
+        if ($url === null || filter_var($url, FILTER_VALIDATE_URL) === false) {
+            return null;
+        }
+
+        return preg_replace('#^http://#', 'https://', $url) ?? $url;
     }
 }

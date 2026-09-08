@@ -145,6 +145,65 @@ class AuthorDetailTest extends TestCase
         Http::assertSentCount(2);
     }
 
+    public function test_manga_author_page_uses_anilist_staff_portrait_when_other_metadata_has_no_image(): void
+    {
+        Cache::flush();
+        config()->set('services.knowledge_graph.key', null);
+        config()->set([
+            'services.anilist.base_url' => 'https://graphql.anilist.co',
+            'services.anilist.author_cache_days' => 30,
+            'services.anilist.connect_timeout' => 1,
+            'services.anilist.timeout' => 2,
+        ]);
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://graphql.anilist.co*' => Http::response([
+                'data' => [
+                    'Page' => [
+                        'staff' => [[
+                            'id' => 96879,
+                            'name' => [
+                                'full' => 'Hiromu Arakawa',
+                                'native' => '荒川 弘',
+                                'userPreferred' => 'Hiromu Arakawa',
+                                'alternative' => [],
+                            ],
+                            'image' => ['large' => 'https://s4.anilist.co/hiromu-arakawa.jpg'],
+                            'description' => 'Japanese manga artist.',
+                            'siteUrl' => 'https://anilist.co/staff/96879/Hiromu-Arakawa',
+                        ]],
+                    ],
+                ],
+            ]),
+        ]);
+        $source = ApiSource::factory()->create(['name' => 'AniList']);
+        $author = Author::factory()->create([
+            'name' => 'Hiromu Arakawa',
+            'slug' => 'hiromu-arakawa',
+            'biography' => null,
+            'image_url' => null,
+        ]);
+        $literature = Literature::factory()->for($source)->create([
+            'title' => 'Fullmetal Alchemist',
+            'slug' => 'fullmetal-alchemist',
+            'type' => 'manga',
+        ]);
+        $author->literatures()->attach($literature, ['role' => 'author', 'position' => 0]);
+
+        $this->get(route('authors.show', $author))
+            ->assertOk()
+            ->assertSee('https://s4.anilist.co/hiromu-arakawa.jpg', false)
+            ->assertSeeText('Japanese manga artist.')
+            ->assertSee('https://anilist.co/staff/96879/Hiromu-Arakawa', false);
+
+        $this->assertDatabaseHas('authors', [
+            'id' => $author->id,
+            'image_url' => 'https://s4.anilist.co/hiromu-arakawa.jpg',
+            'biography' => 'Japanese manga artist.',
+        ]);
+        Http::assertSentCount(1);
+    }
+
     public function test_author_search_result_links_to_the_author_page(): void
     {
         $author = Author::factory()->create([

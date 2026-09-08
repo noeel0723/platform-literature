@@ -76,7 +76,87 @@ class LiteratureCatalogTest extends TestCase
             ->assertSeeText('Search Match 5')
             ->assertSeeText('Search Match 2')
             ->assertDontSeeText('Search Match 1')
-            ->assertSeeText('Showing 4 of the newest matches');
+            ->assertSeeText('Showing 4 of the best matches')
+            ->assertSeeText('More results');
+    }
+
+    public function test_catalog_prioritizes_canonical_books_over_guides_and_unofficial_matches(): void
+    {
+        $this->configureGoogleBooks();
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://www.googleapis.com/books/v1/volumes*' => Http::response(['items' => []]),
+        ]);
+
+        $source = ApiSource::factory()->create([
+            'key' => 'google-books',
+            'name' => 'Google Books',
+        ]);
+        Literature::factory()->for($source)->create([
+            'title' => 'Narnia Study Guide and Workbook',
+            'slug' => 'narnia-study-guide-and-workbook',
+            'type' => 'book',
+            'publisher' => 'Example Learning',
+            'identifier' => '9780000000001',
+            'cover_url' => 'https://images.example.test/narnia-guide.jpg',
+        ]);
+        $official = Literature::factory()->for($source)->create([
+            'title' => 'The Chronicles of Narnia',
+            'slug' => 'the-chronicles-of-narnia',
+            'type' => 'book',
+            'publisher' => 'HarperCollins',
+            'identifier' => '9780066238500',
+            'cover_url' => 'https://images.example.test/narnia.jpg',
+            'knowledge_graph_id' => 'kg:/m/02n4h',
+        ]);
+        $author = Author::factory()->create([
+            'name' => 'C. S. Lewis',
+            'slug' => 'c-s-lewis',
+        ]);
+        $official->authors()->attach($author, ['role' => 'author', 'position' => 0]);
+
+        $response = $this->get(route('literatures.index', [
+            'q' => 'Narnia',
+            'type' => 'book',
+        ]))->assertOk();
+
+        $response
+            ->assertSeeInOrder(['The Chronicles of Narnia', 'Narnia Study Guide and Workbook'])
+            ->assertSeeText('C. S. Lewis');
+    }
+
+    public function test_more_results_expands_a_catalog_search_to_twenty_matches(): void
+    {
+        $this->configureGoogleBooks();
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://www.googleapis.com/books/v1/volumes*' => Http::response(['items' => []]),
+        ]);
+
+        $source = ApiSource::factory()->create([
+            'key' => 'google-books',
+            'name' => 'Google Books',
+        ]);
+
+        foreach (range(1, 18) as $position) {
+            Literature::factory()->for($source)->create([
+                'title' => "Narnia Result {$position}",
+                'slug' => "narnia-result-{$position}",
+                'type' => 'book',
+            ]);
+        }
+
+        $response = $this->get(route('literatures.index', [
+            'q' => 'Narnia',
+            'type' => 'book',
+            'more' => 1,
+        ]))->assertOk();
+
+        $this->assertSame(18, substr_count($response->getContent(), 'data-literature-card'));
+        $response
+            ->assertSeeText('Showing 18 of the best matches')
+            ->assertDontSeeText('More results');
+        Http::assertSent(fn ($request): bool => $request['maxResults'] === 20);
     }
 
     public function test_catalog_can_be_filtered_by_query_and_type(): void
@@ -254,7 +334,12 @@ class LiteratureCatalogTest extends TestCase
                             'staff' => [
                                 'edges' => [[
                                     'role' => 'Story & Art',
-                                    'node' => ['name' => ['full' => 'Hiromu Arakawa']],
+                                    'node' => [
+                                        'name' => ['full' => 'Hiromu Arakawa'],
+                                        'image' => ['large' => 'https://s4.anilist.co/hiromu-arakawa.jpg'],
+                                        'description' => 'Japanese manga artist.',
+                                        'siteUrl' => 'https://anilist.co/staff/96879/Hiromu-Arakawa',
+                                    ],
                                 ]],
                             ],
                         ]],
@@ -278,6 +363,10 @@ class LiteratureCatalogTest extends TestCase
             'external_id' => '5114',
             'title' => 'Fullmetal Alchemist',
             'type' => 'manga',
+        ]);
+        $this->assertDatabaseHas('authors', [
+            'name' => 'Hiromu Arakawa',
+            'image_url' => 'https://s4.anilist.co/hiromu-arakawa.jpg',
         ]);
         Http::assertSentCount(1);
     }

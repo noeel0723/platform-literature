@@ -39,7 +39,7 @@
                 </h2>
             </div>
             @if ($query !== '' || $selectedType !== '')
-                <p class="text-sm text-ink-950/50">Showing {{ $literatures->count() }} of the newest matches</p>
+                <p class="text-sm text-ink-950/50">Showing {{ $literatures->count() }} of the best matches</p>
             @endif
         </div>
 
@@ -53,7 +53,7 @@
         @if ($query === '' && $selectedType === '')
             <div class="border border-dashed border-ink-950/20 bg-white/25 px-6 py-14 text-center">
                 <p class="font-serif text-2xl font-bold text-ink-950">What would you like to read next?</p>
-                <p class="mx-auto mt-2 max-w-xl leading-7 text-ink-950/60">Enter a title, author, or genre above. Only the four newest matching works will be displayed.</p>
+                <p class="mx-auto mt-2 max-w-xl leading-7 text-ink-950/60">Enter a title, author, or genre above. The strongest matching works will be shown first.</p>
             </div>
         @elseif ($literatures->isEmpty())
             <div class="border border-ink-950/10 bg-white/35 px-6 py-14 text-center">
@@ -67,6 +67,15 @@
                     <x-literature-card :$literature />
                 @endforeach
             </div>
+
+            @if ($canExpand)
+                <div class="mt-10 flex justify-center border-t border-ink-950/10 pt-7">
+                    <a href="{{ route('literatures.index', array_filter(['q' => $query, 'type' => $selectedType, 'more' => 1])) }}" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-ink-950/20 bg-white/55 px-6 text-sm font-bold text-ink-950 transition hover:border-brand-blue hover:bg-brand-blue hover:text-brand-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-coral">
+                        More results
+                        <span aria-hidden="true">↓</span>
+                    </a>
+                </div>
+            @endif
         @endif
     </section>
 </x-app-shell>

@@ -84,7 +84,7 @@
                                     @else
                                         <span class="truncate">{{ $action }}</span>
                                     @endif
-                                    <time datetime="{{ $activity->occurred_at->utc()->toIso8601String() }}" data-local-datetime class="truncate text-right">{{ $activity->occurred_at->utc()->format('M j, Y') }} (UTC)</time>
+                                    <time datetime="{{ $activity->occurred_at->utc()->toIso8601String() }}" data-local-datetime class="truncate text-right">{{ $activity->occurred_at->utc()->format('M j, Y') }}</time>
                                 </div>
                             </article>
                         @endforeach

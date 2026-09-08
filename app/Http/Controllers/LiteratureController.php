@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Exceptions\LiteratureSourceUnavailable;
 use App\Models\Literature;
 use App\Models\LiteratureRelation;
+use App\Services\Literature\CatalogResultRanker;
 use App\Services\Literature\CatalogSyncService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -25,15 +26,25 @@ class LiteratureController extends Controller
         'light-novel' => 'Light Novel',
     ];
 
-    public function index(Request $request, CatalogSyncService $catalogSync): View
-    {
+    public function index(
+        Request $request,
+        CatalogSyncService $catalogSync,
+        CatalogResultRanker $resultRanker,
+    ): View {
         $query = trim((string) $request->query('q', ''));
         $selectedType = trim((string) $request->query('type', ''));
+        $expanded = $request->boolean('more');
+        $displayLimit = $expanded ? 20 : 4;
+        $sourceLimit = $expanded ? 20 : 6;
         $unavailableSources = [];
 
         if ($query !== '' && in_array($selectedType, ['', 'book', 'novel'], true)) {
             try {
-                $catalogSync->syncGoogleBooks($query, $selectedType === '' ? 'all' : $selectedType);
+                $catalogSync->syncGoogleBooks(
+                    $query,
+                    $selectedType === '' ? 'all' : $selectedType,
+                    $sourceLimit,
+                );
             } catch (LiteratureSourceUnavailable $exception) {
                 $unavailableSources[] = $exception->source;
             }
@@ -41,7 +52,11 @@ class LiteratureController extends Controller
 
         if ($query !== '' && in_array($selectedType, ['', 'manga', 'manhwa', 'light-novel'], true)) {
             try {
-                $catalogSync->syncAniList($query, $selectedType === '' ? 'all' : $selectedType);
+                $catalogSync->syncAniList(
+                    $query,
+                    $selectedType === '' ? 'all' : $selectedType,
+                    $sourceLimit,
+                );
             } catch (LiteratureSourceUnavailable $exception) {
                 $unavailableSources[] = $exception->source;
             }
@@ -49,7 +64,7 @@ class LiteratureController extends Controller
 
         if ($query !== '' && in_array($selectedType, ['', 'western-comic'], true)) {
             try {
-                $catalogSync->syncComicVine($query);
+                $catalogSync->syncComicVine($query, $sourceLimit);
             } catch (LiteratureSourceUnavailable $exception) {
                 $unavailableSources[] = $exception->source;
             }
@@ -63,7 +78,7 @@ class LiteratureController extends Controller
         $literatures = collect();
 
         if ($query !== '' || $selectedType !== '') {
-            $literatures = Literature::query()
+            $matches = Literature::query()
                 ->with(['apiSource', 'authors', 'categories'])
                 ->when($query !== '', function (Builder $builder) use ($query): void {
                     $builder->where(function (Builder $search) use ($query): void {
@@ -83,15 +98,24 @@ class LiteratureController extends Controller
                 })
                 ->latest('updated_at')
                 ->latest('id')
-                ->limit(4)
-                ->get()
+                ->limit(100)
+                ->get();
+
+            $rankedMatches = $resultRanker->rank($matches, $query);
+            $canExpand = ! $expanded && $query !== '' && $rankedMatches->count() > $displayLimit;
+            $literatures = $rankedMatches
+                ->take($displayLimit)
                 ->map(fn (Literature $literature): array => $this->present($literature));
+        } else {
+            $canExpand = false;
         }
 
         return view('catalog.index', [
             'literatures' => $literatures,
             'query' => $query,
             'selectedType' => $selectedType,
+            'expanded' => $expanded,
+            'canExpand' => $canExpand,
             'sourceWarning' => $sourceWarning,
             'types' => self::TYPES,
         ]);

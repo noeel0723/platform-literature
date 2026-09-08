@@ -167,7 +167,7 @@
                                 <span class="mt-1 block text-xs font-bold uppercase tracking-wider text-ink-950/40">Completed</span>
                             @endif
                             @if ($readingList->completed_at)
-                                <time datetime="{{ $readingList->completed_at->utc()->toIso8601String() }}" data-local-datetime class="mt-1 block truncate text-xs text-ink-950/40">{{ $readingList->completed_at->utc()->format('M j, Y') }} (UTC)</time>
+                                <time datetime="{{ $readingList->completed_at->utc()->toIso8601String() }}" data-local-datetime class="mt-1 block truncate text-xs text-ink-950/40">{{ $readingList->completed_at->utc()->format('M j, Y') }}</time>
                             @endif
                         </a>
                     @empty
@@ -190,7 +190,7 @@
                             </a>
                             <div class="min-w-0">
                                 <h3 class="font-serif text-2xl font-bold text-ink-950"><a href="{{ route('literatures.show', $review->literature) }}#review-{{ $review->id }}" class="hover:text-brand-coral">{{ $review->literature->original_title ?? $review->literature->title }}</a> @if ($review->literature->publication_year)<span class="font-sans text-sm font-normal text-ink-950/45">{{ $review->literature->publication_year }}</span>@endif</h3>
-                                <div class="mt-2 flex flex-wrap items-center gap-3"><x-star-rating :rating="$review->rating" size="sm" /><time datetime="{{ $review->updated_at->utc()->toIso8601String() }}" data-local-datetime class="text-xs text-ink-950/45">{{ $review->updated_at->utc()->format('M j, Y') }} (UTC)</time></div>
+                                <div class="mt-2 flex flex-wrap items-center gap-3"><x-star-rating :rating="$review->rating" size="sm" /><time datetime="{{ $review->updated_at->utc()->toIso8601String() }}" data-local-datetime class="text-xs text-ink-950/45">{{ $review->updated_at->utc()->format('M j, Y') }}</time></div>
                                 @if ($review->body)
                                     <p class="mt-3 line-clamp-3 font-serif text-lg leading-7 text-ink-950/65">{{ $review->contains_spoiler ? 'This review contains spoilers.' : $review->body }}</p>
                                 @else
@@ -305,7 +305,7 @@
                         @endphp
                         <li class="relative pb-4 text-sm last:pb-0 before:absolute before:-left-[1.19rem] before:top-1.5 before:size-2 before:rounded-full before:bg-brand-coral">
                             <p class="leading-5 text-ink-950/55">{{ $activityLabel }} <a href="{{ route('literatures.show', $activity->literature) }}" class="font-semibold text-ink-950 hover:text-brand-coral">{{ $activityTitle }}</a></p>
-                            <time datetime="{{ $activity->occurred_at->utc()->toIso8601String() }}" data-local-datetime class="mt-1 block text-xs text-ink-950/35">{{ $activity->occurred_at->utc()->format('M j, Y') }} (UTC)</time>
+                            <time datetime="{{ $activity->occurred_at->utc()->toIso8601String() }}" data-local-datetime class="mt-1 block text-xs text-ink-950/35">{{ $activity->occurred_at->utc()->format('M j, Y') }}</time>
                         </li>
                     @empty
                         <li class="text-sm text-ink-950/45">No activity yet.</li>

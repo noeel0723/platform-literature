@@ -273,7 +273,7 @@
                                 <div class="flex flex-wrap items-center justify-between gap-3">
                                     <div>
                                         <a href="{{ route('profiles.show', $review->user) }}" class="font-bold text-ink-950 transition hover:text-brand-coral">{{ $review->user->name }}</a>
-                                        <time datetime="{{ $review->created_at->utc()->toIso8601String() }}" data-local-datetime class="mt-1 block text-xs font-semibold uppercase tracking-wider text-ink-950/45">{{ $review->created_at->utc()->format('M j, Y, g:i A') }} (UTC)</time>
+                                        <time datetime="{{ $review->created_at->utc()->toIso8601String() }}" data-local-datetime class="mt-1 block text-xs font-semibold uppercase tracking-wider text-ink-950/45">{{ $review->created_at->utc()->format('M j, Y') }}</time>
                                     </div>
                                     <div class="text-right">
                                         <x-star-rating :rating="$review->rating" />
@@ -455,7 +455,7 @@
                                     </a>
                                     <div>
                                         <a href="{{ route('profiles.show', $discussion->user) }}" class="text-sm font-bold text-ink-950 transition hover:text-brand-coral">{{ $discussion->user->name }}</a>
-                                        <time datetime="{{ $discussion->created_at->utc()->toIso8601String() }}" data-local-datetime class="mt-0.5 block text-[11px] text-ink-950/40">{{ $discussion->created_at->utc()->format('M j, Y, g:i A') }} (UTC)</time>
+                                        <time datetime="{{ $discussion->created_at->utc()->toIso8601String() }}" data-local-datetime class="mt-0.5 block text-[11px] text-ink-950/40">{{ $discussion->created_at->utc()->format('M j, Y') }}</time>
                                     </div>
                                 </div>
                                 <div class="min-w-0">
@@ -501,7 +501,7 @@
                                                 </a>
                                                 <div class="min-w-0">
                                                     <a href="{{ route('profiles.show', $comment->user) }}" class="block truncate text-xs font-bold text-ink-950 transition hover:text-brand-coral">{{ $comment->user->name }}</a>
-                                                    <time datetime="{{ $comment->created_at->utc()->toIso8601String() }}" data-local-datetime class="mt-0.5 block text-[10px] leading-4 text-ink-950/40">{{ $comment->created_at->utc()->format('M j, Y, g:i A') }} (UTC)</time>
+                                                    <time datetime="{{ $comment->created_at->utc()->toIso8601String() }}" data-local-datetime class="mt-0.5 block text-[10px] leading-4 text-ink-950/40">{{ $comment->created_at->utc()->format('M j, Y') }}</time>
                                                 </div>
                                             </div>
                                             <div class="min-w-0">
@@ -521,7 +521,7 @@
                                                     <div class="mt-3 grid gap-1.5 border-l border-ink-950/12 pl-3 sm:grid-cols-[100px_minmax(0,1fr)] sm:gap-3">
                                                         <div>
                                                             <p class="truncate text-xs font-bold text-ink-950"><a href="{{ route('profiles.show', $reply->user) }}" class="transition hover:text-brand-coral">{{ $reply->user->name }}</a></p>
-                                                            <time datetime="{{ $reply->created_at->utc()->toIso8601String() }}" data-local-datetime class="text-[10px] leading-4 text-ink-950/40">{{ $reply->created_at->utc()->format('M j, Y, g:i A') }} (UTC)</time>
+                                                            <time datetime="{{ $reply->created_at->utc()->toIso8601String() }}" data-local-datetime class="text-[10px] leading-4 text-ink-950/40">{{ $reply->created_at->utc()->format('M j, Y') }}</time>
                                                         </div>
                                                         <div>
                                                             @if ($reply->contains_spoiler)

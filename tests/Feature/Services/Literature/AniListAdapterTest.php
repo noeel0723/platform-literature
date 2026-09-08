@@ -43,6 +43,8 @@ class AniListAdapterTest extends TestCase
         $this->assertSame('https://s4.anilist.co/file/anilistcdn/media/manga/cover/large.jpg', $manga->coverUrl);
         $this->assertSame('A story about two brothers.', $manga->synopsis);
         $this->assertSame('Manga', $manga->format);
+        $this->assertSame('Hiromu Arakawa', $manga->authorDetails[0]->name);
+        $this->assertSame('https://s4.anilist.co/hiromu-arakawa.jpg', $manga->authorDetails[0]->imageUrl);
 
         Http::assertSent(function (Request $request): bool {
             $data = $request->data();
@@ -241,7 +243,12 @@ class AniListAdapterTest extends TestCase
                 'edges' => [
                     [
                         'role' => 'Story & Art',
-                        'node' => ['name' => ['full' => 'Hiromu Arakawa']],
+                        'node' => [
+                            'name' => ['full' => 'Hiromu Arakawa'],
+                            'image' => ['large' => 'https://s4.anilist.co/hiromu-arakawa.jpg'],
+                            'description' => 'Japanese manga artist.',
+                            'siteUrl' => 'https://anilist.co/staff/96879/Hiromu-Arakawa',
+                        ],
                     ],
                     [
                         'role' => 'Translation',

@@ -24,11 +24,11 @@ final class CatalogSyncService
         private KnowledgeGraphEnricher $knowledgeGraph,
     ) {}
 
-    public function syncGoogleBooks(string $query, string $literatureType = 'all'): int
+    public function syncGoogleBooks(string $query, string $literatureType = 'all', ?int $limit = null): int
     {
         $items = $this->googleBooks->search(
             $query,
-            (int) config('services.google_books.max_results', 6),
+            $limit ?? (int) config('services.google_books.max_results', 6),
             $literatureType,
         );
 
@@ -41,7 +41,7 @@ final class CatalogSyncService
         );
     }
 
-    public function syncAniList(string $query, string $literatureType): int
+    public function syncAniList(string $query, string $literatureType, ?int $limit = null): int
     {
         if (! in_array($literatureType, ['all', 'manga', 'manhwa', 'light-novel'], true)) {
             throw new InvalidArgumentException('AniList sync only supports all, manga, manhwa, and light-novel types.');
@@ -51,7 +51,7 @@ final class CatalogSyncService
             $items = $this->aniList->search(
                 $query,
                 $literatureType,
-                (int) config('services.anilist.max_results', 6),
+                $limit ?? (int) config('services.anilist.max_results', 6),
             );
 
             return $this->sync(
@@ -67,10 +67,10 @@ final class CatalogSyncService
             }
 
             try {
-                return $this->syncMangaDex($query, $literatureType);
+                return $this->syncMangaDex($query, $literatureType, $limit);
             } catch (LiteratureSourceUnavailable $mangaDexException) {
                 try {
-                    return $this->syncKitsu($query, $literatureType);
+                    return $this->syncKitsu($query, $literatureType, $limit);
                 } catch (LiteratureSourceUnavailable $kitsuException) {
                     throw new LiteratureSourceUnavailable(
                         'AniList, MangaDex, and Kitsu',
@@ -82,7 +82,7 @@ final class CatalogSyncService
         }
     }
 
-    public function syncMangaDex(string $query, string $literatureType): int
+    public function syncMangaDex(string $query, string $literatureType, ?int $limit = null): int
     {
         if (! in_array($literatureType, ['all', 'manga', 'manhwa'], true)) {
             throw new InvalidArgumentException('MangaDex sync only supports all, manga, and manhwa types.');
@@ -91,7 +91,7 @@ final class CatalogSyncService
         $items = $this->mangaDex->search(
             $query,
             $literatureType,
-            (int) config('services.mangadex.max_results', 6),
+            $limit ?? (int) config('services.mangadex.max_results', 6),
         );
 
         return $this->sync(
@@ -103,7 +103,7 @@ final class CatalogSyncService
         );
     }
 
-    public function syncKitsu(string $query, string $literatureType): int
+    public function syncKitsu(string $query, string $literatureType, ?int $limit = null): int
     {
         if (! in_array($literatureType, ['all', 'manga', 'manhwa'], true)) {
             throw new InvalidArgumentException('Kitsu sync only supports all, manga, and manhwa types.');
@@ -112,7 +112,7 @@ final class CatalogSyncService
         $items = $this->kitsu->search(
             $query,
             $literatureType,
-            (int) config('services.kitsu.max_results', 6),
+            $limit ?? (int) config('services.kitsu.max_results', 6),
         );
 
         return $this->sync(
@@ -124,11 +124,11 @@ final class CatalogSyncService
         );
     }
 
-    public function syncComicVine(string $query): int
+    public function syncComicVine(string $query, ?int $limit = null): int
     {
         $items = $this->comicVine->search(
             $query,
-            (int) config('services.comic_vine.max_results', 6),
+            $limit ?? (int) config('services.comic_vine.max_results', 6),
         );
 
         return $this->sync(
@@ -251,7 +251,7 @@ final class CatalogSyncService
         ]);
         $literature->save();
 
-        $this->syncAuthors($literature, $item->authors);
+        $this->syncAuthors($literature, $item->authors, $item->authorDetails);
         $this->syncCategories($literature, $item->categories);
         $this->syncRelations($source, $literature, $item->relations);
 
@@ -292,20 +292,36 @@ final class CatalogSyncService
         }
     }
 
-    /** @param list<string> $authorNames */
-    private function syncAuthors(Literature $literature, array $authorNames): void
+    /**
+     * @param  list<string>  $authorNames
+     * @param  list<NormalizedAuthor>  $authorDetails
+     */
+    private function syncAuthors(Literature $literature, array $authorNames, array $authorDetails = []): void
     {
         if ($authorNames === []) {
             return;
         }
 
         $authorLinks = [];
+        $detailsBySlug = collect($authorDetails)->keyBy(
+            fn (NormalizedAuthor $author): string => Str::slug($author->name),
+        );
 
         foreach ($authorNames as $position => $authorName) {
             $author = Author::query()->firstOrCreate(
                 ['slug' => Str::slug($authorName)],
                 ['name' => $authorName],
             );
+            $details = $detailsBySlug->get($author->slug);
+
+            if ($details instanceof NormalizedAuthor
+                && ($author->image_url === null || $author->biography === null)) {
+                $author->fill([
+                    'image_url' => $author->image_url ?? $details->imageUrl,
+                    'biography' => $author->biography ?? $details->biography,
+                ]);
+                $author->save();
+            }
 
             $authorLinks[$author->id] = [
                 'role' => 'author',

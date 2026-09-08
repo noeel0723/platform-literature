@@ -32,7 +32,7 @@
                             <h2 class="mt-2 truncate text-sm font-bold text-ink-950 transition group-hover:text-brand-coral">{{ $literature->original_title ?? $literature->title }}</h2>
                             <p class="mt-0.5 truncate text-xs text-ink-950/50">{{ $literature->authors->pluck('name')->implode(' & ') ?: 'Author unavailable' }}</p>
                         </a>
-                        <time datetime="{{ $item->updated_at->utc()->toIso8601String() }}" data-local-datetime class="mt-1.5 block text-[0.68rem] text-ink-950/40">Saved {{ $item->updated_at->utc()->format('M j, Y') }} (UTC)</time>
+                        <time datetime="{{ $item->updated_at->utc()->toIso8601String() }}" data-local-datetime data-time-prefix="Saved " class="mt-1.5 block text-[0.68rem] text-ink-950/40">Saved {{ $item->updated_at->utc()->format('M j, Y') }}</time>
                     </article>
                 @endforeach
             </div>

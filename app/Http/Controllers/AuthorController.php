@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Author;
 use App\Models\Literature;
+use App\Services\Literature\AniListAuthorEnricher;
 use App\Services\Literature\KnowledgeGraphEnricher;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -11,14 +12,29 @@ use Illuminate\Support\Str;
 
 class AuthorController extends Controller
 {
-    public function __invoke(Author $author, KnowledgeGraphEnricher $knowledgeGraph): View
-    {
+    public function __invoke(
+        Author $author,
+        KnowledgeGraphEnricher $knowledgeGraph,
+        AniListAuthorEnricher $aniListAuthors,
+    ): View {
         $entity = $knowledgeGraph->findAuthor($author->name);
+        $isMangaCreator = $author->literatures()
+            ->whereIn('type', ['manga', 'manhwa'])
+            ->exists();
+        $aniListAuthor = $author->image_url === null
+            && $isMangaCreator
+            && $entity?->imageUrl === null
+            ? $aniListAuthors->find($author->name)
+            : null;
 
-        if ($entity !== null && ($author->image_url === null || $author->biography === null)) {
+        if (($entity !== null || $aniListAuthor !== null)
+            && ($author->image_url === null || $author->biography === null)) {
             $author->fill([
-                'image_url' => $author->image_url ?? $entity->imageUrl,
-                'biography' => $author->biography ?? $entity->detailedDescription ?? $entity->description,
+                'image_url' => $author->image_url ?? $entity?->imageUrl ?? $aniListAuthor?->imageUrl,
+                'biography' => $author->biography
+                    ?? $entity?->detailedDescription
+                    ?? $entity?->description
+                    ?? $aniListAuthor?->biography,
             ]);
             $author->save();
         }
@@ -39,7 +55,9 @@ class AuthorController extends Controller
         return view('authors.show', [
             'author' => $author,
             'literatures' => $literatures,
-            'profileSourceUrl' => $entity?->sourceUrl ?? $entity?->officialUrl,
+            'profileSourceUrl' => $entity?->sourceUrl
+                ?? $entity?->officialUrl
+                ?? $aniListAuthor?->sourceUrl,
             'imageLicenseUrl' => $entity?->imageLicenseUrl,
         ]);
     }

@@ -84,11 +84,30 @@ document.querySelectorAll('[data-account-menu]').forEach((accountMenu) => {
     });
 });
 
-const localDateTimeFormatter = new Intl.DateTimeFormat('en', {
+const localDateFormatter = new Intl.DateTimeFormat('en', {
     dateStyle: 'medium',
-    timeStyle: 'short',
 });
-const readerTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+const readableActivityDate = (date) => {
+    const elapsedMilliseconds = Date.now() - date.getTime();
+    const elapsedMinutes = Math.floor(elapsedMilliseconds / 60_000);
+
+    if (elapsedMilliseconds >= 0 && elapsedMilliseconds < 86_400_000) {
+        if (elapsedMinutes < 1) {
+            return 'Just now';
+        }
+
+        if (elapsedMinutes < 60) {
+            return `${elapsedMinutes} ${elapsedMinutes === 1 ? 'minute' : 'minutes'} ago`;
+        }
+
+        const elapsedHours = Math.floor(elapsedMinutes / 60);
+
+        return `${elapsedHours} ${elapsedHours === 1 ? 'hour' : 'hours'} ago`;
+    }
+
+    return localDateFormatter.format(date);
+};
 
 document.querySelectorAll('[data-local-datetime]').forEach((element) => {
     const date = new Date(element.getAttribute('datetime'));
@@ -97,8 +116,10 @@ document.querySelectorAll('[data-local-datetime]').forEach((element) => {
         return;
     }
 
-    element.textContent = `${localDateTimeFormatter.format(date)} (${readerTimeZone})`;
-    element.setAttribute('title', `Displayed in your local time zone: ${readerTimeZone}`);
+    const prefix = element.dataset.timePrefix ?? '';
+
+    element.textContent = `${prefix}${readableActivityDate(date)}`;
+    element.setAttribute('title', localDateFormatter.format(date));
 });
 
 const localDatePartFormatters = {
@@ -118,7 +139,7 @@ document.querySelectorAll('[data-local-date-part]').forEach((element) => {
 
     const value = formatter.format(date);
     element.textContent = part === 'month' ? value.toUpperCase() : value;
-    element.setAttribute('title', `${localDateTimeFormatter.format(date)} (${readerTimeZone})`);
+    element.setAttribute('title', localDateFormatter.format(date));
 });
 
 document.querySelectorAll('[data-spoiler-reveal]').forEach((button) => {

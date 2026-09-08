@@ -69,6 +69,7 @@ return [
     'anilist' => [
         'base_url' => env('ANILIST_BASE_URL', 'https://graphql.anilist.co'),
         'max_results' => (int) env('ANILIST_MAX_RESULTS', 6),
+        'author_cache_days' => (int) env('ANILIST_AUTHOR_CACHE_DAYS', 30),
         'connect_timeout' => (int) env('ANILIST_CONNECT_TIMEOUT', 3),
         'timeout' => (int) env('ANILIST_TIMEOUT', 12),
     ],

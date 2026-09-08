@@ -70,7 +70,7 @@
                             <dl class="mt-5 grid gap-3 border-t border-ink-950/10 pt-5 text-sm text-ink-950/60 sm:grid-cols-2">
                                 <div><dt class="text-xs font-bold uppercase tracking-wider text-ink-950/45">Reported by</dt><dd class="mt-1 font-semibold text-ink-950">{{ $report->reporter->name }}</dd></div>
                                 <div><dt class="text-xs font-bold uppercase tracking-wider text-ink-950/45">Content owner</dt><dd class="mt-1 font-semibold text-ink-950">{{ $targetOwner?->name ?? 'Unavailable' }}</dd></div>
-                                <div><dt class="text-xs font-bold uppercase tracking-wider text-ink-950/45">Submitted</dt><dd class="mt-1"><time datetime="{{ $report->created_at->utc()->toIso8601String() }}" data-local-datetime>{{ $report->created_at->utc()->format('M j, Y, g:i A') }} (UTC)</time></dd></div>
+                                <div><dt class="text-xs font-bold uppercase tracking-wider text-ink-950/45">Submitted</dt><dd class="mt-1"><time datetime="{{ $report->created_at->utc()->toIso8601String() }}" data-local-datetime>{{ $report->created_at->utc()->format('M j, Y') }}</time></dd></div>
                                 @if ($targetUrl)
                                     <div><dt class="text-xs font-bold uppercase tracking-wider text-ink-950/45">Target</dt><dd class="mt-1"><a href="{{ $targetUrl }}" class="font-bold underline decoration-brand-coral underline-offset-4">Open reported item</a></dd></div>
                                 @endif

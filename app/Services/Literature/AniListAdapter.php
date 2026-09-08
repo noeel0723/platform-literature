@@ -111,12 +111,13 @@ final class AniListAdapter
         );
 
         $countryOfOrigin = $this->cleanText(Arr::get($item, 'countryOfOrigin'));
+        $authorDetails = $this->authors(Arr::get($item, 'staff.edges'));
 
         return new NormalizedLiterature(
             externalId: $externalId,
             title: $title,
             type: $this->literatureType(Arr::get($item, 'format'), $countryOfOrigin, $literatureType),
-            authors: $this->authors(Arr::get($item, 'staff.edges')),
+            authors: collect($authorDetails)->pluck('name')->all(),
             categories: $this->stringList(Arr::get($item, 'genres')),
             publicationYear: $this->publicationYear(Arr::get($item, 'startDate.year')),
             tagline: null,
@@ -128,6 +129,7 @@ final class AniListAdapter
             coverUrl: $coverUrl,
             originalTitle: $this->originalTitle($item, $title),
             relations: $includeRelations ? $this->relations(Arr::get($item, 'relations.edges')) : [],
+            authorDetails: $authorDetails,
         );
     }
 
@@ -179,7 +181,7 @@ final class AniListAdapter
         return $nativeTitle !== null && $nativeTitle !== $displayTitle ? $nativeTitle : null;
     }
 
-    /** @return list<string> */
+    /** @return list<NormalizedAuthor> */
     private function authors(mixed $edges): array
     {
         if (! is_array($edges)) {
@@ -189,9 +191,25 @@ final class AniListAdapter
         return collect($edges)
             ->filter(fn (mixed $edge): bool => is_array($edge)
                 && Str::contains(Str::lower((string) Arr::get($edge, 'role')), 'story'))
-            ->map(fn (array $edge): ?string => $this->cleanText(Arr::get($edge, 'node.name.full')))
+            ->map(function (array $edge): ?NormalizedAuthor {
+                $name = $this->cleanText(Arr::get($edge, 'node.name.full'));
+
+                if ($name === null) {
+                    return null;
+                }
+
+                return new NormalizedAuthor(
+                    name: $name,
+                    imageUrl: $this->cleanUrl(
+                        Arr::get($edge, 'node.image.large')
+                            ?? Arr::get($edge, 'node.image.medium'),
+                    ),
+                    biography: $this->cleanText(Arr::get($edge, 'node.description')),
+                    sourceUrl: $this->cleanUrl(Arr::get($edge, 'node.siteUrl')),
+                );
+            })
             ->filter()
-            ->unique()
+            ->unique(fn (NormalizedAuthor $author): string => Str::lower($author->name))
             ->values()
             ->all();
     }
@@ -259,6 +277,17 @@ final class AniListAdapter
         return $cleaned === '' ? null : $cleaned;
     }
 
+    private function cleanUrl(mixed $value): ?string
+    {
+        $url = $this->cleanText($value);
+
+        if ($url === null || filter_var($url, FILTER_VALIDATE_URL) === false) {
+            return null;
+        }
+
+        return preg_replace('#^http://#', 'https://', $url) ?? $url;
+    }
+
     private function searchQuery(): string
     {
         return <<<'GRAPHQL'
@@ -295,9 +324,16 @@ final class AniListAdapter
                     edges {
                       role
                       node {
+                        id
                         name {
                           full
                         }
+                        image {
+                          large
+                          medium
+                        }
+                        description(asHtml: false)
+                        siteUrl
                       }
                     }
                   }

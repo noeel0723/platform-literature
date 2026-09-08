@@ -47,7 +47,7 @@
                             <div class="min-w-0 flex-1">
                                 <div class="flex min-w-0 items-start justify-between gap-3">
                                     <p class="min-w-0 text-[13px] leading-5 text-ink-950/60 sm:text-sm"><a href="{{ route('profiles.show', $activity->user) }}" class="font-bold text-ink-950 hover:text-brand-coral">{{ $activity->user->name }}</a> {{ $action }} @unless ($isExpanded)<a href="{{ route('literatures.show', $activity->literature) }}" class="font-bold text-ink-950 hover:text-brand-coral">{{ $title }}</a>@endunless</p>
-                                    <time datetime="{{ $activity->occurred_at->utc()->toIso8601String() }}" data-local-datetime class="shrink-0 pt-0.5 text-[11px] leading-4 text-ink-950/35">{{ $activity->occurred_at->utc()->format('M j, Y') }} (UTC)</time>
+                                    <time datetime="{{ $activity->occurred_at->utc()->toIso8601String() }}" data-local-datetime class="shrink-0 pt-0.5 text-[11px] leading-4 text-ink-950/35">{{ $activity->occurred_at->utc()->format('M j, Y') }}</time>
                                 </div>
 
                                 @if ($isExpanded)

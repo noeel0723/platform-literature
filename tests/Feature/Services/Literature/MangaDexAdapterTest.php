@@ -46,6 +46,8 @@ class MangaDexAdapterTest extends TestCase
         $this->assertSame('https://uploads.mangadex.org/covers/manga-id/cover.jpg', $manga->coverUrl);
         $this->assertSame('A volleyball story.', $manga->synopsis);
         $this->assertSame('ja', $manga->language);
+        $this->assertSame('Haruichi Furudate', $manga->authorDetails[0]->name);
+        $this->assertSame('https://mangadex.org/covers/author.jpg', $manga->authorDetails[0]->imageUrl);
 
         Http::assertSent(function (Request $request): bool {
             $data = $request->data();
@@ -185,7 +187,11 @@ class MangaDexAdapterTest extends TestCase
                 [
                     'id' => 'author-id',
                     'type' => 'author',
-                    'attributes' => ['name' => 'Haruichi Furudate'],
+                    'attributes' => [
+                        'name' => 'Haruichi Furudate',
+                        'imageUrl' => 'https://mangadex.org/covers/author.jpg',
+                        'biography' => ['en' => 'Japanese manga artist.'],
+                    ],
                 ],
                 [
                     'id' => 'artist-id',

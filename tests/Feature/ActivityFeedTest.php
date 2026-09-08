@@ -174,7 +174,9 @@ class ActivityFeedTest extends TestCase
         $this->actingAs($viewer)->get(route('home'))
             ->assertOk()
             ->assertSee('datetime="2026-09-07T02:30:00+00:00"', false)
-            ->assertSee('data-local-datetime', false);
+            ->assertSee('data-local-datetime', false)
+            ->assertDontSee('(UTC)', false)
+            ->assertDontSee('(Asia/Makassar)', false);
     }
 
     public function test_hidden_reviews_are_not_exposed_in_the_activity_feed(): void
