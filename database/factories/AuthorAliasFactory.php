@@ -3,14 +3,14 @@
 namespace Database\Factories;
 
 use App\Models\Author;
+use App\Models\AuthorAlias;
 use App\Services\Literature\AuthorNameNormalizer;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
 
 /**
- * @extends Factory<Author>
+ * @extends Factory<AuthorAlias>
  */
-class AuthorFactory extends Factory
+class AuthorAliasFactory extends Factory
 {
     /**
      * Define the model's default state.
@@ -19,15 +19,15 @@ class AuthorFactory extends Factory
      */
     public function definition(): array
     {
-        $name = fake()->unique()->name();
+        $name = fake()->name();
 
         return [
+            'author_id' => Author::factory(),
             'name' => $name,
             'normalized_name' => app(AuthorNameNormalizer::class)->normalize($name),
-            'external_entity_id' => null,
-            'slug' => Str::slug($name).'-'.fake()->unique()->numberBetween(100, 999),
-            'biography' => fake()->paragraph(),
-            'image_url' => null,
+            'source' => fake()->randomElement(['google-books', 'anilist', 'mangadex', 'kitsu']),
+            'external_id' => fake()->unique()->uuid(),
+            'source_url' => null,
         ];
     }
 }

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Author;
+use App\Models\AuthorAlias;
 use App\Models\Literature;
 use App\Models\ReadingList;
 use App\Models\Review;
@@ -64,6 +65,26 @@ class SearchPageTest extends TestCase
             ->assertSee('data-header-search', false)
             ->assertSee('data-expanded="false"', false)
             ->assertSeeText('Search literature, authors, or readers');
+    }
+
+    public function test_global_search_finds_an_author_by_a_known_alias(): void
+    {
+        $author = Author::factory()->create(['name' => 'J. K. Rowling']);
+        $literature = Literature::factory()->create(['title' => 'The Cuckoo’s Calling']);
+        $literature->authors()->attach($author, ['role' => 'author', 'position' => 0]);
+        AuthorAlias::factory()->for($author)->create([
+            'name' => 'Robert Galbraith',
+            'normalized_name' => 'robert galbraith',
+            'source' => 'google-books',
+            'external_id' => null,
+        ]);
+
+        $this->get(route('search.index', ['q' => 'Robert Galbraith']))
+            ->assertOk()
+            ->assertSeeText('J. K. Rowling')
+            ->assertSeeText('The Cuckoo’s Calling')
+            ->assertSee('data-search-literature', false)
+            ->assertSee('data-search-author', false);
     }
 
     public function test_authenticated_header_shows_the_account_menu_and_feature_links(): void

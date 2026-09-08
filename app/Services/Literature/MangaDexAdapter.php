@@ -177,6 +177,7 @@ final class MangaDexAdapter
                             ['en'],
                         ),
                         sourceUrl: $this->cleanUrl(Arr::get($relationship, 'attributes.website')),
+                        externalId: $this->cleanText(Arr::get($relationship, 'id')),
                     );
                 })
                 ->filter()

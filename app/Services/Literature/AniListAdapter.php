@@ -206,6 +206,9 @@ final class AniListAdapter
                     ),
                     biography: $this->cleanText(Arr::get($edge, 'node.description')),
                     sourceUrl: $this->cleanUrl(Arr::get($edge, 'node.siteUrl')),
+                    externalId: filled(Arr::get($edge, 'node.id'))
+                        ? (string) Arr::get($edge, 'node.id')
+                        : null,
                 );
             })
             ->filter()

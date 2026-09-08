@@ -7,8 +7,9 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['name', 'slug', 'biography', 'image_url'])]
+#[Fillable(['name', 'normalized_name', 'external_entity_id', 'slug', 'biography', 'image_url'])]
 class Author extends Model
 {
     /** @use HasFactory<AuthorFactory> */
@@ -24,6 +25,20 @@ class Author extends Model
     {
         return $this->belongsToMany(Literature::class)
             ->withPivot(['role', 'position'])
+            ->withTimestamps();
+    }
+
+    /** @return HasMany<AuthorAlias, $this> */
+    public function aliases(): HasMany
+    {
+        return $this->hasMany(AuthorAlias::class);
+    }
+
+    /** @return BelongsToMany<User, $this> */
+    public function favoritedByUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'user_favorite_authors')
+            ->withPivot('position')
             ->withTimestamps();
     }
 }

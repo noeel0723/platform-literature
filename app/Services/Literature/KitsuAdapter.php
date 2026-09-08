@@ -121,12 +121,13 @@ final class KitsuAdapter
         }
 
         $originalLanguage = $type === 'manhwa' ? 'ko' : 'ja';
+        $authorDetails = $this->authors($item, $included);
 
         return new NormalizedLiterature(
             externalId: $externalId,
             title: $title,
             type: $type,
-            authors: $this->authors($item, $included),
+            authors: collect($authorDetails)->pluck('name')->all(),
             categories: [],
             publicationYear: $this->publicationYear(Arr::get($attributes, 'startDate')),
             tagline: null,
@@ -143,13 +144,14 @@ final class KitsuAdapter
                     ?: Arr::get($attributes, 'posterImage.original'),
             ),
             originalTitle: $this->originalTitle($attributes, $originalLanguage, $title),
+            authorDetails: $authorDetails,
         );
     }
 
     /**
      * @param  array<string, mixed>  $item
      * @param  list<mixed>  $included
-     * @return list<string>
+     * @return list<NormalizedAuthor>
      */
     private function authors(array $item, array $included): array
     {
@@ -167,7 +169,7 @@ final class KitsuAdapter
         $people = $includedItems
             ->where('type', 'people')
             ->mapWithKeys(fn (array $person): array => [
-                (string) Arr::get($person, 'id') => $this->cleanText(Arr::get($person, 'attributes.name')),
+                (string) Arr::get($person, 'id') => $person,
             ]);
 
         return $includedItems
@@ -178,9 +180,33 @@ final class KitsuAdapter
 
                 return Str::contains($role, ['story', 'art', 'author', 'creator', 'original']);
             })
-            ->map(fn (array $staff): ?string => $people->get((string) Arr::get($staff, 'relationships.person.data.id')))
+            ->map(function (array $staff) use ($people): ?NormalizedAuthor {
+                $person = $people->get((string) Arr::get($staff, 'relationships.person.data.id'));
+
+                if (! is_array($person)) {
+                    return null;
+                }
+
+                $name = $this->cleanText(Arr::get($person, 'attributes.name'));
+                $externalId = $this->cleanText(Arr::get($person, 'id'));
+
+                if ($name === null || $externalId === null) {
+                    return null;
+                }
+
+                return new NormalizedAuthor(
+                    name: $name,
+                    imageUrl: $this->cleanText(
+                        Arr::get($person, 'attributes.image.original')
+                            ?: Arr::get($person, 'attributes.image.medium')
+                            ?: Arr::get($person, 'attributes.image.small'),
+                    ),
+                    biography: $this->cleanText(Arr::get($person, 'attributes.description')),
+                    externalId: $externalId,
+                );
+            })
             ->filter()
-            ->unique()
+            ->unique(fn (NormalizedAuthor $author): string => $author->externalId ?? Str::lower($author->name))
             ->values()
             ->all();
     }

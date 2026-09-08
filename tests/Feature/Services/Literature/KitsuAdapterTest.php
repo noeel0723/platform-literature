@@ -42,6 +42,7 @@ class KitsuAdapterTest extends TestCase
         $this->assertSame('https://media.kitsu.app/haikyu-medium.jpg', $manga->coverUrl);
         $this->assertSame('A volleyball story.', $manga->synopsis);
         $this->assertSame('ja', $manga->language);
+        $this->assertSame('person-id', $manga->authorDetails[0]->externalId);
 
         Http::assertSent(function (Request $request): bool {
             $data = $request->data();

@@ -3,6 +3,7 @@
 namespace Tests\Feature\Services\Literature;
 
 use App\Models\ApiSource;
+use App\Models\Author;
 use App\Models\Literature;
 use App\Models\LiteratureRelation;
 use App\Services\Literature\CatalogSyncService;
@@ -108,6 +109,48 @@ class CatalogSyncServiceTest extends TestCase
         Http::assertSentCount(2);
     }
 
+    public function test_different_sources_link_initial_variants_to_one_author(): void
+    {
+        $this->configureGoogleBooks();
+        $this->configureAniList();
+        config()->set('services.knowledge_graph.key', null);
+        $volume = $this->volume();
+        $volume['volumeInfo']['title'] = 'Harry Potter and the Philosopher’s Stone';
+        $volume['volumeInfo']['authors'] = ['J.K Rowling'];
+        $manga = $this->manga();
+        $manga['title'] = ['english' => 'Harry Potter Manga Edition'];
+        $manga['staff']['edges'][0]['node']['id'] = 1234;
+        $manga['staff']['edges'][0]['node']['name']['full'] = 'J. K. Rowling';
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://www.googleapis.com/books/v1/volumes*' => Http::response([
+                'items' => [$volume],
+            ]),
+            'https://graphql.anilist.co*' => Http::response([
+                'data' => [
+                    'Page' => [
+                        'media' => [$manga],
+                    ],
+                ],
+            ]),
+        ]);
+
+        app(CatalogSyncService::class)->syncGoogleBooks('Harry Potter');
+        app(CatalogSyncService::class)->syncAniList('Harry Potter', 'manga');
+
+        $author = Author::query()->sole();
+        $this->assertSame('J.K Rowling', $author->name);
+        $this->assertSame('jk rowling', $author->normalized_name);
+        $this->assertSame(2, $author->literatures()->count());
+        $this->assertDatabaseCount('author_aliases', 2);
+        $this->assertDatabaseHas('author_aliases', [
+            'author_id' => $author->id,
+            'source' => 'anilist',
+            'external_id' => '1234',
+            'normalized_name' => 'jk rowling',
+        ]);
+    }
+
     public function test_anilist_sync_persists_bidirectional_relations_without_duplicates(): void
     {
         $this->configureAniList();
@@ -197,7 +240,7 @@ class CatalogSyncServiceTest extends TestCase
             ['Thing', 'Book'],
             Literature::query()->where('external_id', '5114')->firstOrFail()->knowledge_graph_types,
         );
-        Http::assertSentCount(2);
+        Http::assertSentCount(3);
     }
 
     public function test_repeated_comic_vine_sync_updates_one_comic_without_duplicates(): void

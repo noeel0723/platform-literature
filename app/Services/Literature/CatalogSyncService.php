@@ -4,7 +4,6 @@ namespace App\Services\Literature;
 
 use App\Exceptions\LiteratureSourceUnavailable;
 use App\Models\ApiSource;
-use App\Models\Author;
 use App\Models\Category;
 use App\Models\Literature;
 use App\Models\LiteratureRelation;
@@ -22,6 +21,8 @@ final class CatalogSyncService
         private KitsuAdapter $kitsu,
         private ComicVineAdapter $comicVine,
         private KnowledgeGraphEnricher $knowledgeGraph,
+        private AuthorNameNormalizer $authorNames,
+        private AuthorEntityResolver $authors,
     ) {}
 
     public function syncGoogleBooks(string $query, string $literatureType = 'all', ?int $limit = null): int
@@ -158,6 +159,11 @@ final class CatalogSyncService
         $enrichedItems = $items->map(fn (NormalizedLiterature $item): array => [
             'item' => $item,
             'entity' => $this->knowledgeGraph->find($item->title, $item->authors),
+            'author_entities' => collect($item->authors)
+                ->mapWithKeys(fn (string $authorName): array => [
+                    $this->authorNames->normalize($authorName) => $this->knowledgeGraph->findAuthor($authorName),
+                ])
+                ->all(),
         ]);
 
         return DB::transaction(function () use (
@@ -178,7 +184,12 @@ final class CatalogSyncService
             );
 
             foreach ($enrichedItems as $enrichedItem) {
-                $this->persist($source, $enrichedItem['item'], $enrichedItem['entity']);
+                $this->persist(
+                    $source,
+                    $enrichedItem['item'],
+                    $enrichedItem['entity'],
+                    $enrichedItem['author_entities'],
+                );
             }
 
             return $enrichedItems->count();
@@ -189,6 +200,7 @@ final class CatalogSyncService
         ApiSource $source,
         NormalizedLiterature $item,
         ?KnowledgeGraphEntity $entity = null,
+        array $authorEntities = [],
     ): Literature {
         $literature = Literature::query()
             ->whereBelongsTo($source)
@@ -203,6 +215,8 @@ final class CatalogSyncService
         }
 
         if ($literature === null && $item->authors !== []) {
+            $normalizedPrimaryAuthor = $this->authorNames->normalize($item->authors[0]);
+
             $literature = Literature::query()
                 ->whereBelongsTo($source)
                 ->where('title', $item->title)
@@ -210,7 +224,12 @@ final class CatalogSyncService
                     $item->publicationYear !== null,
                     fn ($query) => $query->where('publication_year', $item->publicationYear),
                 )
-                ->whereHas('authors', fn ($query) => $query->where('slug', Str::slug($item->authors[0])))
+                ->whereHas('authors', function ($query) use ($item, $normalizedPrimaryAuthor): void {
+                    $query
+                        ->where('normalized_name', $normalizedPrimaryAuthor)
+                        ->orWhere('slug', Str::slug($item->authors[0]))
+                        ->orWhereHas('aliases', fn ($aliases) => $aliases->where('normalized_name', $normalizedPrimaryAuthor));
+                })
                 ->first();
         }
 
@@ -251,7 +270,7 @@ final class CatalogSyncService
         ]);
         $literature->save();
 
-        $this->syncAuthors($literature, $item->authors, $item->authorDetails);
+        $this->syncAuthors($source, $literature, $item->authors, $item->authorDetails, $authorEntities);
         $this->syncCategories($literature, $item->categories);
         $this->syncRelations($source, $literature, $item->relations);
 
@@ -295,33 +314,32 @@ final class CatalogSyncService
     /**
      * @param  list<string>  $authorNames
      * @param  list<NormalizedAuthor>  $authorDetails
+     * @param  array<string, KnowledgeGraphEntity|null>  $authorEntities
      */
-    private function syncAuthors(Literature $literature, array $authorNames, array $authorDetails = []): void
-    {
+    private function syncAuthors(
+        ApiSource $source,
+        Literature $literature,
+        array $authorNames,
+        array $authorDetails = [],
+        array $authorEntities = [],
+    ): void {
         if ($authorNames === []) {
             return;
         }
 
         $authorLinks = [];
-        $detailsBySlug = collect($authorDetails)->keyBy(
-            fn (NormalizedAuthor $author): string => Str::slug($author->name),
+        $detailsByName = collect($authorDetails)->keyBy(
+            fn (NormalizedAuthor $author): string => $this->authorNames->normalize($author->name),
         );
 
         foreach ($authorNames as $position => $authorName) {
-            $author = Author::query()->firstOrCreate(
-                ['slug' => Str::slug($authorName)],
-                ['name' => $authorName],
-            );
-            $details = $detailsBySlug->get($author->slug);
-
-            if ($details instanceof NormalizedAuthor
-                && ($author->image_url === null || $author->biography === null)) {
-                $author->fill([
-                    'image_url' => $author->image_url ?? $details->imageUrl,
-                    'biography' => $author->biography ?? $details->biography,
-                ]);
-                $author->save();
-            }
+            $normalizedName = $this->authorNames->normalize($authorName);
+            $details = $detailsByName->get($normalizedName);
+            $candidate = $details instanceof NormalizedAuthor
+                ? $details
+                : new NormalizedAuthor(name: $authorName);
+            $entity = $authorEntities[$normalizedName] ?? null;
+            $author = $this->authors->resolve($source->key, $candidate, $entity);
 
             $authorLinks[$author->id] = [
                 'role' => 'author',

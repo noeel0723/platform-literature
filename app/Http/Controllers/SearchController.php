@@ -26,7 +26,9 @@ class SearchController extends Controller
                     $literatureQuery
                         ->where('title', 'like', "%{$query}%")
                         ->orWhere('original_title', 'like', "%{$query}%")
-                        ->orWhereHas('authors', fn (Builder $authors) => $authors->where('name', 'like', "%{$query}%"))
+                        ->orWhereHas('authors', fn (Builder $authors) => $authors
+                            ->where('name', 'like', "%{$query}%")
+                            ->orWhereHas('aliases', fn (Builder $aliases) => $aliases->where('name', 'like', "%{$query}%")))
                         ->orWhereHas('categories', fn (Builder $categories) => $categories->where('name', 'like', "%{$query}%"));
                 })
                 ->latest('updated_at')
@@ -37,6 +39,7 @@ class SearchController extends Controller
                 ->where(function (Builder $authorQuery) use ($query): void {
                     $authorQuery
                         ->where('name', 'like', "%{$query}%")
+                        ->orWhereHas('aliases', fn (Builder $aliases) => $aliases->where('name', 'like', "%{$query}%"))
                         ->orWhereHas('literatures', function (Builder $literatures) use ($query): void {
                             $literatures
                                 ->where('title', 'like', "%{$query}%")

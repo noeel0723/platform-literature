@@ -48,6 +48,7 @@ class MangaDexAdapterTest extends TestCase
         $this->assertSame('ja', $manga->language);
         $this->assertSame('Haruichi Furudate', $manga->authorDetails[0]->name);
         $this->assertSame('https://mangadex.org/covers/author.jpg', $manga->authorDetails[0]->imageUrl);
+        $this->assertSame('author-id', $manga->authorDetails[0]->externalId);
 
         Http::assertSent(function (Request $request): bool {
             $data = $request->data();
