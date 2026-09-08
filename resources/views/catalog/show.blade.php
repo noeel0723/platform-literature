@@ -157,9 +157,8 @@
 
         <div class="mt-10">
             <div id="summary" class="border border-ink-950/10 bg-white/40 p-6 sm:p-8">
-                <p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">About this work</p>
-                <h2 class="mt-3 font-serif text-3xl font-bold text-ink-950">Metadata summary</h2>
-                <p class="mt-5 max-w-3xl text-base leading-8 text-ink-950/70">{{ $literature['synopsis'] }}</p>
+                <x-section-heading>Metadata summary</x-section-heading>
+                <p class="mt-4 max-w-3xl text-base leading-8 text-ink-950/70">{{ $literature['synopsis'] }}</p>
                 @if ($literature['synopsis_source_name'] && $literature['synopsis_source_url'])
                     <p class="mt-4 text-xs leading-5 text-ink-950/50">
                         Supplemental summary from
@@ -169,8 +168,8 @@
                 @endif
 
                 <div id="authors" class="mt-10 border-t border-ink-950/10 pt-7">
-                    <h3 class="text-sm font-bold uppercase tracking-[0.18em] text-ink-950/60">Authors and creators</h3>
-                    <div class="mt-4 flex flex-wrap gap-2">
+                    <x-section-heading level="3">Authors and creators</x-section-heading>
+                    <div class="mt-3 flex flex-wrap gap-2">
                         @foreach ($literature['author_links'] as $author)
                             <a href="{{ $author['url'] }}" class="bg-brand-sky/25 px-3 py-2 font-semibold text-ink-950 transition hover:bg-brand-coral hover:text-brand-cream">{{ $author['name'] }}</a>
                         @endforeach
@@ -178,8 +177,8 @@
                 </div>
 
                 <div id="genres" class="mt-8 border-t border-ink-950/10 pt-7">
-                    <h3 class="text-sm font-bold uppercase tracking-[0.18em] text-ink-950/60">Genre</h3>
-                    <div class="mt-4 flex flex-wrap gap-2">
+                    <x-section-heading level="3">Genre</x-section-heading>
+                    <div class="mt-3 flex flex-wrap gap-2">
                         @foreach ($literature['genres'] as $genre)
                             <span class="border border-ink-950/15 px-3 py-2 text-ink-950/70">{{ $genre }}</span>
                         @endforeach
@@ -191,18 +190,15 @@
     </section>
 
     <section id="relationships" class="scroll-mt-24 border-t border-ink-950/10 bg-white/20">
-        <div class="mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:px-10 lg:py-14">
-            <div class="grid gap-3 border-b border-ink-950/15 pb-4 lg:grid-cols-[1fr_.75fr] lg:items-end">
-                <div>
-                    <h2 class="font-serif text-3xl font-bold text-ink-950">Relationship Explorer</h2>
-                </div>
-                <p class="max-w-2xl text-sm leading-6 text-ink-950/55 lg:justify-self-end">Explore sequels, prequels, adaptations, side stories, and related editions without losing the connection between formats.</p>
+        <div class="mx-auto max-w-7xl px-5 py-9 sm:px-8 lg:px-10 lg:py-12">
+            <div class="border-b border-ink-950/15 pb-3">
+                <x-section-heading>Relationship Explorer</x-section-heading>
             </div>
 
             @forelse ($relationshipGroups as $group)
-                <section class="mt-7" aria-labelledby="relationship-{{ $group['type'] }}">
+                <section class="mt-6" aria-labelledby="relationship-{{ $group['type'] }}">
                     <div class="mb-3 flex items-center justify-between gap-4">
-                        <h3 id="relationship-{{ $group['type'] }}" class="text-sm font-bold uppercase tracking-[0.14em] text-ink-950">{{ $group['label'] }}</h3>
+                        <x-section-heading level="3" id="relationship-{{ $group['type'] }}">{{ $group['label'] }}</x-section-heading>
                         <span class="text-[10px] font-bold uppercase tracking-[0.14em] text-ink-950/40">{{ $group['items']->count() }} {{ Str::plural('work', $group['items']->count()) }}</span>
                     </div>
 
@@ -225,13 +221,9 @@
                 </div>
             @endforelse
 
-            <section class="mt-9 border-t border-ink-950/10 pt-6" aria-labelledby="more-by-authors">
-                <div class="mb-3 flex flex-wrap items-end justify-between gap-2">
-                    <div>
-                        <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-brand-coral">Author discovery</p>
-                        <h3 id="more-by-authors" class="mt-1 font-serif text-2xl font-bold text-ink-950">More by these authors</h3>
-                    </div>
-                    <p class="text-xs text-ink-950/50">Other catalog entries matched by creator identity.</p>
+            <section class="mt-8 border-t border-ink-950/10 pt-5" aria-labelledby="more-by-authors">
+                <div class="mb-3">
+                    <x-section-heading level="3" id="more-by-authors">More by these authors</x-section-heading>
                 </div>
 
                 @if ($authorDiscoveries->isNotEmpty())
@@ -248,12 +240,9 @@
     </section>
 
     <section id="reviews" class="border-t border-ink-950/10">
-        <div class="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:px-10 lg:py-20">
-            <div class="flex flex-col gap-5 border-b border-ink-950/15 pb-6 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                    <h2 class="font-serif text-4xl font-bold text-ink-950">Ratings &amp; reviews</h2>
-                    <p class="mt-3 max-w-2xl leading-7 text-ink-950/65">Rate in half-star steps, write a review, and protect other readers by marking spoilers.</p>
-                </div>
+        <div class="mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:px-10 lg:py-14">
+            <div class="flex flex-col gap-3 border-b border-ink-950/15 pb-3 sm:flex-row sm:items-center sm:justify-between">
+                <x-section-heading>Ratings &amp; reviews</x-section-heading>
                 <div class="flex flex-wrap items-center gap-4 sm:justify-end">
                     <div class="text-left sm:text-right">
                         <div class="flex items-center gap-3 sm:justify-end">
@@ -265,11 +254,11 @@
                 </div>
             </div>
 
-            <div class="mt-9">
-                <h3 class="font-serif text-2xl font-bold text-ink-950">Reader reviews</h3>
-                <div class="mt-5 grid gap-4 md:grid-cols-2">
+            <div class="mt-6">
+                <x-section-heading level="3">Reader reviews</x-section-heading>
+                <div class="mt-3 grid gap-3 md:grid-cols-2">
                     @forelse ($reviews as $review)
-                            <article id="review-{{ $review->id }}" class="scroll-mt-28 border border-ink-950/10 bg-white/35 p-5 sm:p-6">
+                            <article id="review-{{ $review->id }}" class="scroll-mt-28 border border-ink-950/10 bg-white/35 p-4 sm:p-5">
                                 <div class="flex flex-wrap items-center justify-between gap-3">
                                     <div>
                                         <a href="{{ route('profiles.show', $review->user) }}" class="font-bold text-ink-950 transition hover:text-brand-coral">{{ $review->user->name }}</a>
@@ -298,13 +287,13 @@
 
                                 @if ($review->body)
                                     @if ($review->contains_spoiler)
-                                        <button type="button" class="mt-5 border border-ink-950/20 px-4 py-2 text-sm font-bold text-ink-950 transition hover:border-brand-coral" data-spoiler-reveal aria-controls="review-body-{{ $review->id }}">Reveal spoiler review</button>
-                                        <p id="review-body-{{ $review->id }}" hidden class="mt-5 whitespace-pre-line leading-7 text-ink-950/70">{{ $review->body }}</p>
+                                        <button type="button" class="mt-4 border border-ink-950/20 px-4 py-2 text-sm font-bold text-ink-950 transition hover:border-brand-coral" data-spoiler-reveal aria-controls="review-body-{{ $review->id }}">Reveal spoiler review</button>
+                                        <p id="review-body-{{ $review->id }}" hidden class="mt-4 whitespace-pre-line leading-7 text-ink-900">{{ $review->body }}</p>
                                     @else
-                                        <p class="mt-5 whitespace-pre-line leading-7 text-ink-950/70">{{ $review->body }}</p>
+                                        <p class="mt-4 whitespace-pre-line leading-7 text-ink-900">{{ $review->body }}</p>
                                     @endif
                                 @else
-                                    <p class="mt-5 text-sm italic text-ink-950/50">Rating only.</p>
+                                    <p class="mt-4 text-sm italic text-ink-950/50">Rating only.</p>
                                 @endif
                             </article>
                     @empty
@@ -393,12 +382,9 @@
     @endauth
 
     <section id="discussions" class="border-t border-ink-950/10 bg-white/20">
-        <div class="mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:px-10 lg:py-14">
-            <div class="flex flex-col gap-3 border-b border-ink-950/15 pb-4 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                    <h2 class="font-serif text-3xl font-bold text-ink-950">Discussions &amp; comments</h2>
-                    <p class="mt-1.5 max-w-2xl text-sm leading-6 text-ink-950/55">Start a focused conversation, respond to other readers, and mark spoilers before publishing.</p>
-                </div>
+        <div class="mx-auto max-w-7xl px-5 py-9 sm:px-8 lg:px-10 lg:py-12">
+            <div class="flex flex-col gap-2 border-b border-ink-950/15 pb-3 sm:flex-row sm:items-center sm:justify-between">
+                <x-section-heading>Discussions</x-section-heading>
                 <div class="text-left sm:text-right">
                     <p class="text-xs font-bold uppercase tracking-wider text-ink-950/50">{{ $discussionCount }} {{ Str::plural('discussion', $discussionCount) }}</p>
                     @if ($discussionCount > $discussions->count())
@@ -407,7 +393,7 @@
                 </div>
             </div>
 
-            <div class="mt-6 grid gap-8 lg:grid-cols-[280px_minmax(0,1fr)]">
+            <div class="mt-5 grid gap-7 lg:grid-cols-[280px_minmax(0,1fr)]">
                 <div>
                     @auth
                         <form action="{{ route('discussions.store', $literature['slug']) }}" method="POST" class="grid gap-4 border border-ink-950/12 bg-brand-cream/55 p-4 lg:sticky lg:top-24">
@@ -487,7 +473,7 @@
                             </div>
 
                             <div class="mt-5 border-t border-ink-950/10 pt-4 sm:ml-[160px]">
-                                <h4 class="text-xs font-bold uppercase tracking-[0.14em] text-ink-950/50">Comments</h4>
+                                <x-section-heading level="4">Comments</x-section-heading>
                                 <div class="mt-2 grid">
                                     @foreach ($discussion->topLevelComments as $comment)
                                         <div class="grid gap-2 border-b border-ink-950/8 py-3 sm:grid-cols-[120px_minmax(0,1fr)] sm:gap-4" data-discussion-comment>

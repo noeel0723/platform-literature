@@ -129,7 +129,7 @@ class DiscussionManagementTest extends TestCase
 
         $this->get(route('literatures.show', $literature))
             ->assertOk()
-            ->assertSeeText('Discussions & comments')
+            ->assertSeeText('Discussions')
             ->assertDontSeeText('Increment 3 / Community')
             ->assertSeeText('Discussing the final scene')
             ->assertSeeText('Thread Starter')

@@ -233,7 +233,10 @@ class LiteratureCatalogTest extends TestCase
             ->assertDontSeeText('Source tracking')
             ->assertDontSeeText('Catalog details')
             ->assertDontSeeText('Edit your review')
-            ->assertDontSeeText('Rate or review');
+            ->assertDontSeeText('Rate or review')
+            ->assertDontSeeText('Rate in half-star steps, write a review, and protect other readers by marking spoilers.')
+            ->assertDontSeeText('Explore sequels, prequels, adaptations, side stories, and related editions without losing the connection between formats.')
+            ->assertDontSeeText('Start a focused conversation, respond to other readers, and mark spoilers before publishing.');
     }
 
     public function test_unknown_literature_returns_not_found(): void
