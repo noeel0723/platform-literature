@@ -57,6 +57,8 @@ class ProfileLiteraturePageTest extends TestCase
         $this->actingAs($user)
             ->get(route('profiles.literature', $user))
             ->assertOk()
-            ->assertSeeInOrder(['Activity', 'Literature', 'Diary']);
+            ->assertSeeInOrder(['Activity', 'Literature', 'Diary'])
+            ->assertDontSee('>Favorites</a>', false)
+            ->assertDontSee('>Completed</a>', false);
     }
 }

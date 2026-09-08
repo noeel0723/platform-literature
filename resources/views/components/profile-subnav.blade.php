@@ -40,7 +40,5 @@
         @endif
         <a href="{{ route('profiles.reviews', $user) }}" class="{{ $itemClass }} {{ $current === 'reviews' ? $activeClass : $inactiveClass }}" @if ($current === 'reviews') aria-current="page" @endif>Reviews</a>
         <a href="{{ route('profiles.readlist', $user) }}" class="{{ $itemClass }} {{ $current === 'readlist' ? $activeClass : $inactiveClass }}" @if ($current === 'readlist') aria-current="page" @endif>Readlist</a>
-        <a href="{{ route('profiles.show', $user) }}#favorites" class="{{ $itemClass }} {{ $inactiveClass }}">Favorites</a>
-        <a href="{{ route('profiles.show', $user) }}#recently-completed" class="{{ $itemClass }} {{ $inactiveClass }}">Completed</a>
     </div>
 </nav>

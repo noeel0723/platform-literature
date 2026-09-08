@@ -219,7 +219,11 @@ class ActivityFeedTest extends TestCase
             ->assertSeeText('Owner Activity')
             ->assertSeeText('Friend Activity')
             ->assertDontSeeText('Stranger Activity')
-            ->assertSee('data-activity-stream', false);
+            ->assertSee('data-activity-stream', false)
+            ->assertSee('data-activity-density="compact"', false)
+            ->assertSeeText('You + friends')
+            ->assertSeeText('Your activity')
+            ->assertSeeText('Following');
 
         $this->actingAs($viewer)->get(route('activity.index', ['scope' => 'friends']))
             ->assertOk()

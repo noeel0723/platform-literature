@@ -46,11 +46,13 @@ class LiteratureDiscoveryTest extends TestCase
         $response
             ->assertOk()
             ->assertSee('Relationship Explorer')
+            ->assertDontSee('Increment 4 / Literature Discovery')
             ->assertSee('Sequel')
             ->assertSee('The Next Story')
             ->assertSee('Adaptation')
             ->assertSee('The Graphic Adaptation')
             ->assertSee('AniList')
+            ->assertSee('data-literature-card-size="compact"', false)
             ->assertSee(route('literatures.show', $sequel), false)
             ->assertSee(route('literatures.show', $adaptation), false);
     }
@@ -80,6 +82,7 @@ class LiteratureDiscoveryTest extends TestCase
             ->assertSee('More by these authors')
             ->assertSee('Second Work')
             ->assertDontSee('Unrelated Work')
+            ->assertSee('data-literature-card-size="compact"', false)
             ->assertSee(route('literatures.show', $otherWork), false);
     }
 

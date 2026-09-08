@@ -130,6 +130,7 @@ class DiscussionManagementTest extends TestCase
         $this->get(route('literatures.show', $literature))
             ->assertOk()
             ->assertSeeText('Discussions & comments')
+            ->assertDontSeeText('Increment 3 / Community')
             ->assertSeeText('Discussing the final scene')
             ->assertSeeText('Thread Starter')
             ->assertSeeText('First Reader')
@@ -139,6 +140,8 @@ class DiscussionManagementTest extends TestCase
             ->assertSeeText('Reveal spoiler reply')
             ->assertSee('id="discussion-body-'.$discussion->id.'" hidden', false)
             ->assertSee('id="comment-body-'.$reply->id.'" hidden', false)
+            ->assertSee('data-discussion-thread', false)
+            ->assertSee('data-discussion-comment', false)
             ->assertSee('data-local-datetime', false)
             ->assertSeeText('The closing image mirrors the opening chapter.')
             ->assertSeeText('The narrator confirms it in the epilogue.');
