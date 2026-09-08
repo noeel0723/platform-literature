@@ -58,6 +58,7 @@ class ProfileManagementTest extends TestCase
             ->assertDontSee('data-profile-stat="discussions"', false)
             ->assertSee('href="'.route('profiles.readlist', $user).'"', false)
             ->assertSee('href="'.route('profiles.reviews', $user).'"', false)
+            ->assertSee('href="'.route('profiles.literature', $user).'"', false)
             ->assertSee('data-profile-subnav', false)
             ->assertSeeInOrder(['First Favorite', 'Second Favorite'])
             ->assertSeeInOrder(['First Author', 'Second Author'])
@@ -80,7 +81,7 @@ class ProfileManagementTest extends TestCase
 
         $this->actingAs($user)->get(route('literatures.show', $literature))
             ->assertOk()
-            ->assertSeeText('Open your profile to access Diary')
+            ->assertDontSeeText('Manage your reading')
             ->assertDontSee('href="'.route('diary.index').'"', false);
 
         $this->actingAs($user)->get(route('profiles.show', $user))
@@ -90,6 +91,7 @@ class ProfileManagementTest extends TestCase
             ->assertSeeInOrder(['Diary Reader', 'Edit profile', '&#64;diary_reader'], false)
             ->assertSee('aria-label="Profile navigation"', false)
             ->assertSee('href="'.route('activity.index').'"', false)
+            ->assertSeeInOrder(['Activity', 'Literature', 'Diary'])
             ->assertSee('data-profile-diary-preview', false)
             ->assertSee('data-profile-ratings', false)
             ->assertSee('data-profile-activity-preview', false)

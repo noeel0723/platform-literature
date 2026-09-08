@@ -145,7 +145,14 @@ class LiteratureCatalogTest extends TestCase
             ->assertOk()
             ->assertSeeText('Watchmen')
             ->assertSeeText('Alan Moore')
-            ->assertSeeText('Comic Vine');
+            ->assertSeeText('Comic Vine')
+            ->assertDontSeeText('Increment 2')
+            ->assertDontSeeText('Manage your reading')
+            ->assertDontSeeText('Increment 3 / Social Cataloging')
+            ->assertDontSeeText('Source tracking')
+            ->assertDontSeeText('Catalog details')
+            ->assertDontSeeText('Edit your review')
+            ->assertDontSeeText('Rate or review');
     }
 
     public function test_unknown_literature_returns_not_found(): void

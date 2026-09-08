@@ -143,15 +143,13 @@
         <nav class="flex gap-6 overflow-x-auto border-b border-ink-950/10 text-sm font-bold uppercase tracking-[0.14em] text-ink-950/60" aria-label="Literature details">
             <a href="#summary" class="border-b-2 border-brand-coral pb-4 text-ink-950">Summary</a>
             <a href="#authors" class="pb-4 text-ink-950/70 hover:text-brand-coral">Authors</a>
-            <a href="#details" class="pb-4 text-ink-950/70 hover:text-brand-coral">Detail</a>
             <a href="#genres" class="pb-4 text-ink-950/70 hover:text-brand-coral">Genre</a>
             <a href="#relationships" class="pb-4 text-ink-950/70 hover:text-brand-coral">Discovery</a>
-            <a href="#readlist" class="pb-4 text-ink-950/70 hover:text-brand-coral">Readlist</a>
             <a href="#reviews" class="pb-4 text-ink-950/70 hover:text-brand-coral">Reviews</a>
             <a href="#discussions" class="pb-4 text-ink-950/70 hover:text-brand-coral">Discussions</a>
         </nav>
 
-        <div class="mt-10 grid gap-10 lg:grid-cols-[1.25fr_.75fr]">
+        <div class="mt-10">
             <div id="summary" class="border border-ink-950/10 bg-white/40 p-6 sm:p-8">
                 <p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">About this work</p>
                 <h2 class="mt-3 font-serif text-3xl font-bold text-ink-950">Metadata summary</h2>
@@ -183,16 +181,6 @@
                 </div>
             </div>
 
-            <aside id="details" class="h-fit border border-ink-950/10 bg-white/40 p-6 sm:p-8">
-                <p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">Source tracking</p>
-                <h2 class="mt-3 font-serif text-2xl font-bold text-ink-950">Catalog details</h2>
-                <dl class="mt-7 grid gap-5 text-sm">
-                    <div class="border-b border-ink-950/10 pb-4"><dt class="text-ink-950/60">Publisher</dt><dd class="mt-1 font-semibold text-ink-950">{{ $literature['publisher'] }}</dd></div>
-                    <div class="border-b border-ink-950/10 pb-4"><dt class="text-ink-950/60">External identifier</dt><dd class="mt-1 font-semibold text-ink-950">{{ $literature['identifier'] }}</dd></div>
-                    <div class="border-b border-ink-950/10 pb-4"><dt class="text-ink-950/60">Metadata source</dt><dd class="mt-1 font-semibold text-ink-950">{{ $literature['source'] }}</dd></div>
-                    <div><dt class="text-ink-950/60">Storage</dt><dd class="mt-1 font-semibold text-ink-950">Internal MySQL catalog</dd></div>
-                </dl>
-            </aside>
         </div>
     </section>
 
@@ -254,87 +242,11 @@
         </div>
     </section>
 
-    <section id="readlist" class="border-t border-ink-950/10 bg-white/20">
-        <div class="mx-auto grid max-w-7xl gap-8 px-5 py-14 sm:px-8 lg:grid-cols-[.7fr_1.3fr] lg:px-10 lg:py-20">
-            <div>
-                <p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">Increment 2</p>
-                <h2 class="mt-3 font-serif text-4xl font-bold text-ink-950">Manage your reading</h2>
-                <p class="mt-4 max-w-md leading-7 text-ink-950/65">Save a status, record your latest page or chapter, and add a short note. Every change is added to your Personal Diary automatically.</p>
-                @auth
-                    <a href="{{ route('profiles.show', auth()->user()) }}" class="mt-6 inline-flex font-bold text-ink-950 underline decoration-brand-coral decoration-2 underline-offset-4">Open your profile to access Diary</a>
-                @endauth
-            </div>
-
-            @auth
-                <form action="{{ route('reading-list.update', $literature['slug']) }}" method="POST" class="grid gap-5 border border-ink-950/15 bg-brand-cream/65 p-6 sm:grid-cols-2 sm:p-8">
-                    @csrf
-                    @method('PUT')
-
-                    <div class="sm:col-span-2">
-                        <label for="status" class="text-sm font-bold text-ink-950">Reading status</label>
-                        <select id="status" name="status" class="mt-2 w-full border border-ink-950/20 bg-white/60 px-4 py-3 outline-none focus:border-brand-coral">
-                            @foreach ($readingStatuses as $value => $label)
-                                <option value="{{ $value }}" @selected(old('status', $readingList?->status ?? 'want_to_read') === $value)>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                        @error('status') <p class="mt-2 text-sm font-semibold text-red-700">{{ $message }}</p> @enderror
-                    </div>
-
-                    <div>
-                        <label for="progress_value" class="text-sm font-bold text-ink-950">Current progress</label>
-                        <input id="progress_value" name="progress_value" type="number" min="0" value="{{ old('progress_value', $readingList?->progress?->current_value) }}" placeholder="Example: 120" class="mt-2 w-full border border-ink-950/20 bg-white/60 px-4 py-3 outline-none focus:border-brand-coral">
-                        @error('progress_value') <p class="mt-2 text-sm font-semibold text-red-700">{{ $message }}</p> @enderror
-                    </div>
-
-                    <div>
-                        <label for="progress_total" class="text-sm font-bold text-ink-950">Total</label>
-                        <input id="progress_total" name="progress_total" type="number" min="1" value="{{ old('progress_total', $readingList?->progress?->total_value) }}" placeholder="Example: 320" class="mt-2 w-full border border-ink-950/20 bg-white/60 px-4 py-3 outline-none focus:border-brand-coral">
-                        @error('progress_total') <p class="mt-2 text-sm font-semibold text-red-700">{{ $message }}</p> @enderror
-                    </div>
-
-                    <div class="sm:col-span-2">
-                        <label for="progress_unit" class="text-sm font-bold text-ink-950">Progress unit</label>
-                        <select id="progress_unit" name="progress_unit" class="mt-2 w-full border border-ink-950/20 bg-white/60 px-4 py-3 outline-none focus:border-brand-coral">
-                            @foreach (['page' => 'Pages', 'chapter' => 'Chapters', 'percent' => 'Percent'] as $value => $label)
-                                <option value="{{ $value }}" @selected(old('progress_unit', $readingList?->progress?->unit ?? 'page') === $value)>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div class="sm:col-span-2">
-                        <label for="note" class="text-sm font-bold text-ink-950">Activity note <span class="font-normal text-ink-950/50">(optional)</span></label>
-                        <textarea id="note" name="note" rows="3" maxlength="1000" placeholder="Write a short thought or reminder..." class="mt-2 w-full resize-y border border-ink-950/20 bg-white/60 px-4 py-3 outline-none focus:border-brand-coral">{{ old('note') }}</textarea>
-                        @error('note') <p class="mt-2 text-sm font-semibold text-red-700">{{ $message }}</p> @enderror
-                    </div>
-
-                    @if ($readingList)
-                        <label class="flex items-start gap-3 text-sm leading-6 text-ink-950/70 sm:col-span-2">
-                            <input name="reread" type="checkbox" value="1" class="mt-1 size-4 accent-brand-coral">
-                            Start a reread. Progress will return to 0 and the reread count will increase.
-                        </label>
-                    @endif
-
-                    <button class="bg-ink-950 px-5 py-3.5 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-brand-cream sm:col-span-2">Save to Readlist</button>
-                </form>
-            @else
-                <div class="border border-ink-950/15 bg-brand-cream/65 p-7 sm:p-9">
-                    <p class="font-serif text-2xl font-bold text-ink-950">Log in to track your reading</p>
-                    <p class="mt-3 leading-7 text-ink-950/65">The catalog remains public. An account keeps your status and progress private to you.</p>
-                    <div class="mt-6 flex flex-wrap gap-3">
-                        <a href="{{ route('login') }}" class="bg-ink-950 px-5 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-brand-cream">Log in</a>
-                        <a href="{{ route('register') }}" class="border border-ink-950/20 px-5 py-3 font-bold text-ink-950 transition hover:border-brand-coral">Create account</a>
-                    </div>
-                </div>
-            @endauth
-        </div>
-    </section>
-
     <section id="reviews" class="border-t border-ink-950/10">
         <div class="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:px-10 lg:py-20">
             <div class="flex flex-col gap-5 border-b border-ink-950/15 pb-6 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                    <p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">Increment 3 / Social Cataloging</p>
-                    <h2 class="mt-3 font-serif text-4xl font-bold text-ink-950">Ratings &amp; reviews</h2>
+                    <h2 class="font-serif text-4xl font-bold text-ink-950">Ratings &amp; reviews</h2>
                     <p class="mt-3 max-w-2xl leading-7 text-ink-950/65">Rate in half-star steps, write a review, and protect other readers by marking spoilers.</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-4 sm:justify-end">
@@ -345,11 +257,6 @@
                         </div>
                         <p class="mt-1 text-xs font-bold uppercase tracking-wider text-ink-950/50">{{ $reviews->count() }} {{ Str::plural('rating', $reviews->count()) }}</p>
                     </div>
-                    @auth
-                        <button type="button" data-dialog-open="review-dialog" class="bg-ink-950 px-5 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-brand-cream">{{ $currentReview ? 'Edit your review' : 'Rate or review' }}</button>
-                    @else
-                        <a href="{{ route('login') }}" class="bg-ink-950 px-5 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-brand-cream">Log in to review</a>
-                    @endauth
                 </div>
             </div>
 

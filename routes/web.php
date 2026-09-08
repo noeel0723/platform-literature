@@ -10,6 +10,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LikeController;
 use App\Http\Controllers\LiteratureController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProfileLiteratureController;
 use App\Http\Controllers\ProfileReviewController;
 use App\Http\Controllers\ReadingDiaryController;
 use App\Http\Controllers\ReadingListController;
@@ -27,6 +28,7 @@ Route::get('/members/{user}/followers', [ProfileController::class, 'followers'])
 Route::get('/members/{user}/following', [ProfileController::class, 'following'])->name('profiles.following');
 Route::get('/members/{user}/readlist', ReadlistController::class)->name('profiles.readlist');
 Route::get('/members/{user}/reviews', ProfileReviewController::class)->name('profiles.reviews');
+Route::get('/members/{user}/literature', ProfileLiteratureController::class)->name('profiles.literature');
 Route::get('/members/{user}', [ProfileController::class, 'show'])->name('profiles.show');
 
 Route::middleware('guest')->group(function (): void {
