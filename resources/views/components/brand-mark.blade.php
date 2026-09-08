@@ -1,9 +1,9 @@
 <a href="{{ route('home') }}" class="group flex items-center gap-3" aria-label="Literahaven - Home">
     <span class="grid grid-cols-2 gap-0.5" aria-hidden="true">
-        <span class="size-3.5 rounded-full bg-brand-blueberry"></span>
-        <span class="size-3.5 rounded-full bg-brand-berry"></span>
-        <span class="size-3.5 rounded-full bg-brand-plate ring-1 ring-inset ring-brand-blueberry/20"></span>
-        <span class="size-3.5 rounded-full bg-brand-yogurt"></span>
+        <span class="size-3.5 rounded-full bg-brand-plate"></span>
+        <span class="size-3.5 rounded-full bg-brand-sky"></span>
+        <span class="size-3.5 rounded-full bg-brand-coral"></span>
+        <span class="size-3.5 rounded-full bg-brand-sun"></span>
     </span>
     <span>
         <span class="block text-lg font-bold leading-none tracking-tight text-brand-plate">Literahaven</span>

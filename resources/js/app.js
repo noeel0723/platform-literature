@@ -8,6 +8,82 @@ mobileMenuButton?.addEventListener('click', () => {
     mobileMenu?.classList.toggle('hidden');
 });
 
+document.querySelectorAll('[data-header-search]').forEach((searchForm) => {
+    const input = searchForm.querySelector('input[name="q"]');
+    const button = searchForm.querySelector('[data-header-search-button]');
+
+    if (!(searchForm instanceof HTMLFormElement) || !(input instanceof HTMLInputElement) || !(button instanceof HTMLButtonElement)) {
+        return;
+    }
+
+    const setExpanded = (isExpanded) => {
+        searchForm.dataset.expanded = String(isExpanded);
+        button.setAttribute('aria-expanded', String(isExpanded));
+        button.setAttribute('aria-label', isExpanded ? 'Search' : 'Open search');
+        input.tabIndex = isExpanded ? 0 : -1;
+        input.setAttribute('aria-hidden', String(!isExpanded));
+
+        if (isExpanded) {
+            window.requestAnimationFrame(() => input.focus());
+        }
+    };
+
+    searchForm.addEventListener('submit', (event) => {
+        if (searchForm.dataset.expanded !== 'true') {
+            event.preventDefault();
+            setExpanded(true);
+
+            return;
+        }
+
+        if (input.value.trim() === '') {
+            event.preventDefault();
+            input.focus();
+        }
+    });
+
+    document.addEventListener('pointerdown', (event) => {
+        if (searchForm.dataset.expanded === 'true' && !searchForm.contains(event.target)) {
+            setExpanded(false);
+        }
+    });
+
+    searchForm.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            setExpanded(false);
+            button.focus();
+        }
+    });
+});
+
+document.querySelectorAll('[data-account-menu]').forEach((accountMenu) => {
+    const button = accountMenu.querySelector('[data-account-menu-button]');
+
+    if (!(button instanceof HTMLButtonElement)) {
+        return;
+    }
+
+    const setOpen = (isOpen) => {
+        accountMenu.dataset.open = String(isOpen);
+        button.setAttribute('aria-expanded', String(isOpen));
+    };
+
+    button.addEventListener('click', () => setOpen(accountMenu.dataset.open !== 'true'));
+
+    document.addEventListener('pointerdown', (event) => {
+        if (!accountMenu.contains(event.target)) {
+            setOpen(false);
+        }
+    });
+
+    accountMenu.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            setOpen(false);
+            button.focus();
+        }
+    });
+});
+
 const localDateTimeFormatter = new Intl.DateTimeFormat('en', {
     dateStyle: 'medium',
     timeStyle: 'short',

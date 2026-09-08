@@ -30,6 +30,12 @@ class MangaDexFallbackTest extends TestCase
             'services.mangadex.cache_minutes' => 30,
             'services.mangadex.connect_timeout' => 1,
             'services.mangadex.timeout' => 2,
+            'services.kitsu.base_url' => 'https://kitsu.io/api/edge',
+            'services.kitsu.user_agent' => 'Literahaven/1.0 test-suite',
+            'services.kitsu.max_results' => 6,
+            'services.kitsu.cache_minutes' => 30,
+            'services.kitsu.connect_timeout' => 1,
+            'services.kitsu.timeout' => 2,
         ]);
     }
 
@@ -83,16 +89,54 @@ class MangaDexFallbackTest extends TestCase
         Http::fake([
             'https://graphql.anilist.co*' => Http::response([], 503),
             'https://api.mangadex.org/manga*' => Http::response([], 503),
+            'https://kitsu.io/api/edge/manga*' => Http::response([], 503),
         ]);
 
         try {
             app(CatalogSyncService::class)->syncAniList('Haikyu', 'manga');
             $this->fail('A combined source failure should be reported.');
         } catch (LiteratureSourceUnavailable $exception) {
-            $this->assertSame('AniList and MangaDex', $exception->source);
+            $this->assertSame('AniList, MangaDex, and Kitsu', $exception->source);
         }
 
-        Http::assertSentCount(2);
+        Http::assertSentCount(3);
+    }
+
+    public function test_kitsu_is_used_when_anilist_and_mangadex_are_unavailable(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://graphql.anilist.co*' => Http::response([], 503),
+            'https://api.mangadex.org/manga*' => Http::response([], 503),
+            'https://kitsu.io/api/edge/manga*' => Http::response([
+                'data' => [[
+                    'id' => 'kitsu-haikyu',
+                    'type' => 'manga',
+                    'attributes' => [
+                        'titles' => ['en' => 'Haikyu!!', 'ja_jp' => 'ハイキュー!!'],
+                        'canonicalTitle' => 'Haikyuu!!',
+                        'synopsis' => 'A volleyball story.',
+                        'subtype' => 'manga',
+                        'startDate' => '2012-02-20',
+                        'posterImage' => ['medium' => 'https://media.kitsu.app/haikyu.jpg'],
+                    ],
+                    'relationships' => ['staff' => ['data' => []]],
+                ]],
+                'included' => [],
+            ]),
+        ]);
+
+        $count = app(CatalogSyncService::class)->syncAniList('Haikyu', 'manga');
+
+        $this->assertSame(1, $count);
+        $this->assertDatabaseHas('api_sources', ['key' => 'kitsu', 'name' => 'Kitsu']);
+        $this->assertDatabaseHas('literatures', [
+            'external_id' => 'kitsu-haikyu',
+            'title' => 'Haikyu!!',
+            'type' => 'manga',
+            'identifier' => 'KITSU:kitsu-haikyu',
+        ]);
+        Http::assertSentCount(3);
     }
 
     /** @return array<string, mixed> */

@@ -61,7 +61,29 @@ class SearchPageTest extends TestCase
         $this->get(route('home'))
             ->assertOk()
             ->assertSee('action="'.route('search.index').'"', false)
+            ->assertSee('data-header-search', false)
+            ->assertSee('data-expanded="false"', false)
             ->assertSeeText('Search literature, authors, or readers');
+    }
+
+    public function test_authenticated_header_shows_the_account_menu_and_feature_links(): void
+    {
+        $user = User::factory()->create([
+            'name' => 'Axel Reader',
+            'username' => 'axellgab',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('home'))
+            ->assertOk()
+            ->assertSee('data-account-menu', false)
+            ->assertSeeText('axellgab')
+            ->assertSee('href="'.route('profiles.show', $user).'"', false)
+            ->assertSee('href="'.route('activity.index').'"', false)
+            ->assertSee('href="'.route('profiles.literature', $user).'"', false)
+            ->assertSee('href="'.route('profiles.reviews', $user).'"', false)
+            ->assertSee('href="'.route('profiles.readlist', $user).'"', false)
+            ->assertSee('action="'.route('logout').'"', false);
     }
 
     public function test_search_does_not_show_a_non_english_synopsis_as_english_copy(): void

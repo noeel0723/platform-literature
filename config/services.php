@@ -83,6 +83,15 @@ return [
         'timeout' => (int) env('MANGADEX_TIMEOUT', 12),
     ],
 
+    'kitsu' => [
+        'base_url' => env('KITSU_BASE_URL', 'https://kitsu.io/api/edge'),
+        'user_agent' => env('KITSU_USER_AGENT', 'Literahaven/1.0 academic-project'),
+        'max_results' => (int) env('KITSU_MAX_RESULTS', 6),
+        'cache_minutes' => (int) env('KITSU_CACHE_MINUTES', 30),
+        'connect_timeout' => (int) env('KITSU_CONNECT_TIMEOUT', 3),
+        'timeout' => (int) env('KITSU_TIMEOUT', 12),
+    ],
+
     'comic_vine' => [
         'base_url' => env('COMIC_VINE_BASE_URL', 'https://comicvine.gamespot.com/api'),
         'key' => env('COMIC_VINE_API_KEY'),

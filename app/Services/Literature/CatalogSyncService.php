@@ -19,6 +19,7 @@ final class CatalogSyncService
         private GoogleBooksAdapter $googleBooks,
         private AniListAdapter $aniList,
         private MangaDexAdapter $mangaDex,
+        private KitsuAdapter $kitsu,
         private ComicVineAdapter $comicVine,
         private KnowledgeGraphEnricher $knowledgeGraph,
     ) {}
@@ -68,11 +69,15 @@ final class CatalogSyncService
             try {
                 return $this->syncMangaDex($query, $literatureType);
             } catch (LiteratureSourceUnavailable $mangaDexException) {
-                throw new LiteratureSourceUnavailable(
-                    'AniList and MangaDex',
-                    'AniList and its MangaDex fallback are unavailable.',
-                    $mangaDexException,
-                );
+                try {
+                    return $this->syncKitsu($query, $literatureType);
+                } catch (LiteratureSourceUnavailable $kitsuException) {
+                    throw new LiteratureSourceUnavailable(
+                        'AniList, MangaDex, and Kitsu',
+                        'AniList and its MangaDex and Kitsu fallbacks are unavailable.',
+                        $kitsuException,
+                    );
+                }
             }
         }
     }
@@ -93,6 +98,27 @@ final class CatalogSyncService
             sourceKey: 'mangadex',
             sourceName: 'MangaDex',
             baseUrl: (string) config('services.mangadex.base_url'),
+            supportedTypes: ['manga', 'manhwa'],
+            items: $items,
+        );
+    }
+
+    public function syncKitsu(string $query, string $literatureType): int
+    {
+        if (! in_array($literatureType, ['all', 'manga', 'manhwa'], true)) {
+            throw new InvalidArgumentException('Kitsu sync only supports all, manga, and manhwa types.');
+        }
+
+        $items = $this->kitsu->search(
+            $query,
+            $literatureType,
+            (int) config('services.kitsu.max_results', 6),
+        );
+
+        return $this->sync(
+            sourceKey: 'kitsu',
+            sourceName: 'Kitsu',
+            baseUrl: (string) config('services.kitsu.base_url'),
             supportedTypes: ['manga', 'manhwa'],
             items: $items,
         );

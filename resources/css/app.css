@@ -9,20 +9,21 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
     --font-serif: Georgia, Cambria, 'Times New Roman', serif;
 
-    --color-brand-plate: #f5f6f3;
-    --color-brand-stem: #6e6f73;
-    --color-brand-blueberry: #2f3a55;
-    --color-brand-berry: #5c6b8a;
-    --color-brand-yogurt: #e7e2de;
+    --color-brand-plate: #f8f3f0;
+    --color-brand-stem: #014baa;
+    --color-brand-blueberry: #102f62;
+    --color-brand-berry: #2878c7;
+    --color-brand-yogurt: #e8eef8;
 
-    --color-brand-cream: #f5f6f3;
-    --color-brand-sky: #e7e2de;
-    --color-brand-coral: #5c6b8a;
+    --color-brand-cream: #f8f3f0;
+    --color-brand-sky: #8fc8ff;
+    --color-brand-coral: #ff6b58;
+    --color-brand-sun: #ffd166;
 
-    --color-ink-950: #2f3a55;
-    --color-ink-900: #39445f;
-    --color-ink-800: #46516d;
-    --color-ink-700: #5c6b8a;
+    --color-ink-950: #102f62;
+    --color-ink-900: #173b70;
+    --color-ink-800: #285184;
+    --color-ink-700: #55749c;
 }
 
 @layer base {
@@ -59,14 +60,14 @@
 
 @layer components {
     .catalog-grid {
-        background-color: color-mix(in srgb, var(--color-brand-yogurt) 28%, var(--color-brand-plate));
+        background-color: color-mix(in srgb, var(--color-brand-yogurt) 42%, var(--color-brand-plate));
     }
 
     .poster-shine::after {
         position: absolute;
         inset: 0;
         content: '';
-        background: linear-gradient(120deg, transparent 35%, rgb(245 246 243 / 0.16), transparent 60%);
+        background: linear-gradient(120deg, transparent 35%, rgb(248 243 240 / 0.22), transparent 60%);
         transform: translateX(-120%);
         transition: transform 500ms ease;
     }
@@ -76,8 +77,118 @@
     }
 
     .review-dialog::backdrop {
-        background: rgb(47 58 85 / 0.7);
+        background: rgb(16 47 98 / 0.72);
         backdrop-filter: blur(4px);
+    }
+
+    .header-search {
+        position: relative;
+        display: flex;
+        height: 2.5rem;
+        width: 2.5rem;
+        min-width: 2.5rem;
+        overflow: hidden;
+        border: 1px solid rgb(248 243 240 / 0.42);
+        border-radius: 9999px;
+        background: transparent;
+        transition: width 220ms ease, background-color 220ms ease, border-color 220ms ease;
+    }
+
+    .header-search[data-expanded='true'] {
+        width: min(21rem, 42vw);
+        border-color: rgb(248 243 240 / 0.85);
+        background: var(--color-brand-plate);
+    }
+
+    .header-search-input {
+        min-width: 0;
+        width: 0;
+        flex: 1 1 auto;
+        border: 0;
+        background: transparent;
+        padding: 0;
+        color: var(--color-ink-950);
+        font-size: 0.875rem;
+        opacity: 0;
+        outline: none;
+        pointer-events: none;
+        transition: width 220ms ease, padding 220ms ease, opacity 150ms ease;
+    }
+
+    .header-search[data-expanded='true'] .header-search-input {
+        width: 100%;
+        padding-inline: 1rem 0.5rem;
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .header-search-input::placeholder {
+        color: rgb(16 47 98 / 0.5);
+    }
+
+    .header-search-button {
+        display: grid;
+        width: 2.5rem;
+        height: 2.5rem;
+        flex: 0 0 2.5rem;
+        place-items: center;
+        border-radius: 9999px;
+        color: var(--color-brand-plate);
+        transition: background-color 150ms ease, color 150ms ease;
+    }
+
+    .header-search-button:hover {
+        background: rgb(248 243 240 / 0.14);
+    }
+
+    .header-search[data-expanded='true'] .header-search-button {
+        background: var(--color-brand-blueberry);
+        color: var(--color-brand-plate);
+    }
+
+    .account-menu-panel {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: translateY(-0.35rem) scale(0.98);
+        transform-origin: top right;
+        transition: opacity 150ms ease, transform 150ms ease, visibility 150ms ease;
+    }
+
+    .account-menu:hover .account-menu-panel,
+    .account-menu[data-open='true'] .account-menu-panel {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: translateY(0) scale(1);
+    }
+
+    .account-menu[data-open='true'] [data-account-menu-chevron] {
+        transform: rotate(180deg);
+    }
+
+    .account-menu-link {
+        display: block;
+        border-radius: 0.5rem;
+        padding: 0.55rem 0.75rem;
+        font-weight: 600;
+        transition: background-color 150ms ease, color 150ms ease;
+    }
+
+    .account-menu-link:hover,
+    .account-menu-link:focus-visible {
+        background: var(--color-brand-yogurt);
+        color: var(--color-brand-stem);
+    }
+}
+
+@media (max-width: 767px) {
+    .header-search[data-expanded='true'] {
+        position: absolute;
+        inset-inline: 0;
+        z-index: 20;
+        width: 100%;
+        box-shadow: 0 0.8rem 2rem rgb(16 47 98 / 0.2);
     }
 }
 
