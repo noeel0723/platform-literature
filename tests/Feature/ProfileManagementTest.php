@@ -41,6 +41,7 @@ class ProfileManagementTest extends TestCase
         $this->get(route('profiles.show', $user))
             ->assertOk()
             ->assertSee('data-profile-header', false)
+            ->assertSee('data-profile-compact-header', false)
             ->assertSeeText('Imanuel Reader')
             ->assertSeeText('@imanuel_reader')
             ->assertSeeText('Makassar, Indonesia')

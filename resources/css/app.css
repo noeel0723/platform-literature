@@ -180,6 +180,41 @@
         background: var(--color-brand-yogurt);
         color: var(--color-brand-stem);
     }
+
+    .quick-log-result {
+        display: flex;
+        width: 100%;
+        align-items: center;
+        gap: 0.875rem;
+        border-bottom: 1px solid rgb(16 47 98 / 0.1);
+        padding: 0.75rem;
+        transition: background-color 150ms ease;
+    }
+
+    .quick-log-result:last-child {
+        border-bottom: 0;
+    }
+
+    .quick-log-result:hover,
+    .quick-log-result:focus-visible {
+        background: rgb(143 200 255 / 0.2);
+    }
+
+    .quick-log-result-cover {
+        display: grid;
+        width: 2.75rem;
+        aspect-ratio: 2 / 3;
+        flex: 0 0 2.75rem;
+        place-items: center;
+        overflow: hidden;
+        border: 1px solid rgb(16 47 98 / 0.12);
+        border-radius: 0.25rem;
+        background: rgb(143 200 255 / 0.2);
+        font-family: var(--font-serif);
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: var(--color-ink-950);
+    }
 }
 
 @media (max-width: 767px) {

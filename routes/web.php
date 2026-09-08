@@ -12,6 +12,7 @@ use App\Http\Controllers\LiteratureController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfileLiteratureController;
 use App\Http\Controllers\ProfileReviewController;
+use App\Http\Controllers\QuickLogController;
 use App\Http\Controllers\ReadingDiaryController;
 use App\Http\Controllers\ReadingListController;
 use App\Http\Controllers\ReadlistController;
@@ -40,6 +41,9 @@ Route::middleware('guest')->group(function (): void {
 
 Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+    Route::get('/quick-log/literatures', QuickLogController::class)
+        ->middleware('throttle:60,1')
+        ->name('quick-log.literatures');
     Route::get('/activity', ActivityController::class)->name('activity.index');
     Route::put('/literatures/{literature}/reading-list', [ReadingListController::class, 'update'])
         ->name('reading-list.update');

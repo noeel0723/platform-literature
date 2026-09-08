@@ -38,6 +38,13 @@
                         </button>
                     </form>
 
+                    @auth
+                        <button type="button" data-dialog-open="quick-log-search-dialog" data-quick-log-open class="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-brand-coral px-3.5 text-xs font-extrabold uppercase tracking-[0.1em] text-white shadow-[0_7px_18px_rgba(16,47,98,0.16)] transition hover:bg-brand-plate hover:text-brand-stem sm:px-4" aria-label="Log a rating or review">
+                            <span class="text-lg leading-none" aria-hidden="true">+</span>
+                            <span>Log</span>
+                        </button>
+                    @endauth
+
                     @guest
                         <a href="{{ route('login') }}" class="shrink-0 whitespace-nowrap text-xs font-bold uppercase tracking-wider text-brand-plate/85 hover:text-white">Log in</a>
                         <a href="{{ route('register') }}" class="hidden shrink-0 whitespace-nowrap rounded-full bg-brand-plate px-4 py-2 text-xs font-bold uppercase tracking-wider text-brand-stem transition hover:bg-white sm:block">Join</a>
@@ -85,6 +92,10 @@
         @enderror
         {{ $slot }}
     </main>
+
+    @auth
+        <x-quick-log />
+    @endauth
 
     <footer class="border-t border-brand-blueberry/10 bg-brand-yogurt/45">
         <div class="mx-auto flex max-w-7xl flex-col gap-3 px-5 py-9 text-sm text-ink-950/60 sm:px-8 md:flex-row md:justify-between lg:px-10">

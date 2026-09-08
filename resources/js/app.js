@@ -182,7 +182,7 @@ document.querySelectorAll('[data-review-dialog]').forEach((dialog) => {
 
     const reviewWasRequested = new URLSearchParams(window.location.search).get('review') === 'edit';
 
-    if (dialog.dataset.autoOpen === 'true' || reviewWasRequested) {
+    if (dialog.dataset.autoOpen === 'true' || (dialog.id === 'review-dialog' && reviewWasRequested)) {
         dialog.showModal();
     }
 });
@@ -229,7 +229,8 @@ document.querySelectorAll('[data-star-rating]').forEach((ratingGroup) => {
             input.value = rating.toFixed(1);
             input.dispatchEvent(new Event('change', { bubbles: true }));
 
-            const dialog = document.getElementById(ratingGroup.dataset.ratingDialog);
+            const dialogId = ratingGroup.dataset.ratingDialog;
+            const dialog = dialogId ? document.getElementById(dialogId) : null;
 
             if (dialog instanceof HTMLDialogElement && !dialog.open) {
                 dialog.showModal();
@@ -247,3 +248,213 @@ document.querySelectorAll('[data-star-rating]').forEach((ratingGroup) => {
 
     renderRating(Number(input.value) || 0);
 });
+
+const quickLogSearchDialog = document.querySelector('[data-quick-log-search-dialog]');
+const quickLogReviewDialog = document.querySelector('[data-quick-log-review-dialog]');
+
+if (quickLogSearchDialog instanceof HTMLDialogElement && quickLogReviewDialog instanceof HTMLDialogElement) {
+    const searchInput = quickLogSearchDialog.querySelector('[data-quick-log-input]');
+    const results = quickLogSearchDialog.querySelector('[data-quick-log-results]');
+    const reviewForm = quickLogReviewDialog.querySelector('[data-quick-log-review-form]');
+    const ratingInput = quickLogReviewDialog.querySelector('#quick-log-rating');
+    const ratingError = quickLogReviewDialog.querySelector('[data-quick-log-rating-error]');
+    const reviewBody = quickLogReviewDialog.querySelector('[data-quick-log-body]');
+    const spoilerInput = quickLogReviewDialog.querySelector('[data-quick-log-spoiler]');
+    const cover = quickLogReviewDialog.querySelector('[data-quick-log-cover]');
+    const coverFallback = quickLogReviewDialog.querySelector('[data-quick-log-cover-fallback]');
+    const title = quickLogReviewDialog.querySelector('[data-quick-log-title]');
+    const meta = quickLogReviewDialog.querySelector('[data-quick-log-meta]');
+    const type = quickLogReviewDialog.querySelector('[data-quick-log-type]');
+    const submitButton = quickLogReviewDialog.querySelector('[data-quick-log-submit]');
+    let searchTimer;
+    let searchRequest;
+
+    const showSearchState = (message) => {
+        if (!results) {
+            return;
+        }
+
+        results.replaceChildren();
+        const state = document.createElement('p');
+        state.className = 'px-4 py-8 text-center text-sm text-ink-950/50';
+        state.textContent = message;
+        results.append(state);
+    };
+
+    const openReview = (literature) => {
+        if (!(reviewForm instanceof HTMLFormElement) || !(ratingInput instanceof HTMLInputElement) || !(reviewBody instanceof HTMLTextAreaElement) || !(spoilerInput instanceof HTMLInputElement)) {
+            return;
+        }
+
+        const review = literature.review ?? {};
+        const initials = literature.title
+            .split(/\s+/)
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((word) => word.charAt(0).toLocaleUpperCase())
+            .join('');
+
+        reviewForm.action = literature.review_url;
+        ratingInput.value = review.rating ? Number(review.rating).toFixed(1) : '';
+        ratingInput.dispatchEvent(new Event('change', { bubbles: true }));
+        reviewBody.value = review.body ?? '';
+        spoilerInput.checked = Boolean(review.contains_spoiler);
+        ratingError?.classList.add('hidden');
+
+        if (title) {
+            title.textContent = literature.title;
+        }
+
+        if (meta) {
+            const authorNames = literature.authors?.length ? literature.authors.join(' & ') : 'Author unavailable';
+            meta.textContent = literature.year ? `${authorNames} · ${literature.year}` : authorNames;
+        }
+
+        if (type) {
+            type.textContent = literature.type ?? 'Literature';
+        }
+
+        if (cover instanceof HTMLImageElement && coverFallback) {
+            if (literature.cover_url) {
+                cover.src = literature.cover_url;
+                cover.alt = `Cover of ${literature.title}`;
+                cover.classList.remove('hidden');
+                coverFallback.classList.add('hidden');
+            } else {
+                cover.removeAttribute('src');
+                cover.alt = '';
+                cover.classList.add('hidden');
+                coverFallback.textContent = initials || 'LH';
+                coverFallback.classList.remove('hidden');
+            }
+        }
+
+        if (submitButton) {
+            submitButton.textContent = literature.review ? 'Update review' : 'Publish review';
+        }
+
+        quickLogSearchDialog.close();
+        quickLogReviewDialog.showModal();
+    };
+
+    const renderResults = (literatures) => {
+        if (!results) {
+            return;
+        }
+
+        if (literatures.length === 0) {
+            showSearchState('No literature matched your search.');
+
+            return;
+        }
+
+        results.replaceChildren();
+
+        literatures.forEach((literature) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'quick-log-result';
+
+            const visual = document.createElement('span');
+            visual.className = 'quick-log-result-cover';
+
+            if (literature.cover_url) {
+                const image = document.createElement('img');
+                image.src = literature.cover_url;
+                image.alt = '';
+                image.loading = 'lazy';
+                image.className = 'size-full object-cover';
+                visual.append(image);
+            } else {
+                visual.textContent = literature.title.slice(0, 2).toLocaleUpperCase();
+            }
+
+            const copy = document.createElement('span');
+            copy.className = 'min-w-0 flex-1 text-left';
+
+            const heading = document.createElement('span');
+            heading.className = 'block truncate font-serif text-base font-bold text-ink-950';
+            heading.textContent = literature.title;
+
+            const author = document.createElement('span');
+            author.className = 'mt-0.5 block truncate text-xs text-ink-950/50';
+            author.textContent = literature.authors?.length ? literature.authors.join(' & ') : 'Author unavailable';
+
+            const details = document.createElement('span');
+            details.className = 'mt-1 block text-[0.65rem] font-bold uppercase tracking-[0.12em] text-ink-950/40';
+            details.textContent = [literature.type, literature.year].filter(Boolean).join(' · ');
+
+            copy.append(heading, author, details);
+
+            const action = document.createElement('span');
+            action.className = 'shrink-0 text-xs font-bold uppercase tracking-wider text-brand-stem';
+            action.textContent = literature.review ? 'Edit' : 'Log';
+
+            button.append(visual, copy, action);
+            button.addEventListener('click', () => openReview(literature));
+            results.append(button);
+        });
+    };
+
+    const loadLiteratures = async (query = '') => {
+        searchRequest?.abort();
+        searchRequest = new AbortController();
+        showSearchState(query ? 'Searching literature...' : 'Loading recent literature...');
+
+        try {
+            const url = new URL(quickLogSearchDialog.dataset.searchUrl, window.location.origin);
+
+            if (query) {
+                url.searchParams.set('q', query);
+            }
+
+            const response = await fetch(url, {
+                headers: { Accept: 'application/json' },
+                signal: searchRequest.signal,
+            });
+
+            if (!response.ok) {
+                throw new Error('Quick log search failed.');
+            }
+
+            const payload = await response.json();
+            renderResults(Array.isArray(payload.data) ? payload.data : []);
+        } catch (error) {
+            if (error.name !== 'AbortError') {
+                showSearchState('Search is temporarily unavailable. Please try again.');
+            }
+        }
+    };
+
+    document.querySelectorAll('[data-quick-log-open]').forEach((button) => {
+        button.addEventListener('click', () => {
+            if (searchInput instanceof HTMLInputElement) {
+                searchInput.value = '';
+                window.requestAnimationFrame(() => searchInput.focus());
+            }
+
+            loadLiteratures();
+        });
+    });
+
+    if (searchInput instanceof HTMLInputElement) {
+        searchInput.addEventListener('input', () => {
+            window.clearTimeout(searchTimer);
+            searchTimer = window.setTimeout(() => loadLiteratures(searchInput.value.trim()), 250);
+        });
+    }
+
+    quickLogReviewDialog.querySelector('[data-quick-log-back]')?.addEventListener('click', () => {
+        quickLogReviewDialog.close();
+        quickLogSearchDialog.showModal();
+        window.requestAnimationFrame(() => searchInput?.focus());
+    });
+
+    reviewForm?.addEventListener('submit', (event) => {
+        if (!(ratingInput instanceof HTMLInputElement) || Number(ratingInput.value) <= 0) {
+            event.preventDefault();
+            ratingError?.classList.remove('hidden');
+            quickLogReviewDialog.querySelector('[data-rating-value]')?.focus();
+        }
+    });
+}

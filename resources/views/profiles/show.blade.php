@@ -12,11 +12,11 @@
 
     <x-profile-subnav :$user current="profile" />
 
-    <section id="profile-overview" data-profile-header class="catalog-grid border-b border-ink-950/10">
-        <div class="mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:px-10 lg:py-12">
-            <div class="grid gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(460px,.85fr)] lg:items-center">
-                <div class="flex min-w-0 flex-col gap-6 sm:flex-row sm:items-center">
-                    <div class="grid size-28 shrink-0 place-items-center overflow-hidden rounded-full border-4 border-brand-cream bg-ink-950 font-serif text-3xl font-bold text-brand-cream shadow-[0_10px_28px_rgba(47,58,85,0.10)] sm:size-32">
+    <section id="profile-overview" data-profile-header data-profile-compact-header class="catalog-grid border-b border-ink-950/10">
+        <div class="mx-auto max-w-7xl px-5 py-7 sm:px-8 lg:px-10 lg:py-8">
+            <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-10">
+                <div class="flex min-w-0 flex-wrap items-start gap-4 sm:items-center sm:gap-5">
+                    <div class="grid size-20 shrink-0 place-items-center overflow-hidden rounded-full border-2 border-brand-cream bg-ink-950 font-serif text-xl font-bold text-brand-cream shadow-[0_7px_20px_rgba(16,47,98,0.12)] sm:size-24">
                         @if ($user->avatarUrl())
                             <img src="{{ $user->avatarUrl() }}" alt="{{ $user->name }}'s profile photo" class="size-full object-cover">
                         @else
@@ -25,60 +25,58 @@
                     </div>
 
                     <div class="min-w-0 flex-1">
-                        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                            <div class="min-w-0 flex-1">
-                                <p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">Reader profile</p>
-                                <h1 class="mt-2 truncate font-serif text-4xl font-bold leading-none text-ink-950 sm:text-5xl">{{ $user->name }}</h1>
-                                @if ($isOwner)
-                                    <a href="{{ route('profiles.edit') }}" class="mt-3 inline-block w-fit border border-ink-950/20 bg-brand-cream/60 px-4 py-2 text-sm font-bold text-ink-950 transition hover:border-brand-coral hover:bg-brand-coral hover:text-brand-cream">Edit profile</a>
-                                @endif
-                                <p class="mt-3 font-semibold text-ink-950/55">&#64;{{ $user->username }}</p>
-                            </div>
-                            <div class="flex shrink-0 flex-wrap gap-3">
-                                @if (! $isOwner && auth()->check())
-                                    <form action="{{ $isFollowing ? route('profiles.follow.destroy', $user) : route('profiles.follow.store', $user) }}" method="POST">
-                                        @csrf
-                                        @if ($isFollowing) @method('DELETE') @endif
-                                        <button class="w-fit px-4 py-2.5 text-sm font-bold transition {{ $isFollowing ? 'border border-ink-950/20 bg-brand-cream/60 text-ink-950 hover:border-brand-coral' : 'bg-ink-950 text-brand-cream hover:bg-brand-coral hover:text-brand-cream' }}">{{ $isFollowing ? 'Following' : 'Follow' }}</button>
-                                    </form>
-                                    <x-report-form target-type="user" :target-id="$user->id" label="Report profile" />
-                                @elseif (! $isOwner)
-                                    <a href="{{ route('login') }}" class="w-fit bg-ink-950 px-4 py-2.5 text-sm font-bold text-brand-cream transition hover:bg-brand-coral hover:text-brand-cream">Log in to follow</a>
-                                @endif
-                            </div>
+                        <p class="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-brand-coral">Reader profile</p>
+                        <div class="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+                            <h1 class="max-w-full truncate font-serif text-3xl font-bold leading-none text-ink-950 sm:text-4xl">{{ $user->name }}</h1>
+                            @if ($isOwner)
+                                <a href="{{ route('profiles.edit') }}" class="rounded-full border border-ink-950/15 bg-brand-cream/65 px-3 py-1.5 text-[0.65rem] font-bold uppercase tracking-wider text-ink-950 transition hover:border-brand-coral hover:bg-brand-coral hover:text-white">Edit profile</a>
+                            @endif
+                            <p class="w-full truncate text-sm font-semibold text-ink-950/50">&#64;{{ $user->username }}</p>
                         </div>
 
                         @if ($user->bio)
-                            <p class="mt-4 max-w-2xl leading-7 text-ink-950/70">{{ $user->bio }}</p>
+                            <p class="mt-2.5 line-clamp-2 max-w-2xl text-sm leading-6 text-ink-950/65">{{ $user->bio }}</p>
                         @else
-                            <p class="mt-4 max-w-2xl italic leading-7 text-ink-950/45">This reader has not added a bio yet.</p>
+                            <p class="mt-2.5 text-sm italic leading-6 text-ink-950/45">This reader has not added a bio yet.</p>
                         @endif
 
-                        <div class="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-ink-950/55">
+                        <div class="mt-2.5 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-ink-950/50">
                             @if ($user->location)
                                 <span class="inline-flex items-center gap-1.5">
-                                    <svg class="size-4" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>
+                                    <svg class="size-3.5" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>
                                     {{ $user->location }}
                                 </span>
                             @endif
                             <span class="inline-flex items-center gap-1.5">
-                                <svg class="size-4" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z"></path></svg>
+                                <svg class="size-3.5" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z"></path></svg>
                                 Member since {{ $user->created_at->format('F Y') }}
                             </span>
                         </div>
                     </div>
+
+                    <div class="flex w-full shrink-0 flex-wrap gap-2 pl-24 sm:w-auto sm:pl-0">
+                        @if (! $isOwner && auth()->check())
+                            <form action="{{ $isFollowing ? route('profiles.follow.destroy', $user) : route('profiles.follow.store', $user) }}" method="POST">
+                                @csrf
+                                @if ($isFollowing) @method('DELETE') @endif
+                                <button class="rounded-full px-4 py-2 text-xs font-bold transition {{ $isFollowing ? 'border border-ink-950/15 bg-brand-cream/60 text-ink-950 hover:border-brand-coral' : 'bg-ink-950 text-brand-cream hover:bg-brand-coral' }}">{{ $isFollowing ? 'Following' : 'Follow' }}</button>
+                            </form>
+                            <x-report-form target-type="user" :target-id="$user->id" label="Report profile" />
+                        @elseif (! $isOwner)
+                            <a href="{{ route('login') }}" class="rounded-full bg-ink-950 px-4 py-2 text-xs font-bold text-brand-cream transition hover:bg-brand-coral">Log in to follow</a>
+                        @endif
+                    </div>
                 </div>
 
-                <dl data-profile-stats class="grid grid-cols-2 gap-px overflow-hidden border border-ink-950/10 bg-ink-950/10 text-center sm:grid-cols-4">
-                    <div data-profile-stat="literature" class="bg-brand-cream/85 p-4"><dd class="font-serif text-2xl font-bold text-ink-950">{{ $user->completed_literature_count }}</dd><dt class="mt-1 text-[0.65rem] font-bold uppercase tracking-wider text-ink-950/50">Literature</dt></div>
-                    <div data-profile-stat="reviews" class="bg-brand-cream/85 p-4"><dd class="font-serif text-2xl font-bold text-ink-950">{{ $user->reviews_count }}</dd><dt class="mt-1 text-[0.65rem] font-bold uppercase tracking-wider text-ink-950/50">Reviews</dt></div>
-                    <div data-profile-stat="following" class="bg-brand-cream/85"><a href="{{ route('profiles.following', $user) }}" class="block p-4 transition hover:bg-brand-sky/35"><dd class="font-serif text-2xl font-bold text-ink-950">{{ $user->following_count }}</dd><dt class="mt-1 text-[0.65rem] font-bold uppercase tracking-wider text-ink-950/50">Following</dt></a></div>
-                    <div data-profile-stat="followers" class="bg-brand-cream/85"><a href="{{ route('profiles.followers', $user) }}" class="block p-4 transition hover:bg-brand-sky/35"><dd class="font-serif text-2xl font-bold text-ink-950">{{ $user->followers_count }}</dd><dt class="mt-1 text-[0.65rem] font-bold uppercase tracking-wider text-ink-950/50">Followers</dt></a></div>
+                <dl data-profile-stats class="grid min-w-0 grid-cols-4 divide-x divide-ink-950/10 border-y border-ink-950/10 text-center lg:min-w-[410px] lg:border-y-0">
+                    <div data-profile-stat="literature" class="px-2 py-3 sm:px-4"><dd class="font-serif text-xl font-bold leading-none text-ink-950 sm:text-2xl">{{ $user->completed_literature_count }}</dd><dt class="mt-1.5 text-[0.55rem] font-bold uppercase tracking-[0.12em] text-ink-950/45 sm:text-[0.62rem]">Literature</dt></div>
+                    <div data-profile-stat="reviews" class="px-2 py-3 sm:px-4"><dd class="font-serif text-xl font-bold leading-none text-ink-950 sm:text-2xl">{{ $user->reviews_count }}</dd><dt class="mt-1.5 text-[0.55rem] font-bold uppercase tracking-[0.12em] text-ink-950/45 sm:text-[0.62rem]">Reviews</dt></div>
+                    <div data-profile-stat="following"><a href="{{ route('profiles.following', $user) }}" class="block px-2 py-3 transition hover:bg-brand-sky/20 sm:px-4"><dd class="font-serif text-xl font-bold leading-none text-ink-950 sm:text-2xl">{{ $user->following_count }}</dd><dt class="mt-1.5 text-[0.55rem] font-bold uppercase tracking-[0.12em] text-ink-950/45 sm:text-[0.62rem]">Following</dt></a></div>
+                    <div data-profile-stat="followers"><a href="{{ route('profiles.followers', $user) }}" class="block px-2 py-3 transition hover:bg-brand-sky/20 sm:px-4"><dd class="font-serif text-xl font-bold leading-none text-ink-950 sm:text-2xl">{{ $user->followers_count }}</dd><dt class="mt-1.5 text-[0.55rem] font-bold uppercase tracking-[0.12em] text-ink-950/45 sm:text-[0.62rem]">Followers</dt></a></div>
                 </dl>
             </div>
 
-            @error('user') <p class="mt-5 text-sm font-semibold text-red-700">{{ $message }}</p> @enderror
-
+            @error('user') <p class="mt-4 text-sm font-semibold text-red-700">{{ $message }}</p> @enderror
         </div>
     </section>
 
