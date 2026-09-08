@@ -34,24 +34,24 @@ class LiteratureController extends Controller
         if ($query !== '' && in_array($selectedType, ['', 'book', 'novel'], true)) {
             try {
                 $catalogSync->syncGoogleBooks($query, $selectedType === '' ? 'all' : $selectedType);
-            } catch (LiteratureSourceUnavailable) {
-                $unavailableSources[] = 'Google Books';
+            } catch (LiteratureSourceUnavailable $exception) {
+                $unavailableSources[] = $exception->source;
             }
         }
 
         if ($query !== '' && in_array($selectedType, ['', 'manga', 'manhwa', 'light-novel'], true)) {
             try {
                 $catalogSync->syncAniList($query, $selectedType === '' ? 'all' : $selectedType);
-            } catch (LiteratureSourceUnavailable) {
-                $unavailableSources[] = 'AniList';
+            } catch (LiteratureSourceUnavailable $exception) {
+                $unavailableSources[] = $exception->source;
             }
         }
 
         if ($query !== '' && in_array($selectedType, ['', 'western-comic'], true)) {
             try {
                 $catalogSync->syncComicVine($query);
-            } catch (LiteratureSourceUnavailable) {
-                $unavailableSources[] = 'Comic Vine';
+            } catch (LiteratureSourceUnavailable $exception) {
+                $unavailableSources[] = $exception->source;
             }
         }
 

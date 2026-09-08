@@ -73,6 +73,16 @@ return [
         'timeout' => (int) env('ANILIST_TIMEOUT', 12),
     ],
 
+    'mangadex' => [
+        'base_url' => env('MANGADEX_BASE_URL', 'https://api.mangadex.org'),
+        'covers_url' => env('MANGADEX_COVERS_URL', 'https://uploads.mangadex.org/covers'),
+        'user_agent' => env('MANGADEX_USER_AGENT', 'Literahaven/1.0 academic-project'),
+        'max_results' => (int) env('MANGADEX_MAX_RESULTS', 6),
+        'cache_minutes' => (int) env('MANGADEX_CACHE_MINUTES', 30),
+        'connect_timeout' => (int) env('MANGADEX_CONNECT_TIMEOUT', 3),
+        'timeout' => (int) env('MANGADEX_TIMEOUT', 12),
+    ],
+
     'comic_vine' => [
         'base_url' => env('COMIC_VINE_BASE_URL', 'https://comicvine.gamespot.com/api'),
         'key' => env('COMIC_VINE_API_KEY'),

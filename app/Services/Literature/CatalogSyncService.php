@@ -2,6 +2,7 @@
 
 namespace App\Services\Literature;
 
+use App\Exceptions\LiteratureSourceUnavailable;
 use App\Models\ApiSource;
 use App\Models\Author;
 use App\Models\Category;
@@ -17,6 +18,7 @@ final class CatalogSyncService
     public function __construct(
         private GoogleBooksAdapter $googleBooks,
         private AniListAdapter $aniList,
+        private MangaDexAdapter $mangaDex,
         private ComicVineAdapter $comicVine,
         private KnowledgeGraphEnricher $knowledgeGraph,
     ) {}
@@ -44,17 +46,54 @@ final class CatalogSyncService
             throw new InvalidArgumentException('AniList sync only supports all, manga, manhwa, and light-novel types.');
         }
 
-        $items = $this->aniList->search(
+        try {
+            $items = $this->aniList->search(
+                $query,
+                $literatureType,
+                (int) config('services.anilist.max_results', 6),
+            );
+
+            return $this->sync(
+                sourceKey: 'anilist',
+                sourceName: 'AniList',
+                baseUrl: (string) config('services.anilist.base_url'),
+                supportedTypes: ['manga', 'manhwa', 'light-novel'],
+                items: $items,
+            );
+        } catch (LiteratureSourceUnavailable $aniListException) {
+            if ($literatureType === 'light-novel') {
+                throw $aniListException;
+            }
+
+            try {
+                return $this->syncMangaDex($query, $literatureType);
+            } catch (LiteratureSourceUnavailable $mangaDexException) {
+                throw new LiteratureSourceUnavailable(
+                    'AniList and MangaDex',
+                    'AniList and its MangaDex fallback are unavailable.',
+                    $mangaDexException,
+                );
+            }
+        }
+    }
+
+    public function syncMangaDex(string $query, string $literatureType): int
+    {
+        if (! in_array($literatureType, ['all', 'manga', 'manhwa'], true)) {
+            throw new InvalidArgumentException('MangaDex sync only supports all, manga, and manhwa types.');
+        }
+
+        $items = $this->mangaDex->search(
             $query,
             $literatureType,
-            (int) config('services.anilist.max_results', 6),
+            (int) config('services.mangadex.max_results', 6),
         );
 
         return $this->sync(
-            sourceKey: 'anilist',
-            sourceName: 'AniList',
-            baseUrl: (string) config('services.anilist.base_url'),
-            supportedTypes: ['manga', 'manhwa', 'light-novel'],
+            sourceKey: 'mangadex',
+            sourceName: 'MangaDex',
+            baseUrl: (string) config('services.mangadex.base_url'),
+            supportedTypes: ['manga', 'manhwa'],
             items: $items,
         );
     }
