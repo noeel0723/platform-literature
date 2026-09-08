@@ -87,7 +87,7 @@ final class KnowledgeGraphEnricher
         }
 
         $language = $this->normalizedLanguage((string) config('services.knowledge_graph.language', 'en'));
-        $cacheKey = 'knowledge-graph:author:'.sha1($language.'|'.$name);
+        $cacheKey = 'knowledge-graph:author:v2:'.sha1($language.'|'.$name);
         $cached = Cache::get($cacheKey);
 
         if (is_array($cached)) {
@@ -128,6 +128,8 @@ final class KnowledgeGraphEnricher
             return null;
         }
 
+        $entity = $this->withWikipediaAuthorPortrait($entity);
+
         Cache::put($cacheKey, [
             'id' => $entity->id,
             'name' => $entity->name,
@@ -142,6 +144,87 @@ final class KnowledgeGraphEnricher
         ], now()->addDays((int) config('services.knowledge_graph.cache_days', 30)));
 
         return $entity;
+    }
+
+    private function withWikipediaAuthorPortrait(KnowledgeGraphEntity $entity): KnowledgeGraphEntity
+    {
+        if ($entity->imageUrl !== null) {
+            return $entity;
+        }
+
+        $wikipediaPage = $this->wikipediaPage($entity->sourceUrl);
+
+        if ($wikipediaPage === null) {
+            return $entity;
+        }
+
+        $endpoint = str_replace(
+            ['{language}', '{title}'],
+            [$wikipediaPage['language'], rawurlencode($wikipediaPage['title'])],
+            (string) config('services.work_metadata.wikipedia_summary_url'),
+        );
+
+        try {
+            $response = Http::withHeaders([
+                'User-Agent' => (string) config('services.work_metadata.user_agent'),
+            ])->acceptJson()
+                ->connectTimeout((int) config('services.work_metadata.connect_timeout', 3))
+                ->timeout((int) config('services.work_metadata.timeout', 8))
+                ->get($endpoint);
+        } catch (ConnectionException) {
+            return $entity;
+        }
+
+        if ($response->failed()) {
+            return $entity;
+        }
+
+        $imageUrl = $this->cleanUrl($response->json('originalimage.source'))
+            ?? $this->cleanUrl($response->json('thumbnail.source'));
+
+        if ($imageUrl === null) {
+            return $entity;
+        }
+
+        return new KnowledgeGraphEntity(
+            id: $entity->id,
+            name: $entity->name,
+            types: $entity->types,
+            description: $entity->description,
+            detailedDescription: $entity->detailedDescription,
+            sourceUrl: $this->cleanUrl($response->json('content_urls.desktop.page')) ?? $entity->sourceUrl,
+            officialUrl: $entity->officialUrl,
+            score: $entity->score,
+            imageUrl: $imageUrl,
+            imageLicenseUrl: $entity->imageLicenseUrl,
+        );
+    }
+
+    /** @return array{language: string, title: string}|null */
+    private function wikipediaPage(?string $sourceUrl): ?array
+    {
+        if ($sourceUrl === null) {
+            return null;
+        }
+
+        $host = Str::lower((string) parse_url($sourceUrl, PHP_URL_HOST));
+        $path = (string) parse_url($sourceUrl, PHP_URL_PATH);
+
+        if (preg_match('/^(?<language>[a-z]{2,3})\.wikipedia\.org$/', $host, $hostMatches) !== 1
+            || preg_match('#^/wiki/(?<title>.+)$#', $path, $pathMatches) !== 1) {
+            return null;
+        }
+
+        $title = rawurldecode($pathMatches['title']);
+
+        if ($title === '') {
+            return null;
+        }
+
+        return [
+            'language' => $hostMatches['language'],
+            'title' => str_replace(' ', '_', $title),
+        ];
     }
 
     /** @param list<string> $authors */

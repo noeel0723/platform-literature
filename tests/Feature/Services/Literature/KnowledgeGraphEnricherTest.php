@@ -127,6 +127,54 @@ class KnowledgeGraphEnricherTest extends TestCase
             && $request['types'] === 'Person');
     }
 
+    public function test_author_lookup_uses_verified_wikipedia_page_when_knowledge_graph_has_no_portrait(): void
+    {
+        $this->configureKnowledgeGraph();
+        Cache::flush();
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://kgsearch.googleapis.com/v1/entities:search*' => Http::response([
+                'itemListElement' => [[
+                    'resultScore' => 990,
+                    'result' => [
+                        '@id' => 'kg:/m/author',
+                        '@type' => ['Thing', 'Person'],
+                        'name' => 'J. K. Rowling',
+                        'description' => 'British author',
+                        'detailedDescription' => [
+                            'articleBody' => 'J. K. Rowling is a British author.',
+                            'url' => 'https://en.wikipedia.org/wiki/J._K._Rowling',
+                        ],
+                    ],
+                ]],
+            ]),
+            'https://en.wikipedia.org/api/rest_v1/page/summary/J._K._Rowling' => Http::response([
+                'originalimage' => [
+                    'source' => 'http://upload.wikimedia.org/wikipedia/commons/rowling.jpg',
+                ],
+                'thumbnail' => [
+                    'source' => 'https://upload.wikimedia.org/wikipedia/commons/thumb/rowling.jpg',
+                ],
+                'content_urls' => [
+                    'desktop' => [
+                        'page' => 'https://en.wikipedia.org/wiki/J._K._Rowling',
+                    ],
+                ],
+            ]),
+        ]);
+
+        $entity = app(KnowledgeGraphEnricher::class)->findAuthor('J. K. Rowling');
+
+        $this->assertNotNull($entity);
+        $this->assertSame(
+            'https://upload.wikimedia.org/wikipedia/commons/rowling.jpg',
+            $entity->imageUrl,
+        );
+        Http::assertSent(fn ($request): bool => $request->url()
+            === 'https://en.wikipedia.org/api/rest_v1/page/summary/J._K._Rowling');
+        Http::assertSentCount(2);
+    }
+
     private function configureKnowledgeGraph(): void
     {
         config()->set([

@@ -95,6 +95,56 @@ class AuthorDetailTest extends TestCase
             && $request['types'] === 'Person');
     }
 
+    public function test_author_page_persists_wikipedia_portrait_when_knowledge_graph_has_no_image(): void
+    {
+        Cache::flush();
+        $this->configureKnowledgeGraph();
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://kgsearch.googleapis.com/v1/entities:search*' => Http::response([
+                'itemListElement' => [[
+                    'resultScore' => 990,
+                    'result' => [
+                        '@id' => 'kg:/m/author',
+                        '@type' => ['Thing', 'Person'],
+                        'name' => 'Haruichi Furudate',
+                        'description' => 'Japanese manga artist',
+                        'detailedDescription' => [
+                            'articleBody' => 'Haruichi Furudate is a Japanese manga artist.',
+                            'url' => 'https://en.wikipedia.org/wiki/Haruichi_Furudate',
+                        ],
+                    ],
+                ]],
+            ]),
+            'https://en.wikipedia.org/api/rest_v1/page/summary/Haruichi_Furudate' => Http::response([
+                'originalimage' => [
+                    'source' => 'https://upload.wikimedia.org/wikipedia/commons/furudate.jpg',
+                ],
+                'content_urls' => [
+                    'desktop' => [
+                        'page' => 'https://en.wikipedia.org/wiki/Haruichi_Furudate',
+                    ],
+                ],
+            ]),
+        ]);
+        $author = Author::factory()->create([
+            'name' => 'Haruichi Furudate',
+            'slug' => 'haruichi-furudate',
+            'biography' => null,
+            'image_url' => null,
+        ]);
+
+        $this->get(route('authors.show', $author))
+            ->assertOk()
+            ->assertSee('https://upload.wikimedia.org/wikipedia/commons/furudate.jpg', false);
+
+        $this->assertDatabaseHas('authors', [
+            'id' => $author->id,
+            'image_url' => 'https://upload.wikimedia.org/wikipedia/commons/furudate.jpg',
+        ]);
+        Http::assertSentCount(2);
+    }
+
     public function test_author_search_result_links_to_the_author_page(): void
     {
         $author = Author::factory()->create([
