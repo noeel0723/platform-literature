@@ -43,6 +43,7 @@ class ProfileLiteraturePageTest extends TestCase
             ->assertDontSeeText('Saved For Later')
             ->assertDontSeeText('Currently Reading')
             ->assertSee('data-profile-literature-grid', false)
+            ->assertSee('data-density="compact"', false)
             ->assertSee('data-profile-literature-item', false)
             ->assertSee('aria-current="page"', false)
             ->assertSee('4.5 out of 5 stars', false);

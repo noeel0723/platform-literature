@@ -1,9 +1,5 @@
 <x-app-shell title="Activity">
-    <section class="catalog-grid border-b border-ink-950/10">
-        <div class="mx-auto max-w-7xl px-5 py-5 sm:px-8 lg:px-10">
-            <x-profile-subnav :user="$viewer" current="activity" />
-        </div>
-    </section>
+    <x-profile-subnav :user="$viewer" current="activity" />
 
     <section class="mx-auto grid max-w-7xl gap-7 px-5 py-7 sm:px-8 sm:py-9 lg:grid-cols-[minmax(0,1fr)_240px] lg:px-10 lg:py-10">
         <main class="min-w-0" aria-labelledby="activity-heading">

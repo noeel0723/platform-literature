@@ -38,6 +38,7 @@ class ProfileReviewPageTest extends TestCase
             ->assertDontSeeText('Hidden Review Title')
             ->assertDontSeeText('Other Reader Title')
             ->assertSee('data-profile-review', false)
+            ->assertSee('data-density="compact"', false)
             ->assertSee('data-review-summary', false);
     }
 

@@ -98,6 +98,34 @@ class ProfileManagementTest extends TestCase
             ->assertSee('href="'.route('diary.index').'"', false);
     }
 
+    public function test_owner_profile_pages_use_one_consistent_shared_sub_navigation(): void
+    {
+        $user = User::factory()->create(['username' => 'consistent_navigation']);
+
+        $routes = [
+            route('profiles.show', $user),
+            route('activity.index'),
+            route('profiles.literature', $user),
+            route('diary.index'),
+            route('profiles.reviews', $user),
+            route('profiles.readlist', $user),
+        ];
+
+        foreach ($routes as $route) {
+            $response = $this->actingAs($user)->get($route)->assertOk();
+            $content = $response->getContent();
+
+            $response
+                ->assertSeeInOrder(['Profile', 'Activity', 'Literature', 'Diary', 'Reviews', 'Readlist'])
+                ->assertSee('data-profile-subnav-shell', false)
+                ->assertSee('data-profile-subnav-container', false)
+                ->assertSee('aria-current="page"', false);
+
+            $this->assertSame(1, substr_count($content, 'data-profile-subnav-shell'));
+            $this->assertSame(1, substr_count($content, 'data-profile-subnav-container'));
+        }
+    }
+
     public function test_owner_can_update_identity_and_four_favorites(): void
     {
         $user = User::factory()->create(['username' => 'old_reader']);

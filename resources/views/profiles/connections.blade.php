@@ -1,4 +1,6 @@
 <x-app-shell :title="Str::headline($relationship).' - '.$user->name">
+    <x-profile-subnav :$user current="profile" />
+
     <section class="catalog-grid border-b border-ink-950/10">
         <div class="mx-auto max-w-6xl px-5 py-12 sm:px-8 lg:px-10 lg:py-16">
             <a href="{{ route('profiles.show', $user) }}" class="text-sm font-bold text-ink-950/65 transition hover:text-brand-coral">&larr; Back to {{ $user->name }}'s profile</a>

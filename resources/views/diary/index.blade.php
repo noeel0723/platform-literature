@@ -1,11 +1,7 @@
 <x-app-shell title="Personal Diary">
     @php($reader = auth()->user())
 
-    <section class="catalog-grid border-b border-ink-950/10">
-        <div class="mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-10">
-            <x-profile-subnav :user="$reader" current="diary" />
-        </div>
-    </section>
+    <x-profile-subnav :user="$reader" current="diary" />
 
     <section class="mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:px-10 lg:py-14" aria-labelledby="activity-history-heading">
         <div class="flex flex-col gap-2 border-b border-ink-950/20 pb-3 sm:flex-row sm:items-end sm:justify-between">

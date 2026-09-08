@@ -10,6 +10,8 @@
             ->implode('');
     @endphp
 
+    <x-profile-subnav :$user current="profile" />
+
     <section id="profile-overview" data-profile-header class="catalog-grid border-b border-ink-950/10">
         <div class="mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:px-10 lg:py-12">
             <div class="grid gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(460px,.85fr)] lg:items-center">
@@ -77,7 +79,6 @@
 
             @error('user') <p class="mt-5 text-sm font-semibold text-red-700">{{ $message }}</p> @enderror
 
-            <x-profile-subnav :$user current="profile" class="mt-8" />
         </div>
     </section>
 
