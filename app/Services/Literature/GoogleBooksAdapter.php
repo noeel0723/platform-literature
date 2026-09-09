@@ -28,6 +28,9 @@ final class GoogleBooksAdapter
         }
 
         $apiKey = trim((string) config('services.google_books.key'));
+        $searchQuery = str_contains($query, ' ')
+            ? '"'.str_replace('"', '', $query).'"'
+            : $query;
 
         if ($apiKey === '') {
             throw new LiteratureSourceUnavailable(
@@ -42,7 +45,7 @@ final class GoogleBooksAdapter
                 ->connectTimeout((int) config('services.google_books.connect_timeout', 3))
                 ->timeout((int) config('services.google_books.timeout', 8))
                 ->get('/volumes', [
-                    'q' => "{$query} subject:fiction",
+                    'q' => $searchQuery,
                     'maxResults' => max(1, min($limit, 40)),
                     'printType' => 'books',
                     'projection' => 'full',
@@ -189,11 +192,31 @@ final class GoogleBooksAdapter
             $coverUrl = $this->cleanText(Arr::get($imageLinks, $size));
 
             if ($coverUrl !== null) {
-                return preg_replace('#^http://#', 'https://', $coverUrl) ?? $coverUrl;
+                $coverUrl = preg_replace('#^http://#', 'https://', $coverUrl) ?? $coverUrl;
+
+                return $this->upgradeGoogleCover($coverUrl);
             }
         }
 
         return null;
+    }
+
+    private function upgradeGoogleCover(string $coverUrl): string
+    {
+        $host = parse_url($coverUrl, PHP_URL_HOST);
+
+        if (! is_string($host) || ! in_array($host, ['books.google.com', 'books.googleusercontent.com'], true)) {
+            return $coverUrl;
+        }
+
+        if (! str_contains($coverUrl, '/books/content')) {
+            return $coverUrl;
+        }
+
+        $upgraded = preg_replace('/([?&])zoom=\d+/', '$1zoom=3', $coverUrl) ?? $coverUrl;
+        $upgraded = preg_replace('/([?&])w=\d+/', '$1w=900', $upgraded) ?? $upgraded;
+
+        return preg_replace('/([?&])edge=curl(?:&|$)/', '$1', $upgraded) ?? $upgraded;
     }
 
     /** @param list<string> $categories */

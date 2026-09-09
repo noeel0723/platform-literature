@@ -8,12 +8,29 @@ use App\Models\Literature;
 use App\Models\LiteratureRelation;
 use App\Services\Literature\CatalogSyncService;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class CatalogSyncServiceTest extends TestCase
 {
     use LazilyRefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Cache::flush();
+        config()->set([
+            'services.open_library.base_url' => 'https://openlibrary.org',
+            'services.open_library.covers_url' => 'https://covers.openlibrary.org',
+            'services.open_library.user_agent' => 'Literahaven/1.0 test-suite',
+            'services.open_library.cache_minutes' => 1,
+            'services.open_library.connect_timeout' => 1,
+            'services.open_library.timeout' => 2,
+            'services.hardcover.token' => null,
+        ]);
+    }
 
     public function test_repeated_sync_updates_one_catalog_record_without_duplicates(): void
     {
@@ -23,6 +40,7 @@ class CatalogSyncServiceTest extends TestCase
             'https://www.googleapis.com/books/v1/volumes*' => Http::response([
                 'items' => [$this->volume()],
             ]),
+            'https://openlibrary.org/search.json*' => Http::response(['docs' => []]),
         ]);
 
         $firstSyncCount = app(CatalogSyncService::class)->syncGoogleBooks('Dune');
@@ -45,7 +63,7 @@ class CatalogSyncServiceTest extends TestCase
             'publication_year' => 1965,
             'identifier' => '9780441172719',
         ]);
-        Http::assertSentCount(2);
+        Http::assertSentCount(3);
     }
 
     public function test_sync_matches_an_existing_google_book_by_isbn(): void
@@ -56,6 +74,7 @@ class CatalogSyncServiceTest extends TestCase
             'https://www.googleapis.com/books/v1/volumes*' => Http::response([
                 'items' => [$this->volume()],
             ]),
+            'https://openlibrary.org/search.json*' => Http::response(['docs' => []]),
         ]);
         $source = ApiSource::factory()->create([
             'key' => 'google-books',
@@ -74,7 +93,7 @@ class CatalogSyncServiceTest extends TestCase
         $this->assertSame('google-volume-1', $existing->refresh()->external_id);
         $this->assertSame('dune', $existing->slug);
         $this->assertSame('A science fiction classic.', $existing->synopsis);
-        Http::assertSentCount(1);
+        Http::assertSentCount(2);
     }
 
     public function test_repeated_anilist_sync_updates_one_manga_without_duplicates(): void
@@ -128,6 +147,7 @@ class CatalogSyncServiceTest extends TestCase
             'https://www.googleapis.com/books/v1/volumes*' => Http::response([
                 'items' => [$volume],
             ]),
+            'https://openlibrary.org/search.json*' => Http::response(['docs' => []]),
             'https://graphql.anilist.co*' => Http::response([
                 'data' => [
                     'Page' => [
@@ -151,6 +171,25 @@ class CatalogSyncServiceTest extends TestCase
             'external_id' => '1234',
             'normalized_name' => 'jk rowling',
         ]);
+    }
+
+    public function test_sync_keeps_long_external_titles_within_the_database_slug_limit(): void
+    {
+        $this->configureGoogleBooks();
+        $volume = $this->volume();
+        $volume['id'] = 'very-long-google-title';
+        $volume['volumeInfo']['title'] = str_repeat('The Collected Chronicles of Narnia ', 12);
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://www.googleapis.com/books/v1/volumes*' => Http::response(['items' => [$volume]]),
+            'https://openlibrary.org/search.json*' => Http::response(['docs' => []]),
+        ]);
+
+        app(CatalogSyncService::class)->syncGoogleBooks('Narnia');
+
+        $literature = Literature::query()->where('external_id', 'very-long-google-title')->sole();
+        $this->assertLessThanOrEqual(255, strlen($literature->slug));
+        $this->assertDatabaseCount('literatures', 1);
     }
 
     public function test_anilist_sync_persists_bidirectional_relations_without_duplicates(): void

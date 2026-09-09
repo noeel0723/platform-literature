@@ -17,6 +17,7 @@ final class CatalogSyncService
     public function __construct(
         private GoogleBooksAdapter $googleBooks,
         private OpenLibraryAdapter $openLibrary,
+        private HardcoverAdapter $hardcover,
         private AniListAdapter $aniList,
         private MangaDexAdapter $mangaDex,
         private KitsuAdapter $kitsu,
@@ -30,32 +31,60 @@ final class CatalogSyncService
     public function syncGoogleBooks(string $query, string $literatureType = 'all', ?int $limit = null): int
     {
         $normalizedLimit = $limit ?? (int) config('services.google_books.max_results', 6);
+        $synced = 0;
+        $availableSources = 0;
+        $lastException = null;
 
         try {
             $items = $this->googleBooks->search($query, $normalizedLimit, $literatureType);
-
-            if ($items->isNotEmpty()) {
-                return $this->sync(
-                    sourceKey: 'google-books',
-                    sourceName: 'Google Books',
-                    baseUrl: (string) config('services.google_books.base_url'),
-                    supportedTypes: ['novel'],
-                    items: $items,
-                );
-            }
-        } catch (LiteratureSourceUnavailable) {
-            // Continue to the fallback source below.
+            $availableSources++;
+            $synced += $this->sync(
+                sourceKey: 'google-books',
+                sourceName: 'Google Books',
+                baseUrl: (string) config('services.google_books.base_url'),
+                supportedTypes: ['novel'],
+                items: $items,
+            );
+        } catch (LiteratureSourceUnavailable $exception) {
+            $lastException = $exception;
         }
 
         try {
-            return $this->syncOpenLibrary($query, $normalizedLimit);
-        } catch (LiteratureSourceUnavailable $openLibraryException) {
+            $items = $this->openLibrary->search($query, $normalizedLimit);
+            $availableSources++;
+            $synced += $this->sync(
+                sourceKey: 'open-library',
+                sourceName: 'Open Library',
+                baseUrl: (string) config('services.open_library.base_url'),
+                supportedTypes: ['novel'],
+                items: $items,
+            );
+        } catch (LiteratureSourceUnavailable $exception) {
+            $lastException = $exception;
+        }
+
+        if (filled(config('services.hardcover.token'))) {
+            try {
+                $synced += $this->syncHardcover($query, $normalizedLimit);
+                $availableSources++;
+            } catch (LiteratureSourceUnavailable $exception) {
+                $lastException = $exception;
+            }
+        }
+
+        if ($availableSources === 0) {
+            $sourceNames = filled(config('services.hardcover.token'))
+                ? 'Google Books, Open Library, and Hardcover'
+                : 'Google Books and Open Library';
+
             throw new LiteratureSourceUnavailable(
-                'Google Books and Open Library',
-                'Google Books returned no usable results or was unavailable, and its Open Library fallback is unavailable.',
-                $openLibraryException,
+                $sourceNames,
+                "{$sourceNames} are unavailable.",
+                $lastException,
             );
         }
+
+        return $synced;
     }
 
     public function syncOpenLibrary(string $query, ?int $limit = null): int
@@ -69,6 +98,22 @@ final class CatalogSyncService
             sourceKey: 'open-library',
             sourceName: 'Open Library',
             baseUrl: (string) config('services.open_library.base_url'),
+            supportedTypes: ['novel'],
+            items: $items,
+        );
+    }
+
+    public function syncHardcover(string $query, ?int $limit = null): int
+    {
+        $items = $this->hardcover->search(
+            $query,
+            $limit ?? (int) config('services.hardcover.max_results', 6),
+        );
+
+        return $this->sync(
+            sourceKey: 'hardcover',
+            sourceName: 'Hardcover',
+            baseUrl: (string) config('services.hardcover.base_url'),
             supportedTypes: ['novel'],
             items: $items,
         );
@@ -184,15 +229,26 @@ final class CatalogSyncService
             return 0;
         }
 
-        $enrichedItems = $items->map(fn (NormalizedLiterature $item): array => [
-            'item' => $item,
-            'entity' => $this->knowledgeGraph->find($item->title, $item->authors),
-            'author_entities' => collect($item->authors)
-                ->mapWithKeys(fn (string $authorName): array => [
-                    $this->authorNames->normalize($authorName) => $this->knowledgeGraph->findAuthor($authorName),
-                ])
-                ->all(),
-        ]);
+        $enrichmentLimit = max(0, (int) config('services.knowledge_graph.sync_item_limit', 4));
+        $enrichedItems = $items->values()->map(function (NormalizedLiterature $item, int $position) use ($enrichmentLimit): array {
+            if ($position >= $enrichmentLimit) {
+                return [
+                    'item' => $item,
+                    'entity' => null,
+                    'author_entities' => [],
+                ];
+            }
+
+            return [
+                'item' => $item,
+                'entity' => $this->knowledgeGraph->find($item->title, $item->authors),
+                'author_entities' => collect($item->authors)
+                    ->mapWithKeys(fn (string $authorName): array => [
+                        $this->authorNames->normalize($authorName) => $this->knowledgeGraph->findAuthor($authorName),
+                    ])
+                    ->all(),
+            ];
+        });
 
         return DB::transaction(function () use (
             $sourceKey,
@@ -398,14 +454,15 @@ final class CatalogSyncService
 
     private function uniqueSlug(ApiSource $source, NormalizedLiterature $item): string
     {
-        $baseSlug = Str::slug($item->title);
+        $baseSlug = Str::limit(Str::slug($item->title), 255, '');
+        $baseSlug = $baseSlug !== '' ? $baseSlug : 'literature';
 
         if (! Literature::query()->where('slug', $baseSlug)->exists()) {
             return $baseSlug;
         }
 
-        return Str::limit($baseSlug, 180, '')
-            .'-'.$source->key.'-'
-            .Str::slug($item->externalId);
+        $suffix = '-'.$source->key.'-'.substr(hash('sha256', $item->externalId), 0, 12);
+
+        return Str::limit($baseSlug, 255 - strlen($suffix), '').$suffix;
     }
 }

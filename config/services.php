@@ -53,11 +53,22 @@ return [
         'timeout' => (int) env('OPEN_LIBRARY_TIMEOUT', 10),
     ],
 
+    'hardcover' => [
+        'base_url' => env('HARDCOVER_BASE_URL', 'https://api.hardcover.app/v1/graphql'),
+        'token' => env('HARDCOVER_API_TOKEN'),
+        'user_agent' => env('HARDCOVER_USER_AGENT', 'Literahaven/1.0 academic-project'),
+        'max_results' => (int) env('HARDCOVER_MAX_RESULTS', 6),
+        'cache_minutes' => (int) env('HARDCOVER_CACHE_MINUTES', 30),
+        'connect_timeout' => (int) env('HARDCOVER_CONNECT_TIMEOUT', 3),
+        'timeout' => (int) env('HARDCOVER_TIMEOUT', 10),
+    ],
+
     'knowledge_graph' => [
         'base_url' => env('GOOGLE_KNOWLEDGE_GRAPH_BASE_URL', 'https://kgsearch.googleapis.com/v1/entities:search'),
         'key' => env('GOOGLE_KNOWLEDGE_GRAPH_API_KEY') ?: env('GOOGLE_BOOKS_API_KEY'),
         'language' => env('GOOGLE_KNOWLEDGE_GRAPH_LANGUAGE', 'en'),
         'candidate_limit' => (int) env('GOOGLE_KNOWLEDGE_GRAPH_CANDIDATE_LIMIT', 5),
+        'sync_item_limit' => (int) env('GOOGLE_KNOWLEDGE_GRAPH_SYNC_ITEM_LIMIT', 4),
         'cache_days' => (int) env('GOOGLE_KNOWLEDGE_GRAPH_CACHE_DAYS', 30),
         'connect_timeout' => (int) env('GOOGLE_KNOWLEDGE_GRAPH_CONNECT_TIMEOUT', 3),
         'timeout' => (int) env('GOOGLE_KNOWLEDGE_GRAPH_TIMEOUT', 8),

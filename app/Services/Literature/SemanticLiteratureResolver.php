@@ -157,13 +157,19 @@ class SemanticLiteratureResolver
             if ($exactYearCandidates->isEmpty() && $authorCandidates->count() === 1) {
                 $candidate = $authorCandidates->firstOrFail();
 
-                if ($candidate->publication_year === null || $literature->publication_year === null) {
+                if (
+                    $candidate->publication_year === null
+                    || $literature->publication_year === null
+                    || $literature->type === 'novel'
+                ) {
                     return [
                         'work' => $candidate,
                         'candidate_ids' => [$candidate->id],
-                        'method' => 'title_author',
+                        'method' => $literature->type === 'novel'
+                            ? 'title_author_edition'
+                            : 'title_author',
                         'status' => LiteratureSourceMapping::STATUS_MATCHED,
-                        'confidence' => 0.86,
+                        'confidence' => $literature->type === 'novel' ? 0.90 : 0.86,
                     ];
                 }
             }

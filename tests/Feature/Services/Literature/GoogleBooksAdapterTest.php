@@ -43,7 +43,7 @@ class GoogleBooksAdapterTest extends TestCase
         $this->assertSame('Novel', $book->format);
 
         Http::assertSent(fn (Request $request): bool => $request->method() === 'GET'
-            && $request['q'] === 'Dune subject:fiction'
+            && $request['q'] === 'Dune'
             && $request['maxResults'] === 4
             && $request['printType'] === 'books'
             && $request['key'] === 'test-google-books-key');
@@ -71,6 +71,34 @@ class GoogleBooksAdapterTest extends TestCase
         $results = app(GoogleBooksAdapter::class)->search('The Science of Dune');
 
         $this->assertTrue($results->isEmpty());
+    }
+
+    public function test_thumbnail_content_url_is_upgraded_to_a_larger_google_books_cover(): void
+    {
+        $this->configureGoogleBooks();
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://www.googleapis.com/books/v1/volumes*' => Http::response([
+                'items' => [[
+                    'id' => 'silver-chair',
+                    'volumeInfo' => [
+                        'title' => 'The Silver Chair',
+                        'authors' => ['C. S. Lewis'],
+                        'imageLinks' => [
+                            'thumbnail' => 'http://books.google.com/books/content?id=abc&printsec=frontcover&img=1&zoom=1&edge=curl',
+                        ],
+                        'printType' => 'BOOK',
+                    ],
+                ]],
+            ]),
+            'https://www.wikidata.org/w/api.php*' => Http::response(['search' => []]),
+        ]);
+
+        $novel = app(GoogleBooksAdapter::class)->search('The Silver Chair')->sole();
+
+        $this->assertStringContainsString('zoom=3', $novel->coverUrl);
+        $this->assertStringNotContainsString('edge=curl', $novel->coverUrl);
+        $this->assertStringStartsWith('https://', $novel->coverUrl);
     }
 
     public function test_removed_book_type_is_rejected(): void
@@ -146,7 +174,7 @@ class GoogleBooksAdapterTest extends TestCase
         Http::assertSentCount(4);
     }
 
-    public function test_novel_search_uses_a_fiction_subject_and_classifies_ambiguous_results_as_novels(): void
+    public function test_novel_search_keeps_broad_title_recall_and_classifies_ambiguous_results_as_novels(): void
     {
         $this->configureGoogleBooks();
         Http::preventStrayRequests();
@@ -168,7 +196,7 @@ class GoogleBooksAdapterTest extends TestCase
         $this->assertSame('novel', $novel->type);
         $this->assertSame('Novel', $novel->format);
         Http::assertSent(fn (Request $request): bool => str_starts_with($request->url(), 'https://www.googleapis.com/books/v1/volumes')
-            && $request['q'] === 'A Story subject:fiction');
+            && $request['q'] === '"A Story"');
     }
 
     public function test_search_returns_an_empty_collection_for_an_incomplete_response(): void

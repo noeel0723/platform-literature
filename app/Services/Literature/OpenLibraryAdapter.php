@@ -22,7 +22,7 @@ final class OpenLibraryAdapter
         }
 
         $normalizedLimit = max(1, min($limit, 100));
-        $cacheKey = 'literature-source:open-library:'.hash(
+        $cacheKey = 'literature-source:open-library:v2:'.hash(
             'sha256',
             Str::lower($query).":{$normalizedLimit}",
         );

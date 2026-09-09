@@ -61,6 +61,40 @@ class SemanticLiteratureResolverTest extends TestCase
         $this->assertDatabaseCount('canonical_works', 1);
     }
 
+    public function test_novel_editions_with_the_same_title_and_author_can_match_across_publication_years(): void
+    {
+        $author = Author::factory()->create([
+            'name' => 'C. S. Lewis',
+            'normalized_name' => 'cs lewis',
+        ]);
+        $workRecord = $this->literature(
+            $this->source('open-library'),
+            'OL71078W',
+            'The Silver Chair',
+            'OPENLIBRARY:OL71078W',
+            'novel',
+            1953,
+        );
+        $editionRecord = $this->literature(
+            $this->source('google-books'),
+            'google-silver-chair',
+            'The Silver Chair',
+            '9780064471091',
+            'novel',
+            2002,
+        );
+        $this->attachAuthor($workRecord, $author);
+        $this->attachAuthor($editionRecord, $author);
+
+        $workMapping = app(SemanticLiteratureResolver::class)->resolve($workRecord);
+        $editionMapping = app(SemanticLiteratureResolver::class)->resolve($editionRecord);
+
+        $this->assertSame($workMapping->canonical_work_id, $editionMapping->canonical_work_id);
+        $this->assertSame('title_author_edition', $editionMapping->match_method);
+        $this->assertSame(LiteratureSourceMapping::STATUS_MATCHED, $editionMapping->mapping_status);
+        $this->assertDatabaseCount('canonical_works', 1);
+    }
+
     public function test_similar_records_with_different_authors_are_not_automatically_merged(): void
     {
         $firstAuthor = Author::factory()->create();

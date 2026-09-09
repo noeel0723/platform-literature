@@ -97,6 +97,37 @@ class CanonicalLiteratureProjectionTest extends TestCase
         $this->assertTrue($preferred->is($completeFallback));
     }
 
+    public function test_a_large_open_library_cover_beats_a_google_thumbnail_for_the_same_novel(): void
+    {
+        $author = Author::factory()->create(['name' => 'C. S. Lewis']);
+        $work = CanonicalWork::factory()->for($author, 'primaryAuthor')->create([
+            'canonical_title' => 'The Silver Chair',
+            'normalized_title' => 'the silver chair',
+            'type' => 'novel',
+            'publication_year' => 1953,
+        ]);
+        $googleBooks = ApiSource::factory()->create(['key' => 'google-books']);
+        $openLibrary = ApiSource::factory()->create(['key' => 'open-library']);
+        $thumbnail = Literature::factory()->for($googleBooks)->create([
+            'title' => 'The Silver Chair',
+            'type' => 'novel',
+            'cover_url' => 'https://books.google.com/books/content?id=abc&zoom=1',
+        ]);
+        $largeCover = Literature::factory()->for($openLibrary)->create([
+            'title' => 'The Silver Chair',
+            'type' => 'novel',
+            'cover_url' => 'https://covers.openlibrary.org/b/id/14325438-L.jpg?default=false',
+        ]);
+        $thumbnail->authors()->attach($author, ['role' => 'author', 'position' => 0]);
+        $largeCover->authors()->attach($author, ['role' => 'author', 'position' => 0]);
+        $this->map($work, $thumbnail);
+        $this->map($work, $largeCover);
+
+        $preferred = app(CanonicalLiteratureProjector::class)->refresh($work);
+
+        $this->assertTrue($preferred->is($largeCover));
+    }
+
     public function test_latest_catalog_paginates_canonical_works_and_keeps_unmapped_legacy_records(): void
     {
         $this->createProjectedPair();
