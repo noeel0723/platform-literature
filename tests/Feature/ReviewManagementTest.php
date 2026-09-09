@@ -176,6 +176,7 @@ class ReviewManagementTest extends TestCase
             ->assertSee('data-dialog-open="review-dialog"', false)
             ->assertSee('data-rating-value="1.5"', false)
             ->assertSee('data-rating-value="2.5"', false)
+            ->assertSee('data-rating-value="1.5" class="h-12 w-5 overflow-hidden text-left text-4xl leading-12 text-ink-950', false)
             ->assertSeeText('Hover to preview a rating')
             ->assertSeeText('Community rating')
             ->assertSeeText('Your Rating')

@@ -39,7 +39,12 @@
                 </h2>
             </div>
             @if ($query !== '' || $selectedType !== '')
-                <p class="text-sm text-ink-950/50">Showing {{ $literatures->count() }} of the best matches</p>
+                <div class="flex items-center gap-5">
+                    <p class="text-sm text-ink-950/50">Showing {{ $literatures->count() }} of the best matches</p>
+                    @if ($canExpand)
+                        <a href="{{ route('literatures.latest', array_filter(['q' => $query, 'type' => $selectedType])) }}" class="text-xs font-bold uppercase tracking-[0.16em] text-ink-950 transition hover:text-brand-coral">More</a>
+                    @endif
+                </div>
             @endif
         </div>
 
@@ -67,15 +72,6 @@
                     <x-literature-card :$literature />
                 @endforeach
             </div>
-
-            @if ($canExpand)
-                <div class="mt-10 flex justify-center border-t border-ink-950/10 pt-7">
-                    <a href="{{ route('literatures.index', array_filter(['q' => $query, 'type' => $selectedType, 'more' => 1])) }}" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-ink-950/20 bg-white/55 px-6 text-sm font-bold text-ink-950 transition hover:border-brand-blue hover:bg-brand-blue hover:text-brand-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-coral">
-                        More results
-                        <span aria-hidden="true">↓</span>
-                    </a>
-                </div>
-            @endif
         @endif
     </section>
 </x-app-shell>

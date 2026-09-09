@@ -77,7 +77,7 @@ class LiteratureCatalogTest extends TestCase
             ->assertSeeText('Search Match 2')
             ->assertDontSeeText('Search Match 1')
             ->assertSeeText('Showing 4 of the best matches')
-            ->assertSeeText('More results');
+            ->assertSeeText('More');
     }
 
     public function test_catalog_prioritizes_canonical_books_over_guides_and_unofficial_matches(): void
@@ -125,7 +125,7 @@ class LiteratureCatalogTest extends TestCase
             ->assertSeeText('C. S. Lewis');
     }
 
-    public function test_more_results_expands_a_catalog_search_to_twenty_matches(): void
+    public function test_more_link_opens_a_compact_fifteen_item_paginated_catalog(): void
     {
         $this->configureGoogleBooks();
         Http::preventStrayRequests();
@@ -146,17 +146,40 @@ class LiteratureCatalogTest extends TestCase
             ]);
         }
 
-        $response = $this->get(route('literatures.index', [
+        $catalogResponse = $this->get(route('literatures.index', [
             'q' => 'Narnia',
             'type' => 'book',
-            'more' => 1,
         ]))->assertOk();
 
-        $this->assertSame(18, substr_count($response->getContent(), 'data-literature-card'));
-        $response
-            ->assertSeeText('Showing 18 of the best matches')
-            ->assertDontSeeText('More results');
+        $catalogResponse
+            ->assertSeeText('More')
+            ->assertSee(route('literatures.latest', ['q' => 'Narnia', 'type' => 'book']));
+        $this->assertSame(4, substr_count($catalogResponse->getContent(), 'data-literature-card'));
         Http::assertSent(fn ($request): bool => $request['maxResults'] === 20);
+
+        $firstPage = $this->get(route('literatures.latest', [
+            'q' => 'Narnia',
+            'type' => 'book',
+        ]))->assertOk();
+
+        $this->assertSame(15, substr_count($firstPage->getContent(), 'data-literature-card-size="compact"'));
+        $firstPage
+            ->assertSeeText('18 matches · 15 per page')
+            ->assertSeeText('Page 1 of 2')
+            ->assertSeeText('Previous')
+            ->assertSeeText('Next')
+            ->assertSee('data-latest-literature-grid', false);
+
+        $secondPage = $this->get(route('literatures.latest', [
+            'q' => 'Narnia',
+            'type' => 'book',
+            'page' => 2,
+        ]))->assertOk();
+
+        $this->assertSame(3, substr_count($secondPage->getContent(), 'data-literature-card-size="compact"'));
+        $secondPage
+            ->assertSeeText('Page 2 of 2')
+            ->assertSee('rel="prev"', false);
     }
 
     public function test_catalog_can_be_filtered_by_query_and_type(): void

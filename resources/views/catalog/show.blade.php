@@ -125,7 +125,7 @@
                                 <div data-star-rating data-rating-input="review-rating" data-rating-dialog="review-dialog" class="flex" role="radiogroup" aria-label="Choose your rating from 0.5 to 5 stars">
                                     @foreach (range(1, 10) as $halfStep)
                                         @php($ratingValue = $halfStep / 2)
-                                        <button type="button" data-rating-value="{{ $ratingValue }}" class="h-12 w-5 overflow-hidden text-left text-4xl leading-12 text-ink-950/15 transition focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-coral" role="radio" aria-checked="false" aria-label="{{ number_format($ratingValue, 1) }} out of 5 stars">
+                                        <button type="button" data-rating-value="{{ $ratingValue }}" class="h-12 w-5 overflow-hidden text-left text-4xl leading-12 text-ink-950 transition focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-coral" role="radio" aria-checked="false" aria-label="{{ number_format($ratingValue, 1) }} out of 5 stars">
                                             <span class="block w-10 {{ $halfStep % 2 === 0 ? '-translate-x-1/2' : '' }}">&#9733;</span>
                                         </button>
                                     @endforeach
@@ -340,7 +340,7 @@
                             <div data-star-rating data-rating-input="review-rating" class="flex" role="radiogroup" aria-label="Choose a rating from 0.5 to 5 stars">
                                 @foreach (range(1, 10) as $halfStep)
                                     @php($ratingValue = $halfStep / 2)
-                                    <button type="button" data-rating-value="{{ $ratingValue }}" class="h-14 w-6 overflow-hidden text-left text-5xl leading-14 text-ink-950/15 transition focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-coral" role="radio" aria-checked="false" aria-label="{{ number_format($ratingValue, 1) }} out of 5 stars">
+                                    <button type="button" data-rating-value="{{ $ratingValue }}" class="h-14 w-6 overflow-hidden text-left text-5xl leading-14 text-ink-950 transition focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-coral" role="radio" aria-checked="false" aria-label="{{ number_format($ratingValue, 1) }} out of 5 stars">
                                         <span class="block w-12 {{ $halfStep % 2 === 0 ? '-translate-x-1/2' : '' }}">&#9733;</span>
                                     </button>
                                 @endforeach

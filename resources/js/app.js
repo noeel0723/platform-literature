@@ -230,7 +230,7 @@ document.querySelectorAll('[data-star-rating]').forEach((ratingGroup) => {
             const isSelected = Number(button.dataset.ratingValue) <= rating;
 
             button.classList.toggle('text-brand-coral', isSelected);
-            button.classList.toggle('text-ink-950/15', !isSelected);
+            button.classList.toggle('text-ink-950', !isSelected);
             button.setAttribute('aria-checked', String(Number(button.dataset.ratingValue) === rating));
         });
 

@@ -33,9 +33,8 @@ class LiteratureController extends Controller
     ): View {
         $query = trim((string) $request->query('q', ''));
         $selectedType = trim((string) $request->query('type', ''));
-        $expanded = $request->boolean('more');
-        $displayLimit = $expanded ? 20 : 4;
-        $sourceLimit = $expanded ? 20 : 6;
+        $displayLimit = 4;
+        $sourceLimit = 20;
         $unavailableSources = [];
 
         if ($query !== '' && in_array($selectedType, ['', 'book', 'novel'], true)) {
@@ -78,31 +77,14 @@ class LiteratureController extends Controller
         $literatures = collect();
 
         if ($query !== '' || $selectedType !== '') {
-            $matches = Literature::query()
-                ->with(['apiSource', 'authors', 'categories'])
-                ->when($query !== '', function (Builder $builder) use ($query): void {
-                    $builder->where(function (Builder $search) use ($query): void {
-                        $search
-                            ->where('title', 'like', "%{$query}%")
-                            ->orWhere('original_title', 'like', "%{$query}%")
-                            ->orWhereHas('authors', function (Builder $authors) use ($query): void {
-                                $authors->where('name', 'like', "%{$query}%");
-                            })
-                            ->orWhereHas('categories', function (Builder $categories) use ($query): void {
-                                $categories->where('name', 'like', "%{$query}%");
-                            });
-                    });
-                })
-                ->when($selectedType !== '', function (Builder $builder) use ($selectedType): void {
-                    $builder->where('type', $selectedType);
-                })
+            $matches = $this->catalogMatches($query, $selectedType)
                 ->latest('updated_at')
                 ->latest('id')
                 ->limit(100)
                 ->get();
 
             $rankedMatches = $resultRanker->rank($matches, $query);
-            $canExpand = ! $expanded && $query !== '' && $rankedMatches->count() > $displayLimit;
+            $canExpand = $rankedMatches->count() > $displayLimit;
             $literatures = $rankedMatches
                 ->take($displayLimit)
                 ->map(fn (Literature $literature): array => $this->present($literature));
@@ -114,9 +96,27 @@ class LiteratureController extends Controller
             'literatures' => $literatures,
             'query' => $query,
             'selectedType' => $selectedType,
-            'expanded' => $expanded,
             'canExpand' => $canExpand,
             'sourceWarning' => $sourceWarning,
+            'types' => self::TYPES,
+        ]);
+    }
+
+    public function latest(Request $request): View
+    {
+        $query = trim((string) $request->query('q', ''));
+        $selectedType = trim((string) $request->query('type', ''));
+        $literatures = $this->catalogMatches($query, $selectedType)
+            ->latest('updated_at')
+            ->latest('id')
+            ->paginate(15)
+            ->withQueryString()
+            ->through(fn (Literature $literature): array => $this->present($literature));
+
+        return view('catalog.latest', [
+            'literatures' => $literatures,
+            'query' => $query,
+            'selectedType' => $selectedType,
             'types' => self::TYPES,
         ]);
     }
@@ -267,6 +267,31 @@ class LiteratureController extends Controller
             'theme' => $literature->theme,
             'initials' => $this->initials($displayTitle),
         ];
+    }
+
+    /** @return Builder<Literature> */
+    private function catalogMatches(string $query, string $selectedType): Builder
+    {
+        return Literature::query()
+            ->with(['apiSource', 'authors', 'categories'])
+            ->when($query !== '', function (Builder $builder) use ($query): void {
+                $builder->where(function (Builder $search) use ($query): void {
+                    $search
+                        ->where('title', 'like', "%{$query}%")
+                        ->orWhere('original_title', 'like', "%{$query}%")
+                        ->orWhereHas('authors', function (Builder $authors) use ($query): void {
+                            $authors
+                                ->where('name', 'like', "%{$query}%")
+                                ->orWhereHas('aliases', fn (Builder $aliases) => $aliases->where('name', 'like', "%{$query}%"));
+                        })
+                        ->orWhereHas('categories', function (Builder $categories) use ($query): void {
+                            $categories->where('name', 'like', "%{$query}%");
+                        });
+                });
+            })
+            ->when($selectedType !== '', function (Builder $builder) use ($selectedType): void {
+                $builder->where('type', $selectedType);
+            });
     }
 
     private function initials(string $title): string

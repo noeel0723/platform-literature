@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', HomeController::class)->name('home');
 Route::get('/search', SearchController::class)->name('search.index');
 Route::get('/catalog', [LiteratureController::class, 'index'])->name('literatures.index');
+Route::get('/catalog/latest', [LiteratureController::class, 'latest'])->name('literatures.latest');
 Route::get('/authors/{author}', AuthorController::class)->name('authors.show');
 Route::get('/literatures/{literature}', [LiteratureController::class, 'show'])->name('literatures.show');
 Route::get('/members/{user}/followers', [ProfileController::class, 'followers'])->name('profiles.followers');

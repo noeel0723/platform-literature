@@ -54,7 +54,7 @@
                     <div data-star-rating data-rating-input="quick-log-rating" class="flex" role="radiogroup" aria-label="Choose a rating from 0.5 to 5 stars">
                         @foreach (range(1, 10) as $halfStep)
                             @php($ratingValue = $halfStep / 2)
-                            <button type="button" data-rating-value="{{ $ratingValue }}" class="h-10 w-4.5 overflow-hidden text-left text-3xl leading-10 text-ink-950/15 transition focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-coral" role="radio" aria-checked="false" aria-label="{{ number_format($ratingValue, 1) }} out of 5 stars">
+                            <button type="button" data-rating-value="{{ $ratingValue }}" class="h-10 w-4.5 overflow-hidden text-left text-3xl leading-10 text-ink-950 transition focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-coral" role="radio" aria-checked="false" aria-label="{{ number_format($ratingValue, 1) }} out of 5 stars">
                                 <span class="block w-9 {{ $halfStep % 2 === 0 ? '-translate-x-1/2' : '' }}">&#9733;</span>
                             </button>
                         @endforeach

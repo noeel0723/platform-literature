@@ -11,7 +11,7 @@
 
 <span {{ $attributes->class(['inline-flex '.$sizeClass]) }} role="img" aria-label="{{ number_format($value, 1) }} out of 5 stars">
     @foreach (range(1, 5) as $star)
-        <span class="relative inline-block leading-none text-ink-950/15" aria-hidden="true">
+        <span class="relative inline-block leading-none text-ink-950" aria-hidden="true">
             &#9733;
             @if ($value >= $star)
                 <span class="absolute inset-0 text-brand-coral">&#9733;</span>
