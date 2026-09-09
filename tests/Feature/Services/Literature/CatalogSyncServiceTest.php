@@ -36,6 +36,8 @@ class CatalogSyncServiceTest extends TestCase
         $this->assertDatabaseCount('categories', 2);
         $this->assertDatabaseCount('author_literature', 1);
         $this->assertDatabaseCount('category_literature', 2);
+        $this->assertDatabaseCount('canonical_works', 1);
+        $this->assertDatabaseCount('literature_source_mappings', 1);
         $this->assertDatabaseHas('literatures', [
             'external_id' => 'google-volume-1',
             'title' => 'Dune',

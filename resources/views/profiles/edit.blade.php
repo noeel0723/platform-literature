@@ -4,9 +4,7 @@
     <section class="catalog-grid border-b border-ink-950/10">
         <div class="mx-auto max-w-5xl px-5 py-12 sm:px-8 lg:px-10 lg:py-16">
             <a href="{{ route('profiles.show', $user) }}" class="text-sm font-bold text-ink-950/65 transition hover:text-brand-coral">&larr; Back to profile</a>
-            <p class="mt-8 text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">Profile &amp; identity</p>
-            <h1 class="mt-3 font-serif text-5xl font-bold text-ink-950">Edit your profile</h1>
-            <p class="mt-4 max-w-2xl leading-7 text-ink-950/65">Choose how other Literahaven readers see you and highlight the works and authors that define your taste.</p>
+            <h1 class="mt-3 font-serif text-2xl font-bold text-ink-950">Edit your profile</h1>
         </div>
     </section>
 

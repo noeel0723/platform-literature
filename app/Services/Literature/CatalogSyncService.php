@@ -23,6 +23,7 @@ final class CatalogSyncService
         private KnowledgeGraphEnricher $knowledgeGraph,
         private AuthorNameNormalizer $authorNames,
         private AuthorEntityResolver $authors,
+        private SemanticLiteratureResolver $semanticResolver,
     ) {}
 
     public function syncGoogleBooks(string $query, string $literatureType = 'all', ?int $limit = null): int
@@ -269,6 +270,7 @@ final class CatalogSyncService
         $this->syncAuthors($source, $literature, $item->authors, $item->authorDetails, $authorEntities);
         $this->syncCategories($literature, $item->categories);
         $this->syncRelations($source, $literature, $item->relations);
+        $this->semanticResolver->resolve($literature);
 
         return $literature;
     }

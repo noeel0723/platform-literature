@@ -34,6 +34,12 @@ class Author extends Model
         return $this->hasMany(AuthorAlias::class);
     }
 
+    /** @return HasMany<CanonicalWork, $this> */
+    public function canonicalWorks(): HasMany
+    {
+        return $this->hasMany(CanonicalWork::class, 'primary_author_id');
+    }
+
     /** @return BelongsToMany<User, $this> */
     public function favoritedByUsers(): BelongsToMany
     {

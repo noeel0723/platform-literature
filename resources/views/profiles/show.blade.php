@@ -84,7 +84,7 @@
         <div class="min-w-0">
             <div>
             <div class="flex items-end justify-between border-b border-ink-950/15 pb-3">
-                <div><p class="text-xs font-bold uppercase tracking-[0.18em] text-brand-coral">Personal shelf</p><h2 class="mt-2 font-serif text-3xl font-bold text-ink-950">Favorite Literature</h2></div>
+                <div><p class="text-xs font-bold uppercase tracking-[0.18em] text-brand-coral">Favorites Literature</p></div>
                 <span class="text-sm text-ink-950/50">Up to four</span>
             </div>
 
@@ -112,7 +112,7 @@
 
             <div class="mt-12">
             <div class="flex items-end justify-between border-b border-ink-950/15 pb-3">
-                <div><p class="text-xs font-bold uppercase tracking-[0.18em] text-brand-coral">Creative voices</p><h2 class="mt-2 font-serif text-3xl font-bold text-ink-950">Favorite Authors</h2></div>
+                <div><p class="text-xs font-bold uppercase tracking-[0.18em] text-brand-coral">favorites Authors</p></div>
                 <span class="text-sm text-ink-950/50">Up to four</span>
             </div>
 

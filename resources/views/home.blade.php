@@ -2,17 +2,16 @@
     <section>
         <div class="mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-14 lg:px-10">
             <div class="border-b border-ink-950/15 pb-8">
-                <p class="text-xs font-bold uppercase tracking-[0.28em] text-brand-coral">Your social shelf</p>
-                <h1 class="mt-3 font-serif text-4xl font-bold tracking-tight text-ink-950 sm:text-5xl">
+                <h1 class="mt-3 text-center font-serif text-1xl font-bold tracking-tight text-ink-950 sm:text-2xl">
                     @auth
-                        Welcome back, {{ $viewer->name }}.
+                        Welcome back, {{ $viewer->name }}. Here is what your friends have been reading..
                     @else
                         Welcome to Literahaven.
                     @endauth
                 </h1>
                 <p class="mt-3 max-w-2xl leading-7 text-ink-950/60">
                     @auth
-                        Here is what your friends have been reading and reviewing lately.
+                        
                     @else
                         Sign in and follow other readers to build your personal activity feed.
                     @endauth
@@ -23,7 +22,6 @@
                 <div class="flex items-end justify-between gap-4 border-b border-ink-950/15 pb-3">
                     <div>
                         <p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">Activity feed</p>
-                        <h2 id="friends-activity-heading" class="mt-1 font-serif text-2xl font-bold text-ink-950">New from Friends</h2>
                     </div>
                     <span class="text-xs font-bold uppercase tracking-[0.16em] text-ink-950/45">Latest 6</span>
                 </div>
@@ -96,7 +94,6 @@
                 <div class="flex items-end justify-between gap-4 border-b border-ink-950/15 pb-3">
                     <div>
                         <p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">Shared discoveries</p>
-                        <h2 id="popular-friends-heading" class="mt-1 font-serif text-2xl font-bold text-ink-950">Popular with Friends</h2>
                     </div>
                     <span class="text-xs font-bold uppercase tracking-[0.16em] text-ink-950/45">Most read</span>
                 </div>

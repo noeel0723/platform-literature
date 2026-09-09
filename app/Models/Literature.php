@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 #[Fillable([
@@ -113,6 +114,12 @@ class Literature extends Model
     public function incomingRelations(): HasMany
     {
         return $this->hasMany(LiteratureRelation::class, 'related_literature_id');
+    }
+
+    /** @return HasOne<LiteratureSourceMapping, $this> */
+    public function sourceMapping(): HasOne
+    {
+        return $this->hasOne(LiteratureSourceMapping::class);
     }
 
     public function getRouteKeyName(): string

@@ -20,6 +20,12 @@ class ApiSource extends Model
         return $this->hasMany(Literature::class);
     }
 
+    /** @return HasMany<LiteratureSourceMapping, $this> */
+    public function literatureMappings(): HasMany
+    {
+        return $this->hasMany(LiteratureSourceMapping::class);
+    }
+
     /** @return array<string, string> */
     protected function casts(): array
     {
