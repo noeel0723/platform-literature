@@ -23,8 +23,8 @@ final class GoogleBooksAdapter
             return collect();
         }
 
-        if (! in_array($requestedType, ['all', 'book', 'novel'], true)) {
-            throw new InvalidArgumentException('Google Books only supports all, book, and novel catalog types.');
+        if (! in_array($requestedType, ['all', 'novel'], true)) {
+            throw new InvalidArgumentException('Google Books only supports all and novel catalog types.');
         }
 
         $apiKey = trim((string) config('services.google_books.key'));
@@ -42,7 +42,7 @@ final class GoogleBooksAdapter
                 ->connectTimeout((int) config('services.google_books.connect_timeout', 3))
                 ->timeout((int) config('services.google_books.timeout', 8))
                 ->get('/volumes', [
-                    'q' => $requestedType === 'novel' ? "{$query} subject:fiction" : $query,
+                    'q' => "{$query} subject:fiction",
                     'maxResults' => max(1, min($limit, 40)),
                     'printType' => 'books',
                     'projection' => 'full',
@@ -77,12 +77,12 @@ final class GoogleBooksAdapter
         }
 
         return collect($items)
-            ->map(fn (mixed $item): ?NormalizedLiterature => $this->normalize($item, $requestedType))
+            ->map(fn (mixed $item): ?NormalizedLiterature => $this->normalize($item))
             ->filter()
             ->values();
     }
 
-    private function normalize(mixed $item, string $requestedType = 'all'): ?NormalizedLiterature
+    private function normalize(mixed $item): ?NormalizedLiterature
     {
         if (! is_array($item)) {
             return null;
@@ -115,7 +115,11 @@ final class GoogleBooksAdapter
         $tagline = $sourceUsesContentLanguage ? $sourceTagline ?? $enrichment->tagline : $enrichment->tagline;
         $synopsis = $sourceUsesContentLanguage ? $sourceSynopsis ?? $enrichment->synopsis : $enrichment->synopsis;
         $usedEnrichmentSynopsis = $enrichment->synopsis !== null && $synopsis === $enrichment->synopsis;
-        $literatureType = $this->literatureType($title, $categories, $synopsis, $requestedType);
+        $literatureType = $this->literatureType($title, $categories, $synopsis);
+
+        if ($literatureType === null) {
+            return null;
+        }
 
         return new NormalizedLiterature(
             externalId: $externalId,
@@ -128,7 +132,7 @@ final class GoogleBooksAdapter
             synopsis: $synopsis,
             publisher: $this->cleanText(Arr::get($item, 'volumeInfo.publisher')),
             language: $language,
-            format: $this->format(Arr::get($item, 'volumeInfo.printType'), $literatureType),
+            format: $this->format(Arr::get($item, 'volumeInfo.printType')),
             identifier: $this->identifier(Arr::get($item, 'volumeInfo.industryIdentifiers')),
             coverUrl: $this->coverUrl(Arr::get($item, 'volumeInfo.imageLinks')),
             originalTitle: $enrichment->originalTitle,
@@ -193,7 +197,7 @@ final class GoogleBooksAdapter
     }
 
     /** @param list<string> $categories */
-    private function literatureType(string $title, array $categories, ?string $synopsis, string $requestedType = 'all'): string
+    private function literatureType(string $title, array $categories, ?string $synopsis): ?string
     {
         $normalizedTitle = Str::lower($title);
         $normalizedCategories = Str::lower(implode(' | ', $categories));
@@ -204,7 +208,7 @@ final class GoogleBooksAdapter
         }
 
         if (preg_match('/\b(?:non[- ]?fiction|nonfiksi|comics?|graphic novels?|literary criticism|literary collections)\b/u', $normalizedCategories) === 1) {
-            return 'book';
+            return null;
         }
 
         if (preg_match('/\b(?:fiction|fiksi|novels?|romance|romansa|fantasy|fantasi)\b/u', $normalizedCategories) === 1) {
@@ -219,14 +223,14 @@ final class GoogleBooksAdapter
             return 'novel';
         }
 
-        return $requestedType === 'novel' ? 'novel' : 'book';
+        return 'novel';
     }
 
-    private function format(mixed $printType, string $literatureType): string
+    private function format(mixed $printType): string
     {
         return match (Str::upper((string) $printType)) {
             'MAGAZINE' => 'Magazine',
-            default => $literatureType === 'novel' ? 'Novel' : 'Book',
+            default => 'Novel',
         };
     }
 

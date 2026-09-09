@@ -27,7 +27,7 @@ class LiteratureFactory extends Factory
             'slug' => Str::slug($title).'-'.fake()->unique()->numberBetween(100, 999),
             'title' => $title,
             'original_title' => null,
-            'type' => 'book',
+            'type' => 'novel',
             'publication_year' => fake()->numberBetween(1900, 2026),
             'tagline' => fake()->sentence(),
             'synopsis' => fake()->paragraph(),

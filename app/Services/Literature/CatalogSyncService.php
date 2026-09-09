@@ -37,15 +37,15 @@ final class CatalogSyncService
             sourceKey: 'google-books',
             sourceName: 'Google Books',
             baseUrl: (string) config('services.google_books.base_url'),
-            supportedTypes: ['book', 'novel'],
+            supportedTypes: ['novel'],
             items: $items,
         );
     }
 
     public function syncAniList(string $query, string $literatureType, ?int $limit = null): int
     {
-        if (! in_array($literatureType, ['all', 'manga', 'manhwa', 'light-novel'], true)) {
-            throw new InvalidArgumentException('AniList sync only supports all, manga, manhwa, and light-novel types.');
+        if (! in_array($literatureType, ['all', 'manga', 'manhwa'], true)) {
+            throw new InvalidArgumentException('AniList sync only supports all, manga, and manhwa types.');
         }
 
         try {
@@ -59,14 +59,10 @@ final class CatalogSyncService
                 sourceKey: 'anilist',
                 sourceName: 'AniList',
                 baseUrl: (string) config('services.anilist.base_url'),
-                supportedTypes: ['manga', 'manhwa', 'light-novel'],
+                supportedTypes: ['manga', 'manhwa'],
                 items: $items,
             );
         } catch (LiteratureSourceUnavailable $aniListException) {
-            if ($literatureType === 'light-novel') {
-                throw $aniListException;
-            }
-
             try {
                 return $this->syncMangaDex($query, $literatureType, $limit);
             } catch (LiteratureSourceUnavailable $mangaDexException) {

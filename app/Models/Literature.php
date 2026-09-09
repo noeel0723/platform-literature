@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 #[Fillable([
     'api_source_id',
@@ -37,6 +38,25 @@ class Literature extends Model
 {
     /** @use HasFactory<LiteratureFactory> */
     use HasFactory;
+
+    /** @var array<string, string> */
+    public const TYPE_LABELS = [
+        'novel' => 'Novel',
+        'western-comic' => 'Comic',
+        'manga' => 'Manga',
+        'manhwa' => 'Manhwa',
+    ];
+
+    /** @return list<string> */
+    public static function supportedTypes(): array
+    {
+        return array_keys(self::TYPE_LABELS);
+    }
+
+    public function typeLabel(): string
+    {
+        return self::TYPE_LABELS[$this->type] ?? Str::headline($this->type);
+    }
 
     /** @return BelongsTo<ApiSource, $this> */
     public function apiSource(): BelongsTo

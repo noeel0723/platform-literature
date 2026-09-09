@@ -66,21 +66,14 @@ class MangaDexFallbackTest extends TestCase
         Http::assertSentCount(2);
     }
 
-    public function test_light_novels_do_not_fall_back_to_mangadex(): void
+    public function test_removed_light_novel_type_is_rejected_before_requesting_any_source(): void
     {
         Http::preventStrayRequests();
-        Http::fake([
-            'https://graphql.anilist.co*' => Http::response([], 503),
-        ]);
 
-        try {
-            app(CatalogSyncService::class)->syncAniList('Spice and Wolf', 'light-novel');
-            $this->fail('AniList failure should be propagated for light novels.');
-        } catch (LiteratureSourceUnavailable $exception) {
-            $this->assertSame('AniList', $exception->source);
-        }
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('only supports all, manga, and manhwa');
 
-        Http::assertSentCount(1);
+        app(CatalogSyncService::class)->syncAniList('Spice and Wolf', 'light-novel');
     }
 
     public function test_combined_source_error_is_reported_when_primary_and_fallback_fail(): void

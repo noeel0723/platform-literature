@@ -21,7 +21,7 @@ class ApiSourceFactory extends Factory
             'key' => fake()->unique()->slug(2),
             'name' => fake()->company(),
             'base_url' => fake()->url(),
-            'supported_types' => ['book'],
+            'supported_types' => ['novel'],
             'is_active' => true,
         ];
     }

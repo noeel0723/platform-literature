@@ -22,6 +22,7 @@ class SearchController extends Controller
         if ($query !== '') {
             $literatures = Literature::query()
                 ->with('authors')
+                ->whereIn('type', Literature::supportedTypes())
                 ->where(function (Builder $literatureQuery) use ($query): void {
                     $literatureQuery
                         ->where('title', 'like', "%{$query}%")
@@ -42,12 +43,19 @@ class SearchController extends Controller
                         ->orWhereHas('aliases', fn (Builder $aliases) => $aliases->where('name', 'like', "%{$query}%"))
                         ->orWhereHas('literatures', function (Builder $literatures) use ($query): void {
                             $literatures
-                                ->where('title', 'like', "%{$query}%")
-                                ->orWhere('original_title', 'like', "%{$query}%");
+                                ->whereIn('type', Literature::supportedTypes())
+                                ->where(function (Builder $titles) use ($query): void {
+                                    $titles
+                                        ->where('title', 'like', "%{$query}%")
+                                        ->orWhere('original_title', 'like', "%{$query}%");
+                                });
                         });
                 })
-                ->withCount('literatures')
-                ->with(['literatures' => fn ($literatures) => $literatures->latest('publication_year')->limit(3)])
+                ->withCount(['literatures' => fn (Builder $literatures) => $literatures->whereIn('type', Literature::supportedTypes())])
+                ->with(['literatures' => fn ($literatures) => $literatures
+                    ->whereIn('type', Literature::supportedTypes())
+                    ->latest('publication_year')
+                    ->limit(3)])
                 ->orderBy('name')
                 ->limit(8)
                 ->get();

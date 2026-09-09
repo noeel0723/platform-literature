@@ -22,7 +22,7 @@ class LiteratureCatalogTest extends TestCase
             [
                 'title' => 'Bumi Manusia',
                 'slug' => 'bumi-manusia',
-                'type' => 'book',
+                'type' => 'novel',
             ],
             'Google Books',
             ['Pramoedya Ananta Toer'],
@@ -44,6 +44,33 @@ class LiteratureCatalogTest extends TestCase
             ->assertDontSeeText('Increments 1-3 / Catalog, reading, and reviews');
     }
 
+    public function test_catalog_exposes_only_the_supported_literature_types(): void
+    {
+        $legacyBook = Literature::factory()->create([
+            'title' => 'Legacy General Book',
+            'slug' => 'legacy-general-book',
+            'type' => 'book',
+        ]);
+        Literature::factory()->create([
+            'title' => 'Legacy Light Novel',
+            'slug' => 'legacy-light-novel',
+            'type' => 'light-novel',
+        ]);
+
+        $response = $this->get(route('literatures.index', [
+            'type' => 'book',
+        ]));
+
+        $response
+            ->assertOk()
+            ->assertSeeText('Novel')
+            ->assertSeeText('Comic')
+            ->assertSeeText('Manga')
+            ->assertSeeText('Manhwa')
+            ->assertDontSeeText('Light Novel')
+            ->assertDontSeeText($legacyBook->title);
+    }
+
     public function test_catalog_only_displays_the_four_newest_search_matches(): void
     {
         $this->configureGoogleBooks();
@@ -61,14 +88,14 @@ class LiteratureCatalogTest extends TestCase
             Literature::factory()->for($source)->create([
                 'title' => "Search Match {$position}",
                 'slug' => "search-match-{$position}",
-                'type' => 'book',
+                'type' => 'novel',
                 'updated_at' => now()->subMinutes(6 - $position),
             ]);
         }
 
         $response = $this->get(route('literatures.index', [
             'q' => 'Search Match',
-            'type' => 'book',
+            'type' => 'novel',
         ]))->assertOk();
 
         $this->assertSame(4, substr_count($response->getContent(), 'data-literature-card'));
@@ -95,7 +122,7 @@ class LiteratureCatalogTest extends TestCase
         Literature::factory()->for($source)->create([
             'title' => 'Narnia Study Guide and Workbook',
             'slug' => 'narnia-study-guide-and-workbook',
-            'type' => 'book',
+            'type' => 'novel',
             'publisher' => 'Example Learning',
             'identifier' => '9780000000001',
             'cover_url' => 'https://images.example.test/narnia-guide.jpg',
@@ -103,7 +130,7 @@ class LiteratureCatalogTest extends TestCase
         $official = Literature::factory()->for($source)->create([
             'title' => 'The Chronicles of Narnia',
             'slug' => 'the-chronicles-of-narnia',
-            'type' => 'book',
+            'type' => 'novel',
             'publisher' => 'HarperCollins',
             'identifier' => '9780066238500',
             'cover_url' => 'https://images.example.test/narnia.jpg',
@@ -117,7 +144,7 @@ class LiteratureCatalogTest extends TestCase
 
         $response = $this->get(route('literatures.index', [
             'q' => 'Narnia',
-            'type' => 'book',
+            'type' => 'novel',
         ]))->assertOk();
 
         $response
@@ -142,24 +169,24 @@ class LiteratureCatalogTest extends TestCase
             Literature::factory()->for($source)->create([
                 'title' => "Narnia Result {$position}",
                 'slug' => "narnia-result-{$position}",
-                'type' => 'book',
+                'type' => 'novel',
             ]);
         }
 
         $catalogResponse = $this->get(route('literatures.index', [
             'q' => 'Narnia',
-            'type' => 'book',
+            'type' => 'novel',
         ]))->assertOk();
 
         $catalogResponse
             ->assertSeeText('More')
-            ->assertSee(route('literatures.latest', ['q' => 'Narnia', 'type' => 'book']));
+            ->assertSee(route('literatures.latest', ['q' => 'Narnia', 'type' => 'novel']));
         $this->assertSame(4, substr_count($catalogResponse->getContent(), 'data-literature-card'));
         Http::assertSent(fn ($request): bool => $request['maxResults'] === 20);
 
         $firstPage = $this->get(route('literatures.latest', [
             'q' => 'Narnia',
-            'type' => 'book',
+            'type' => 'novel',
         ]))->assertOk();
 
         $this->assertSame(15, substr_count($firstPage->getContent(), 'data-literature-card-size="compact"'));
@@ -172,7 +199,7 @@ class LiteratureCatalogTest extends TestCase
 
         $secondPage = $this->get(route('literatures.latest', [
             'q' => 'Narnia',
-            'type' => 'book',
+            'type' => 'novel',
             'page' => 2,
         ]))->assertOk();
 
@@ -191,7 +218,7 @@ class LiteratureCatalogTest extends TestCase
         ]);
 
         $this->createLiterature(
-            ['title' => 'Bumi Manusia', 'slug' => 'bumi-manusia', 'type' => 'book'],
+            ['title' => 'Bumi Manusia', 'slug' => 'bumi-manusia', 'type' => 'novel'],
             'Google Books',
             ['Pramoedya Ananta Toer'],
         );
@@ -203,7 +230,7 @@ class LiteratureCatalogTest extends TestCase
 
         $response = $this->get(route('literatures.index', [
             'q' => 'bumi',
-            'type' => 'book',
+            'type' => 'novel',
         ]));
 
         $response
@@ -321,14 +348,14 @@ class LiteratureCatalogTest extends TestCase
             'https://www.googleapis.com/books/v1/volumes*' => Http::failedConnection(),
         ]);
         $this->createLiterature(
-            ['title' => 'Dune', 'slug' => 'dune', 'type' => 'book'],
+            ['title' => 'Dune', 'slug' => 'dune', 'type' => 'novel'],
             'Google Books',
             ['Frank Herbert'],
         );
 
         $response = $this->get(route('literatures.index', [
             'q' => 'Dune',
-            'type' => 'book',
+            'type' => 'novel',
         ]));
 
         $response

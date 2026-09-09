@@ -40,6 +40,7 @@ class AuthorController extends Controller
         }
 
         $literatures = $author->literatures()
+            ->whereIn('type', Literature::supportedTypes())
             ->with(['apiSource', 'authors'])
             ->withAvg([
                 'reviews' => fn (Builder $reviews) => $reviews->whereNull('hidden_at'),
@@ -50,7 +51,7 @@ class AuthorController extends Controller
             ->withQueryString()
             ->through(fn (Literature $literature): array => $this->presentCard($literature));
 
-        $author->loadCount('literatures');
+        $author->loadCount(['literatures' => fn (Builder $literatures) => $literatures->whereIn('type', Literature::supportedTypes())]);
 
         return view('authors.show', [
             'author' => $author,
@@ -66,20 +67,12 @@ class AuthorController extends Controller
     private function presentCard(Literature $literature): array
     {
         $displayTitle = $literature->original_title ?? $literature->title;
-        $typeLabels = [
-            'book' => 'Book',
-            'novel' => 'Novel',
-            'western-comic' => 'Western Comic',
-            'manga' => 'Manga',
-            'manhwa' => 'Manhwa',
-            'light-novel' => 'Light Novel',
-        ];
 
         return [
             'slug' => $literature->slug,
             'title' => $displayTitle,
             'year' => $literature->publication_year === null ? '—' : (string) $literature->publication_year,
-            'type_label' => $typeLabels[$literature->type] ?? Str::headline($literature->type),
+            'type_label' => $literature->typeLabel(),
             'author' => $literature->authors->pluck('name')->implode(' & ') ?: 'Author unavailable',
             'source' => $literature->apiSource->name,
             'cover_url' => $literature->cover_url,

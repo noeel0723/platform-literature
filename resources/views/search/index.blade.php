@@ -35,7 +35,7 @@
                                     <h2 class="font-serif text-2xl font-bold text-ink-950 sm:text-3xl"><a href="{{ route('literatures.show', $literature) }}" class="hover:text-brand-coral">{{ $displayTitle }}</a> @if ($literature->publication_year)<span class="font-sans text-base font-normal text-ink-950/45">{{ $literature->publication_year }}</span>@endif</h2>
                                     <p class="mt-2 text-sm text-ink-950/55">By <span class="font-semibold text-ink-950/70">{{ $literature->authors->pluck('name')->implode(' & ') ?: 'Author unavailable' }}</span></p>
                                     <p class="mt-2 line-clamp-2 text-sm leading-6 text-ink-950/55">{{ $displaySynopsis ?: 'English synopsis unavailable.' }}</p>
-                                    <span class="mt-3 inline-block text-xs font-bold uppercase tracking-wider text-brand-coral">{{ Str::headline($literature->type) }}</span>
+                                    <span class="mt-3 inline-block text-xs font-bold uppercase tracking-wider text-brand-coral">{{ $literature->typeLabel() }}</span>
                                 </div>
                             </article>
                         @endforeach

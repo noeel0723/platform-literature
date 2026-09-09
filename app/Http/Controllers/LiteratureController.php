@@ -14,18 +14,6 @@ use Illuminate\Support\Str;
 
 class LiteratureController extends Controller
 {
-    /**
-     * @var array<string, string>
-     */
-    private const TYPES = [
-        'book' => 'Book',
-        'novel' => 'Novel',
-        'western-comic' => 'Western Comic',
-        'manga' => 'Manga',
-        'manhwa' => 'Manhwa',
-        'light-novel' => 'Light Novel',
-    ];
-
     public function index(
         Request $request,
         CatalogSyncService $catalogSync,
@@ -33,11 +21,12 @@ class LiteratureController extends Controller
     ): View {
         $query = trim((string) $request->query('q', ''));
         $selectedType = trim((string) $request->query('type', ''));
+        $selectedType = array_key_exists($selectedType, Literature::TYPE_LABELS) ? $selectedType : '';
         $displayLimit = 4;
         $sourceLimit = 20;
         $unavailableSources = [];
 
-        if ($query !== '' && in_array($selectedType, ['', 'book', 'novel'], true)) {
+        if ($query !== '' && in_array($selectedType, ['', 'novel'], true)) {
             try {
                 $catalogSync->syncGoogleBooks(
                     $query,
@@ -49,7 +38,7 @@ class LiteratureController extends Controller
             }
         }
 
-        if ($query !== '' && in_array($selectedType, ['', 'manga', 'manhwa', 'light-novel'], true)) {
+        if ($query !== '' && in_array($selectedType, ['', 'manga', 'manhwa'], true)) {
             try {
                 $catalogSync->syncAniList(
                     $query,
@@ -98,7 +87,7 @@ class LiteratureController extends Controller
             'selectedType' => $selectedType,
             'canExpand' => $canExpand,
             'sourceWarning' => $sourceWarning,
-            'types' => self::TYPES,
+            'types' => Literature::TYPE_LABELS,
         ]);
     }
 
@@ -106,6 +95,7 @@ class LiteratureController extends Controller
     {
         $query = trim((string) $request->query('q', ''));
         $selectedType = trim((string) $request->query('type', ''));
+        $selectedType = array_key_exists($selectedType, Literature::TYPE_LABELS) ? $selectedType : '';
         $literatures = $this->catalogMatches($query, $selectedType)
             ->latest('updated_at')
             ->latest('id')
@@ -117,7 +107,7 @@ class LiteratureController extends Controller
             'literatures' => $literatures,
             'query' => $query,
             'selectedType' => $selectedType,
-            'types' => self::TYPES,
+            'types' => Literature::TYPE_LABELS,
         ]);
     }
 
@@ -226,8 +216,12 @@ class LiteratureController extends Controller
             || $literature->language === 'en'
             || $literature->synopsis_source_name === 'Wikipedia EN';
         $formatLabels = [
-            'Buku' => 'Book',
-            'Komik Barat' => 'Western Comic',
+            'Book' => 'Novel',
+            'Buku' => 'Novel',
+            'Light Novel' => 'Novel',
+            'Light novel' => 'Novel',
+            'Komik Barat' => 'Comic',
+            'Western Comic' => 'Comic',
             'Manhwa satu bab' => 'One-shot Manhwa',
         ];
         $languageLabels = [
@@ -243,7 +237,7 @@ class LiteratureController extends Controller
             'edition_title' => $displayTitle === $literature->title ? null : $literature->title,
             'year' => $literature->publication_year === null ? 'Year unavailable' : (string) $literature->publication_year,
             'type' => $literature->type,
-            'type_label' => self::TYPES[$literature->type] ?? Str::headline($literature->type),
+            'type_label' => $literature->typeLabel(),
             'author' => $authorNames->isEmpty() ? 'Author unavailable' : $authorNames->implode(' & '),
             'authors' => $authorNames->all(),
             'author_links' => $literature->authors
@@ -260,7 +254,7 @@ class LiteratureController extends Controller
             'synopsis_source_url' => $metadataIsEnglish ? $literature->synopsis_source_url : null,
             'publisher' => $literature->publisher ?? 'Unavailable',
             'language' => $languageLabels[$literature->language] ?? $literature->language ?? 'Unavailable',
-            'format' => $formatLabels[$literature->format] ?? $literature->format ?? self::TYPES[$literature->type] ?? Str::headline($literature->type),
+            'format' => $formatLabels[$literature->format] ?? $literature->format ?? $literature->typeLabel(),
             'genres' => $literature->categories->pluck('name')->all(),
             'identifier' => $literature->identifier ?? $literature->external_id,
             'cover_url' => $literature->cover_url,
@@ -274,6 +268,7 @@ class LiteratureController extends Controller
     {
         return Literature::query()
             ->with(['apiSource', 'authors', 'categories'])
+            ->whereIn('type', Literature::supportedTypes())
             ->when($query !== '', function (Builder $builder) use ($query): void {
                 $builder->where(function (Builder $search) use ($query): void {
                     $search

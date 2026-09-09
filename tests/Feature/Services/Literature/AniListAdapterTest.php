@@ -91,23 +91,17 @@ class AniListAdapterTest extends TestCase
         });
     }
 
-    public function test_light_novel_search_uses_the_novel_format(): void
+    public function test_removed_light_novel_type_is_rejected(): void
     {
         $this->configureAniList();
-        Http::preventStrayRequests();
-        Http::fake([
-            'https://graphql.anilist.co*' => Http::response([
-                'data' => ['Page' => ['media' => []]],
-            ]),
-        ]);
 
-        $results = app(AniListAdapter::class)->search('Spice and Wolf', 'light-novel');
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('only supports all, manga, and manhwa');
 
-        $this->assertTrue($results->isEmpty());
-        Http::assertSent(fn (Request $request): bool => $request->data()['variables']['formats'] === ['NOVEL']);
+        app(AniListAdapter::class)->search('Spice and Wolf', 'light-novel');
     }
 
-    public function test_all_format_search_uses_one_request_for_manga_and_light_novels(): void
+    public function test_all_format_search_uses_one_request_for_manga_and_manhwa(): void
     {
         $this->configureAniList();
         Http::preventStrayRequests();
@@ -122,7 +116,6 @@ class AniListAdapterTest extends TestCase
         Http::assertSent(fn (Request $request): bool => $request->data()['variables']['formats'] === [
             'MANGA',
             'ONE_SHOT',
-            'NOVEL',
         ]);
         Http::assertSentCount(1);
     }

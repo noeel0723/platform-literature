@@ -18,6 +18,7 @@ class QuickLogController extends Controller
 
         $literatures = Literature::query()
             ->select(['id', 'slug', 'title', 'original_title', 'type', 'publication_year', 'cover_url', 'updated_at'])
+            ->whereIn('type', Literature::supportedTypes())
             ->with(['authors:id,name'])
             ->with(['reviews' => fn (HasMany $reviews): HasMany => $reviews
                 ->select(['id', 'user_id', 'literature_id', 'rating', 'body', 'contains_spoiler'])
@@ -47,7 +48,7 @@ class QuickLogController extends Controller
                     'id' => $literature->id,
                     'title' => $literature->original_title ?? $literature->title,
                     'year' => $literature->publication_year,
-                    'type' => Str::headline($literature->type),
+                    'type' => $literature->typeLabel(),
                     'cover_url' => $literature->cover_url,
                     'authors' => $literature->authors->pluck('name')->values()->all(),
                     'review_url' => route('reviews.update', $literature),

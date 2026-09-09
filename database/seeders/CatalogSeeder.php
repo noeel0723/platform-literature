@@ -81,7 +81,7 @@ class CatalogSeeder extends Seeder
             'google-books' => [
                 'name' => 'Google Books',
                 'base_url' => 'https://www.googleapis.com/books/v1',
-                'supported_types' => ['book', 'novel'],
+                'supported_types' => ['novel'],
                 'is_active' => true,
             ],
             'comic-vine' => [
@@ -93,7 +93,7 @@ class CatalogSeeder extends Seeder
             'anilist' => [
                 'name' => 'AniList',
                 'base_url' => 'https://graphql.anilist.co',
-                'supported_types' => ['manga', 'manhwa', 'light-novel'],
+                'supported_types' => ['manga', 'manhwa'],
                 'is_active' => true,
             ],
         ];
@@ -168,13 +168,13 @@ class CatalogSeeder extends Seeder
                 'external_id' => '5114',
                 'slug' => 'spice-and-wolf',
                 'title' => 'Spice and Wolf',
-                'type' => 'light-novel',
+                'type' => 'novel',
                 'publication_year' => 2006,
                 'tagline' => 'Perjalanan dagang menjadi kisah tentang kepercayaan, rumah, dan kebersamaan.',
                 'synopsis' => 'Seorang pedagang keliling bertemu dewi serigala yang ingin kembali ke tanah kelahirannya. Mereka menempuh perjalanan melalui pasar dan kota yang penuh intrik.',
                 'publisher' => 'ASCII Media Works',
                 'language' => 'Jepang',
-                'format' => 'Light novel',
+                'format' => 'Novel',
                 'identifier' => 'AniList ID 5114',
                 'theme' => 'cream',
                 'authors' => [

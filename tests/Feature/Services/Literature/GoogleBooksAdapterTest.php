@@ -43,13 +43,13 @@ class GoogleBooksAdapterTest extends TestCase
         $this->assertSame('Novel', $book->format);
 
         Http::assertSent(fn (Request $request): bool => $request->method() === 'GET'
-            && $request['q'] === 'Dune'
+            && $request['q'] === 'Dune subject:fiction'
             && $request['maxResults'] === 4
             && $request['printType'] === 'books'
             && $request['key'] === 'test-google-books-key');
     }
 
-    public function test_search_keeps_non_fiction_as_a_general_book(): void
+    public function test_search_excludes_non_fiction_results_from_the_novel_catalog(): void
     {
         $this->configureGoogleBooks();
         Http::preventStrayRequests();
@@ -59,7 +59,7 @@ class GoogleBooksAdapterTest extends TestCase
                     'id' => 'google-non-fiction',
                     'volumeInfo' => [
                         'title' => 'The Science of Dune',
-                        'categories' => ['Social Science'],
+                        'categories' => ['Nonfiction'],
                         'imageLinks' => ['thumbnail' => 'http://books.google.com/thumbnail.jpg'],
                         'printType' => 'BOOK',
                     ],
@@ -68,11 +68,19 @@ class GoogleBooksAdapterTest extends TestCase
             'https://www.wikidata.org/w/api.php*' => Http::response(['search' => []]),
         ]);
 
-        $book = app(GoogleBooksAdapter::class)->search('The Science of Dune')->first();
+        $results = app(GoogleBooksAdapter::class)->search('The Science of Dune');
 
-        $this->assertSame('book', $book->type);
-        $this->assertSame('Book', $book->format);
-        $this->assertSame('https://books.google.com/thumbnail.jpg', $book->coverUrl);
+        $this->assertTrue($results->isEmpty());
+    }
+
+    public function test_removed_book_type_is_rejected(): void
+    {
+        $this->configureGoogleBooks();
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('only supports all and novel');
+
+        app(GoogleBooksAdapter::class)->search('Dune', requestedType: 'book');
     }
 
     public function test_localized_volume_is_enriched_without_overwriting_its_edition_title(): void

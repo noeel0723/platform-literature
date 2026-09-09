@@ -24,9 +24,8 @@ final class AniListAdapter
         $formats = match ($literatureType) {
             'manga' => ['MANGA', 'ONE_SHOT'],
             'manhwa' => ['MANGA', 'ONE_SHOT'],
-            'light-novel' => ['NOVEL'],
-            'all' => ['MANGA', 'ONE_SHOT', 'NOVEL'],
-            default => throw new InvalidArgumentException('AniList only supports all, manga, manhwa, and light-novel catalog types.'),
+            'all' => ['MANGA', 'ONE_SHOT'],
+            default => throw new InvalidArgumentException('AniList only supports all, manga, and manhwa catalog types.'),
         };
 
         $countryOfOrigin = $literatureType === 'manhwa' ? 'KR' : null;
@@ -82,12 +81,12 @@ final class AniListAdapter
         }
 
         return collect($items)
-            ->map(fn (mixed $item): ?NormalizedLiterature => $this->normalize($item, $literatureType))
+            ->map(fn (mixed $item): ?NormalizedLiterature => $this->normalize($item))
             ->filter()
             ->values();
     }
 
-    private function normalize(mixed $item, string $literatureType, bool $includeRelations = true): ?NormalizedLiterature
+    private function normalize(mixed $item, bool $includeRelations = true): ?NormalizedLiterature
     {
         if (! is_array($item)) {
             return null;
@@ -116,7 +115,7 @@ final class AniListAdapter
         return new NormalizedLiterature(
             externalId: $externalId,
             title: $title,
-            type: $this->literatureType(Arr::get($item, 'format'), $countryOfOrigin, $literatureType),
+            type: $this->literatureType(Arr::get($item, 'format'), $countryOfOrigin),
             authors: collect($authorDetails)->pluck('name')->all(),
             categories: $this->stringList(Arr::get($item, 'genres')),
             publicationYear: $this->publicationYear(Arr::get($item, 'startDate.year')),
@@ -144,7 +143,7 @@ final class AniListAdapter
             ->filter(fn (mixed $edge): bool => is_array($edge)
                 && Str::upper((string) Arr::get($edge, 'node.type')) === 'MANGA')
             ->map(function (array $edge): ?NormalizedLiteratureRelation {
-                $literature = $this->normalize(Arr::get($edge, 'node'), 'all', false);
+                $literature = $this->normalize(Arr::get($edge, 'node'), false);
 
                 if ($literature === null) {
                     return null;
@@ -253,19 +252,17 @@ final class AniListAdapter
 
         return match ($normalizedFormat) {
             'MANGA' => 'Manga',
-            'NOVEL' => 'Light Novel',
             'ONE_SHOT' => 'One-shot',
             '' => null,
             default => Str::headline(Str::lower($normalizedFormat)),
         };
     }
 
-    private function literatureType(mixed $format, ?string $countryOfOrigin, string $requestedType): string
+    private function literatureType(mixed $format, ?string $countryOfOrigin): string
     {
         return match (Str::upper((string) $format)) {
-            'NOVEL' => 'light-novel',
             'MANGA', 'ONE_SHOT' => $countryOfOrigin === 'KR' ? 'manhwa' : 'manga',
-            default => $requestedType === 'light-novel' ? 'light-novel' : 'manga',
+            default => 'manga',
         };
     }
 
