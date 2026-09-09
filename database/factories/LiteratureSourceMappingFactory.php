@@ -29,6 +29,7 @@ class LiteratureSourceMappingFactory extends Factory
             'match_method' => 'created',
             'mapping_status' => LiteratureSourceMapping::STATUS_NEW,
             'confidence' => 1,
+            'quality_score' => 0,
             'candidate_work_ids' => null,
             'field_provenance' => ['title' => 'fixture'],
         ];

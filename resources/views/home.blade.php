@@ -44,7 +44,7 @@
                     <div class="mt-5 grid grid-cols-2 gap-x-4 gap-y-7 sm:grid-cols-3 lg:grid-cols-6">
                         @foreach ($activities as $activity)
                             @php
-                                $displayTitle = $activity->literature->original_title ?? $activity->literature->title;
+                                $displayTitle = $activity->literature->displayTitle();
                                 $rating = data_get($activity->metadata, 'rating');
                                 $action = match ($activity->type) {
                                     \App\Models\Activity::TYPE_COMPLETED => 'Completed',
@@ -106,7 +106,7 @@
                     <div class="mt-5 grid grid-cols-2 gap-x-4 gap-y-7 sm:grid-cols-3 lg:grid-cols-6">
                         @foreach ($popularLiteratures as $literature)
                             @php
-                                $displayTitle = $literature->original_title ?? $literature->title;
+                                $displayTitle = $literature->displayTitle();
                                 $friends = $literature->readingLists;
                             @endphp
 

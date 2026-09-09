@@ -16,6 +16,7 @@ final class CatalogSyncService
 {
     public function __construct(
         private GoogleBooksAdapter $googleBooks,
+        private OpenLibraryAdapter $openLibrary,
         private AniListAdapter $aniList,
         private MangaDexAdapter $mangaDex,
         private KitsuAdapter $kitsu,
@@ -28,16 +29,46 @@ final class CatalogSyncService
 
     public function syncGoogleBooks(string $query, string $literatureType = 'all', ?int $limit = null): int
     {
-        $items = $this->googleBooks->search(
+        $normalizedLimit = $limit ?? (int) config('services.google_books.max_results', 6);
+
+        try {
+            $items = $this->googleBooks->search($query, $normalizedLimit, $literatureType);
+
+            if ($items->isNotEmpty()) {
+                return $this->sync(
+                    sourceKey: 'google-books',
+                    sourceName: 'Google Books',
+                    baseUrl: (string) config('services.google_books.base_url'),
+                    supportedTypes: ['novel'],
+                    items: $items,
+                );
+            }
+        } catch (LiteratureSourceUnavailable) {
+            // Continue to the fallback source below.
+        }
+
+        try {
+            return $this->syncOpenLibrary($query, $normalizedLimit);
+        } catch (LiteratureSourceUnavailable $openLibraryException) {
+            throw new LiteratureSourceUnavailable(
+                'Google Books and Open Library',
+                'Google Books returned no usable results or was unavailable, and its Open Library fallback is unavailable.',
+                $openLibraryException,
+            );
+        }
+    }
+
+    public function syncOpenLibrary(string $query, ?int $limit = null): int
+    {
+        $items = $this->openLibrary->search(
             $query,
-            $limit ?? (int) config('services.google_books.max_results', 6),
-            $literatureType,
+            $limit ?? (int) config('services.open_library.max_results', 6),
         );
 
         return $this->sync(
-            sourceKey: 'google-books',
-            sourceName: 'Google Books',
-            baseUrl: (string) config('services.google_books.base_url'),
+            sourceKey: 'open-library',
+            sourceName: 'Open Library',
+            baseUrl: (string) config('services.open_library.base_url'),
             supportedTypes: ['novel'],
             items: $items,
         );

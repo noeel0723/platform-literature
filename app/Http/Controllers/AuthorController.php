@@ -41,6 +41,7 @@ class AuthorController extends Controller
 
         $literatures = $author->literatures()
             ->whereIn('type', Literature::supportedTypes())
+            ->canonicalRepresentatives()
             ->with(['apiSource', 'authors'])
             ->withAvg([
                 'reviews' => fn (Builder $reviews) => $reviews->whereNull('hidden_at'),
@@ -51,7 +52,9 @@ class AuthorController extends Controller
             ->withQueryString()
             ->through(fn (Literature $literature): array => $this->presentCard($literature));
 
-        $author->loadCount(['literatures' => fn (Builder $literatures) => $literatures->whereIn('type', Literature::supportedTypes())]);
+        $author->loadCount(['literatures' => fn (Builder $literatures) => $literatures
+            ->whereIn('type', Literature::supportedTypes())
+            ->canonicalRepresentatives()]);
 
         return view('authors.show', [
             'author' => $author,
@@ -66,7 +69,7 @@ class AuthorController extends Controller
     /** @return array<string, mixed> */
     private function presentCard(Literature $literature): array
     {
-        $displayTitle = $literature->original_title ?? $literature->title;
+        $displayTitle = $literature->displayTitle();
 
         return [
             'slug' => $literature->slug,

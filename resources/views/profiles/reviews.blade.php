@@ -15,7 +15,7 @@
                 @forelse ($reviews as $review)
                     @php
                         $literature = $review->literature;
-                        $reviewTitle = $literature->original_title ?? $literature->title;
+                        $reviewTitle = $literature->displayTitle();
                         $spoilerId = 'review-spoiler-'.$review->id;
                     @endphp
                     <article class="grid grid-cols-[52px_minmax(0,1fr)] gap-3 border-b border-ink-950/12 py-4 sm:grid-cols-[60px_minmax(0,1fr)] sm:gap-4" data-profile-review>

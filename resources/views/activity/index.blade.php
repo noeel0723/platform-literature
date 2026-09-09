@@ -18,7 +18,7 @@
             <div data-activity-stream data-activity-density="compact">
                 @forelse ($activities as $activity)
                     @php
-                        $title = $activity->literature->original_title ?? $activity->literature->title;
+                        $title = $activity->literature->displayTitle();
                         $rating = data_get($activity->metadata, 'rating');
                         $containsSpoiler = (bool) data_get($activity->metadata, 'contains_spoiler', false);
                         $excerpt = data_get($activity->metadata, 'review_excerpt') ?? data_get($activity->metadata, 'excerpt');

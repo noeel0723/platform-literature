@@ -21,7 +21,7 @@
                     <section id="literature-results" class="scroll-mt-24" aria-labelledby="literature-results-heading">
                         <h2 id="literature-results-heading" class="border-b border-ink-950/10 py-4 text-xs font-bold uppercase tracking-[0.18em] text-ink-950/50">Literature</h2>
                         @foreach ($literatures as $literature)
-                            @php($displayTitle = $literature->original_title ?? $literature->title)
+                            @php($displayTitle = $literature->displayTitle())
                             @php($displaySynopsis = in_array(Str::lower((string) $literature->language), ['', 'en', 'eng', 'english'], true) ? $literature->synopsis : null)
                             <article class="grid grid-cols-[72px_minmax(0,1fr)] gap-4 border-b border-ink-950/10 py-5 sm:grid-cols-[86px_minmax(0,1fr)] sm:gap-6" data-search-literature>
                                 <a href="{{ route('literatures.show', $literature) }}" class="aspect-[2/3] overflow-hidden rounded-sm border border-ink-950/15 bg-brand-sky/25">
@@ -58,7 +58,7 @@
                                     <div class="min-w-0">
                                         <h3 class="truncate font-serif text-xl font-bold text-ink-950"><a href="{{ route('authors.show', $author) }}" class="hover:text-brand-coral">{{ $author->name }}</a></h3>
                                         <p class="mt-1 text-xs text-ink-950/45">{{ $author->literatures_count }} catalog {{ Str::plural('title', $author->literatures_count) }}</p>
-                                        <p class="mt-2 line-clamp-2 text-sm leading-6 text-ink-950/55">{{ $author->literatures->map(fn ($literature) => $literature->original_title ?? $literature->title)->implode(', ') ?: 'No linked literature yet.' }}</p>
+                                        <p class="mt-2 line-clamp-2 text-sm leading-6 text-ink-950/55">{{ $author->literatures->map(fn ($literature) => $literature->displayTitle())->implode(', ') ?: 'No linked literature yet.' }}</p>
                                     </div>
                                 </article>
                             @endforeach

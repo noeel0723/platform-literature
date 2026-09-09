@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Database\Factories\LiteratureFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -57,6 +58,26 @@ class Literature extends Model
     public function typeLabel(): string
     {
         return self::TYPE_LABELS[$this->type] ?? Str::headline($this->type);
+    }
+
+    public function displayTitle(): string
+    {
+        if (in_array($this->type, ['manga', 'manhwa'], true)) {
+            return $this->title;
+        }
+
+        return $this->original_title ?? $this->title;
+    }
+
+    public function alternateTitle(): ?string
+    {
+        $alternateTitle = in_array($this->type, ['manga', 'manhwa'], true)
+            ? $this->original_title
+            : ($this->original_title === null ? null : $this->title);
+
+        return filled($alternateTitle) && $alternateTitle !== $this->displayTitle()
+            ? $alternateTitle
+            : null;
     }
 
     /** @return BelongsTo<ApiSource, $this> */
@@ -120,6 +141,18 @@ class Literature extends Model
     public function sourceMapping(): HasOne
     {
         return $this->hasOne(LiteratureSourceMapping::class);
+    }
+
+    /** @param Builder<Literature> $query */
+    public function scopeCanonicalRepresentatives(Builder $query): void
+    {
+        $query->where(function (Builder $representatives): void {
+            $representatives
+                ->whereIn('literatures.id', CanonicalWork::query()
+                    ->select('preferred_literature_id')
+                    ->whereNotNull('preferred_literature_id'))
+                ->orWhereDoesntHave('sourceMapping');
+        });
     }
 
     public function getRouteKeyName(): string

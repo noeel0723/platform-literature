@@ -67,6 +67,22 @@ class SearchPageTest extends TestCase
             ->assertSeeText('Search literature, authors, or readers');
     }
 
+    public function test_global_search_displays_a_mangas_global_title_while_native_title_remains_searchable(): void
+    {
+        Literature::factory()->create([
+            'type' => 'manga',
+            'title' => 'Haikyu!!',
+            'original_title' => 'ハイキュー!!',
+        ]);
+
+        $response = $this->get(route('search.index', ['q' => 'ハイキュー']));
+
+        $response
+            ->assertOk()
+            ->assertSeeText('Haikyu!!')
+            ->assertSee('data-search-literature', false);
+    }
+
     public function test_global_search_finds_an_author_by_a_known_alias(): void
     {
         $author = Author::factory()->create(['name' => 'J. K. Rowling']);

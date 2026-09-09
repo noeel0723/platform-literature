@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['primary_author_id', 'canonical_title', 'normalized_title', 'type', 'publication_year'])]
+#[Fillable(['primary_author_id', 'preferred_literature_id', 'canonical_title', 'normalized_title', 'type', 'publication_year'])]
 class CanonicalWork extends Model
 {
     /** @use HasFactory<CanonicalWorkFactory> */
@@ -20,6 +20,12 @@ class CanonicalWork extends Model
     public function primaryAuthor(): BelongsTo
     {
         return $this->belongsTo(Author::class, 'primary_author_id');
+    }
+
+    /** @return BelongsTo<Literature, $this> */
+    public function preferredLiterature(): BelongsTo
+    {
+        return $this->belongsTo(Literature::class, 'preferred_literature_id');
     }
 
     /** @return HasMany<CanonicalWorkIdentifier, $this> */

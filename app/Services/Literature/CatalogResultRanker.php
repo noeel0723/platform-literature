@@ -38,7 +38,8 @@ final class CatalogResultRanker
 
     private function score(Literature $literature, string $query): int
     {
-        $title = $this->normalize($literature->original_title ?? $literature->title);
+        $title = $this->normalize($literature->displayTitle());
+        $alternateTitle = $this->normalize($literature->alternateTitle() ?? '');
         $normalizedQuery = $this->normalize($query);
         $score = 0;
 
@@ -48,6 +49,12 @@ final class CatalogResultRanker
             $score += 280;
         } elseif (Str::contains($title, $normalizedQuery)) {
             $score += 180;
+        }
+
+        if ($alternateTitle === $normalizedQuery) {
+            $score += 420;
+        } elseif ($alternateTitle !== '' && Str::contains($alternateTitle, $normalizedQuery)) {
+            $score += 140;
         }
 
         $queryWords = Str::of($normalizedQuery)->explode(' ')->filter()->unique();
@@ -86,9 +93,13 @@ final class CatalogResultRanker
 
     private function canonicalKey(Literature $literature): string
     {
+        if ($literature->sourceMapping?->canonical_work_id !== null) {
+            return 'canonical:'.$literature->sourceMapping->canonical_work_id;
+        }
+
         $author = $literature->authors->first()?->name ?? '';
 
-        return $this->normalize($literature->original_title ?? $literature->title)
+        return $this->normalize($literature->displayTitle())
             .'|'.$this->normalize($author);
     }
 

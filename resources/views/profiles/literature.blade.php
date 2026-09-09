@@ -20,7 +20,7 @@
                 @foreach ($completedLiterature as $item)
                     @php
                         $literature = $item->literature;
-                        $title = $literature->original_title ?? $literature->title;
+                        $title = $literature->displayTitle();
                         $rating = $literature->reviews->first()?->rating;
                     @endphp
                     <article class="group min-w-0" data-profile-literature-item>

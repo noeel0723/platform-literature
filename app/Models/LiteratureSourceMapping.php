@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'match_method',
     'mapping_status',
     'confidence',
+    'quality_score',
     'candidate_work_ids',
     'field_provenance',
 ])]
@@ -62,6 +63,7 @@ class LiteratureSourceMapping extends Model
             'candidate_work_ids' => 'array',
             'field_provenance' => 'array',
             'confidence' => 'float',
+            'quality_score' => 'integer',
         ];
     }
 }

@@ -94,6 +94,32 @@ class MangaDexAdapterTest extends TestCase
         Http::assertSent(fn (Request $request): bool => $request->data()['originalLanguage'] === ['ko']);
     }
 
+    public function test_search_prefers_an_english_alternative_title_over_a_native_primary_title(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://api.mangadex.org/manga*' => Http::response([
+                'result' => 'ok',
+                'data' => [[
+                    ...$this->manga(),
+                    'attributes' => [
+                        ...$this->manga()['attributes'],
+                        'title' => ['ja' => 'ハイキュー!!'],
+                        'altTitles' => [
+                            ['en' => 'Haikyu!!'],
+                            ['ja-ro' => 'Haikyuu!!'],
+                        ],
+                    ],
+                ]],
+            ]),
+        ]);
+
+        $manga = app(MangaDexAdapter::class)->search('Haikyu', 'manga')->first();
+
+        $this->assertSame('Haikyu!!', $manga->title);
+        $this->assertSame('ハイキュー!!', $manga->originalTitle);
+    }
+
     public function test_all_search_only_keeps_japanese_manga_and_korean_manhwa(): void
     {
         Http::preventStrayRequests();

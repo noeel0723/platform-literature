@@ -53,7 +53,7 @@
                     </div>
                     <h1 class="mt-4 font-serif text-5xl font-bold leading-none tracking-tight text-ink-950 sm:text-6xl">{{ $literature['title'] }}</h1>
                     @if ($literature['edition_title'])
-                        <p class="mt-3 text-sm text-ink-950/55">Edition title: <span class="font-semibold text-ink-950/75">{{ $literature['edition_title'] }}</span></p>
+                        <p class="mt-3 text-sm text-ink-950/55">{{ $literature['alternate_title_label'] }}: <span class="font-semibold text-ink-950/75">{{ $literature['edition_title'] }}</span></p>
                     @endif
                     <p class="mt-4 text-lg text-ink-950/60">By
                         @forelse ($literature['author_links'] as $author)

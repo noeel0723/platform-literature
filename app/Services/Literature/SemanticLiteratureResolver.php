@@ -11,7 +11,10 @@ use Illuminate\Support\Facades\DB;
 
 class SemanticLiteratureResolver
 {
-    public function __construct(private LiteratureIdentityNormalizer $identities) {}
+    public function __construct(
+        private LiteratureIdentityNormalizer $identities,
+        private CanonicalLiteratureProjector $projector,
+    ) {}
 
     public function resolve(Literature $literature): LiteratureSourceMapping
     {
@@ -34,6 +37,7 @@ class SemanticLiteratureResolver
                 'field_provenance' => $this->fieldProvenance($literature),
             ]);
             $this->storeIdentifiers($existingMapping->canonicalWork, $identifiers);
+            $this->projector->refresh($existingMapping->canonicalWork);
 
             return $existingMapping->refresh();
         }
@@ -88,6 +92,7 @@ class SemanticLiteratureResolver
         ]);
 
         $this->storeIdentifiers($canonicalWork, $identifiers);
+        $this->projector->refresh($canonicalWork);
 
         return $mapping->load('canonicalWork');
     }

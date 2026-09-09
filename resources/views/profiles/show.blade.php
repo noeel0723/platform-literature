@@ -94,13 +94,13 @@
                         <a href="{{ route('literatures.show', $literature) }}" class="block">
                             <div class="relative aspect-[2/3] overflow-hidden border border-ink-950/15 bg-brand-sky/20 shadow-[0_8px_24px_rgba(47,58,85,0.08)] transition duration-200 group-hover:-translate-y-1 group-hover:border-brand-coral">
                                 @if ($literature->cover_url)
-                                    <img src="{{ $literature->cover_url }}" alt="Cover of {{ $literature->original_title ?? $literature->title }}" class="size-full object-cover">
+                                    <img src="{{ $literature->cover_url }}" alt="Cover of {{ $literature->displayTitle() }}" class="size-full object-cover">
                                 @else
                                     <div class="grid size-full place-items-center p-4 text-center font-serif text-3xl font-bold text-ink-950">{{ Str::upper(Str::substr($literature->title, 0, 2)) }}</div>
                                 @endif
                                 <span class="absolute left-3 top-3 grid size-8 place-items-center bg-ink-950 text-xs font-bold text-brand-cream">{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
                             </div>
-                            <h3 class="mt-3 truncate font-bold text-ink-950 transition group-hover:text-brand-coral">{{ $literature->original_title ?? $literature->title }}</h3>
+                            <h3 class="mt-3 truncate font-bold text-ink-950 transition group-hover:text-brand-coral">{{ $literature->displayTitle() }}</h3>
                             <p class="mt-1 truncate text-sm text-ink-950/55">{{ $literature->authors->pluck('name')->implode(' & ') ?: 'Author unavailable' }}</p>
                         </a>
                     </article>
@@ -155,12 +155,12 @@
                         <a href="{{ route('literatures.show', $readingList->literature) }}" class="group min-w-0" data-profile-completed-card>
                             <span class="block aspect-[2/3] overflow-hidden rounded-sm border border-ink-950/15 bg-brand-sky/25 shadow-[0_7px_18px_rgba(47,58,85,0.07)] transition group-hover:-translate-y-1 group-hover:border-brand-coral">
                                 @if ($readingList->literature->cover_url)
-                                    <img src="{{ $readingList->literature->cover_url }}" alt="Cover of {{ $readingList->literature->original_title ?? $readingList->literature->title }}" class="size-full object-cover" loading="lazy">
+                                    <img src="{{ $readingList->literature->cover_url }}" alt="Cover of {{ $readingList->literature->displayTitle() }}" class="size-full object-cover" loading="lazy">
                                 @else
-                                    <span class="grid size-full place-items-center font-serif text-2xl font-bold text-ink-950">{{ Str::upper(Str::substr($readingList->literature->original_title ?? $readingList->literature->title, 0, 2)) }}</span>
+                                    <span class="grid size-full place-items-center font-serif text-2xl font-bold text-ink-950">{{ Str::upper(Str::substr($readingList->literature->displayTitle(), 0, 2)) }}</span>
                                 @endif
                             </span>
-                            <span class="mt-2 block truncate text-sm font-bold text-ink-950 group-hover:text-brand-coral">{{ $readingList->literature->original_title ?? $readingList->literature->title }}</span>
+                            <span class="mt-2 block truncate text-sm font-bold text-ink-950 group-hover:text-brand-coral">{{ $readingList->literature->displayTitle() }}</span>
                             @if ($readingList->literature->reviews->first())
                                 <x-star-rating :rating="$readingList->literature->reviews->first()->rating" size="sm" class="mt-1" />
                             @else
@@ -183,13 +183,13 @@
                         <article class="grid grid-cols-[72px_minmax(0,1fr)] gap-4 border-b border-ink-950/10 py-5 sm:grid-cols-[88px_minmax(0,1fr)] sm:gap-6" data-profile-recent-review>
                             <a href="{{ route('literatures.show', $review->literature) }}#review-{{ $review->id }}" class="aspect-[2/3] overflow-hidden rounded-sm border border-ink-950/15 bg-brand-sky/25">
                                 @if ($review->literature->cover_url)
-                                    <img src="{{ $review->literature->cover_url }}" alt="Cover of {{ $review->literature->original_title ?? $review->literature->title }}" class="size-full object-cover" loading="lazy">
+                                    <img src="{{ $review->literature->cover_url }}" alt="Cover of {{ $review->literature->displayTitle() }}" class="size-full object-cover" loading="lazy">
                                 @else
-                                    <span class="grid size-full place-items-center font-serif text-lg font-bold text-ink-950">{{ Str::upper(Str::substr($review->literature->original_title ?? $review->literature->title, 0, 2)) }}</span>
+                                    <span class="grid size-full place-items-center font-serif text-lg font-bold text-ink-950">{{ Str::upper(Str::substr($review->literature->displayTitle(), 0, 2)) }}</span>
                                 @endif
                             </a>
                             <div class="min-w-0">
-                                <h3 class="font-serif text-2xl font-bold text-ink-950"><a href="{{ route('literatures.show', $review->literature) }}#review-{{ $review->id }}" class="hover:text-brand-coral">{{ $review->literature->original_title ?? $review->literature->title }}</a> @if ($review->literature->publication_year)<span class="font-sans text-sm font-normal text-ink-950/45">{{ $review->literature->publication_year }}</span>@endif</h3>
+                                <h3 class="font-serif text-2xl font-bold text-ink-950"><a href="{{ route('literatures.show', $review->literature) }}#review-{{ $review->id }}" class="hover:text-brand-coral">{{ $review->literature->displayTitle() }}</a> @if ($review->literature->publication_year)<span class="font-sans text-sm font-normal text-ink-950/45">{{ $review->literature->publication_year }}</span>@endif</h3>
                                 <div class="mt-2 flex flex-wrap items-center gap-3"><x-star-rating :rating="$review->rating" size="sm" /><time datetime="{{ $review->updated_at->utc()->toIso8601String() }}" data-local-datetime class="text-xs text-ink-950/45">{{ $review->updated_at->utc()->format('M j, Y') }}</time></div>
                                 @if ($review->body)
                                     <p class="mt-3 line-clamp-3 font-serif text-lg leading-7 text-ink-950/65">{{ $review->contains_spoiler ? 'This review contains spoilers.' : $review->body }}</p>
@@ -220,11 +220,11 @@
             @else
                 <div class="mt-6 grid grid-cols-4 gap-1.5 overflow-hidden">
                     @foreach ($readlistPreview as $item)
-                        <a href="{{ route('literatures.show', $item->literature) }}" class="group relative block aspect-[2/3] overflow-hidden border border-ink-950/10 bg-brand-sky/20" title="{{ $item->literature->original_title ?? $item->literature->title }}">
+                        <a href="{{ route('literatures.show', $item->literature) }}" class="group relative block aspect-[2/3] overflow-hidden border border-ink-950/10 bg-brand-sky/20" title="{{ $item->literature->displayTitle() }}">
                             @if ($item->literature->cover_url)
-                                <img src="{{ $item->literature->cover_url }}" alt="Cover of {{ $item->literature->original_title ?? $item->literature->title }}" class="size-full object-cover transition duration-200 group-hover:scale-105" loading="lazy">
+                                <img src="{{ $item->literature->cover_url }}" alt="Cover of {{ $item->literature->displayTitle() }}" class="size-full object-cover transition duration-200 group-hover:scale-105" loading="lazy">
                             @else
-                                <span class="grid size-full place-items-center px-1 text-center font-serif text-sm font-bold text-ink-950">{{ Str::upper(Str::substr($item->literature->original_title ?? $item->literature->title, 0, 2)) }}</span>
+                                <span class="grid size-full place-items-center px-1 text-center font-serif text-sm font-bold text-ink-950">{{ Str::upper(Str::substr($item->literature->displayTitle(), 0, 2)) }}</span>
                             @endif
                         </a>
                     @endforeach
@@ -251,7 +251,7 @@
                 <ol class="mt-3 grid gap-2">
                     @forelse ($recentReviews as $review)
                         <li class="flex min-w-0 items-center justify-between gap-3 text-sm">
-                            <a href="{{ route('literatures.show', $review->literature) }}" class="truncate text-ink-950/65 hover:text-brand-coral">{{ $review->literature->original_title ?? $review->literature->title }}</a>
+                            <a href="{{ route('literatures.show', $review->literature) }}" class="truncate text-ink-950/65 hover:text-brand-coral">{{ $review->literature->displayTitle() }}</a>
                             <span class="shrink-0 font-bold text-brand-coral">{{ number_format($review->rating, 1) }}</span>
                         </li>
                     @empty
@@ -291,7 +291,7 @@
                 <ol class="mt-4 border-l border-ink-950/20 pl-4">
                     @forelse ($recentActivities as $activity)
                         @php
-                            $activityTitle = $activity->literature->original_title ?? $activity->literature->title;
+                            $activityTitle = $activity->literature->displayTitle();
                             $activityLabel = match ($activity->type) {
                                 \App\Models\Activity::TYPE_ADDED_TO_READLIST => 'Added to Readlist',
                                 \App\Models\Activity::TYPE_STARTED_READING => 'Started',

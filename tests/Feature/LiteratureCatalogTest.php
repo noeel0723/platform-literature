@@ -77,6 +77,7 @@ class LiteratureCatalogTest extends TestCase
         Http::preventStrayRequests();
         Http::fake([
             'https://www.googleapis.com/books/v1/volumes*' => Http::response(['items' => []]),
+            'https://openlibrary.org/search.json*' => Http::response(['docs' => []]),
         ]);
 
         $source = ApiSource::factory()->create([
@@ -113,6 +114,7 @@ class LiteratureCatalogTest extends TestCase
         Http::preventStrayRequests();
         Http::fake([
             'https://www.googleapis.com/books/v1/volumes*' => Http::response(['items' => []]),
+            'https://openlibrary.org/search.json*' => Http::response(['docs' => []]),
         ]);
 
         $source = ApiSource::factory()->create([
@@ -158,6 +160,7 @@ class LiteratureCatalogTest extends TestCase
         Http::preventStrayRequests();
         Http::fake([
             'https://www.googleapis.com/books/v1/volumes*' => Http::response(['items' => []]),
+            'https://openlibrary.org/search.json*' => Http::response(['docs' => []]),
         ]);
 
         $source = ApiSource::factory()->create([
@@ -182,7 +185,8 @@ class LiteratureCatalogTest extends TestCase
             ->assertSeeText('More')
             ->assertSee(route('literatures.latest', ['q' => 'Narnia', 'type' => 'novel']));
         $this->assertSame(4, substr_count($catalogResponse->getContent(), 'data-literature-card'));
-        Http::assertSent(fn ($request): bool => $request['maxResults'] === 20);
+        Http::assertSent(fn ($request): bool => str_starts_with($request->url(), 'https://www.googleapis.com/books/v1/volumes')
+            && $request['maxResults'] === 20);
 
         $firstPage = $this->get(route('literatures.latest', [
             'q' => 'Narnia',
@@ -215,6 +219,7 @@ class LiteratureCatalogTest extends TestCase
         Http::preventStrayRequests();
         Http::fake([
             'https://www.googleapis.com/books/v1/volumes*' => Http::response(['items' => []]),
+            'https://openlibrary.org/search.json*' => Http::response(['docs' => []]),
         ]);
 
         $this->createLiterature(
@@ -340,12 +345,13 @@ class LiteratureCatalogTest extends TestCase
         Http::assertSentCount(2);
     }
 
-    public function test_catalog_search_uses_local_results_when_google_books_is_unavailable(): void
+    public function test_catalog_search_uses_local_results_when_all_novel_sources_are_unavailable(): void
     {
         $this->configureGoogleBooks();
         Http::preventStrayRequests();
         Http::fake([
             'https://www.googleapis.com/books/v1/volumes*' => Http::failedConnection(),
+            'https://openlibrary.org/search.json*' => Http::failedConnection(),
         ]);
         $this->createLiterature(
             ['title' => 'Dune', 'slug' => 'dune', 'type' => 'novel'],
@@ -364,7 +370,7 @@ class LiteratureCatalogTest extends TestCase
             ->assertSeeText('The local catalog remains available.')
             ->assertSeeText('Results from the local catalog are still available.');
         $this->assertDatabaseCount('literatures', 1);
-        Http::assertSentCount(1);
+        Http::assertSentCount(2);
     }
 
     public function test_catalog_search_imports_anilist_manga_into_the_internal_catalog(): void

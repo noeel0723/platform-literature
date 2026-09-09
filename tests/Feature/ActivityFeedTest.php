@@ -23,8 +23,8 @@ class ActivityFeedTest extends TestCase
 
         $this->get(route('home'))
             ->assertOk()
-            ->assertSeeText('New from Friends')
-            ->assertSeeText('Popular with Friends')
+            ->assertSeeText('Activity feed')
+            ->assertSeeText('Shared discoveries')
             ->assertDontSeeText('Catalog Only Literature')
             ->assertDontSeeText('Metadata sources')
             ->assertDontSeeText('Current scope')

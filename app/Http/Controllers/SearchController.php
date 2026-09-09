@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Author;
 use App\Models\Literature;
 use App\Models\User;
+use App\Services\Literature\CanonicalLiteratureSearch;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -12,7 +13,7 @@ use Illuminate\Support\Str;
 
 class SearchController extends Controller
 {
-    public function __invoke(Request $request): View
+    public function __invoke(Request $request, CanonicalLiteratureSearch $canonicalSearch): View
     {
         $query = Str::limit(Str::squish((string) $request->query('q', '')), 100, '');
         $literatures = collect();
@@ -20,18 +21,7 @@ class SearchController extends Controller
         $members = collect();
 
         if ($query !== '') {
-            $literatures = Literature::query()
-                ->with('authors')
-                ->whereIn('type', Literature::supportedTypes())
-                ->where(function (Builder $literatureQuery) use ($query): void {
-                    $literatureQuery
-                        ->where('title', 'like', "%{$query}%")
-                        ->orWhere('original_title', 'like', "%{$query}%")
-                        ->orWhereHas('authors', fn (Builder $authors) => $authors
-                            ->where('name', 'like', "%{$query}%")
-                            ->orWhereHas('aliases', fn (Builder $aliases) => $aliases->where('name', 'like', "%{$query}%")))
-                        ->orWhereHas('categories', fn (Builder $categories) => $categories->where('name', 'like', "%{$query}%"));
-                })
+            $literatures = $canonicalSearch->query($query)
                 ->latest('updated_at')
                 ->limit(12)
                 ->get();
@@ -51,9 +41,12 @@ class SearchController extends Controller
                                 });
                         });
                 })
-                ->withCount(['literatures' => fn (Builder $literatures) => $literatures->whereIn('type', Literature::supportedTypes())])
+                ->withCount(['literatures' => fn (Builder $literatures) => $literatures
+                    ->whereIn('type', Literature::supportedTypes())
+                    ->canonicalRepresentatives()])
                 ->with(['literatures' => fn ($literatures) => $literatures
                     ->whereIn('type', Literature::supportedTypes())
+                    ->canonicalRepresentatives()
                     ->latest('publication_year')
                     ->limit(3)])
                 ->orderBy('name')

@@ -24,12 +24,12 @@
                         <a href="{{ route('literatures.show', $literature) }}" class="block">
                             <div class="relative aspect-[2/3] overflow-hidden rounded-sm border border-ink-950/15 bg-brand-sky/20 shadow-[0_7px_18px_rgba(47,58,85,0.08)] transition duration-200 group-hover:-translate-y-1 group-hover:border-brand-coral">
                                 @if ($literature->cover_url)
-                                    <img src="{{ $literature->cover_url }}" alt="Cover of {{ $literature->original_title ?? $literature->title }}" class="size-full object-cover" loading="lazy">
+                                    <img src="{{ $literature->cover_url }}" alt="Cover of {{ $literature->displayTitle() }}" class="size-full object-cover" loading="lazy">
                                 @else
-                                    <div class="grid size-full place-items-center p-4 text-center font-serif text-2xl font-bold text-ink-950">{{ Str::upper(Str::substr($literature->original_title ?? $literature->title, 0, 2)) }}</div>
+                                    <div class="grid size-full place-items-center p-4 text-center font-serif text-2xl font-bold text-ink-950">{{ Str::upper(Str::substr($literature->displayTitle(), 0, 2)) }}</div>
                                 @endif
                             </div>
-                            <h2 class="mt-2 truncate text-sm font-bold text-ink-950 transition group-hover:text-brand-coral">{{ $literature->original_title ?? $literature->title }}</h2>
+                            <h2 class="mt-2 truncate text-sm font-bold text-ink-950 transition group-hover:text-brand-coral">{{ $literature->displayTitle() }}</h2>
                             <p class="mt-0.5 truncate text-xs text-ink-950/50">{{ $literature->authors->pluck('name')->implode(' & ') ?: 'Author unavailable' }}</p>
                         </a>
                         <time datetime="{{ $item->updated_at->utc()->toIso8601String() }}" data-local-datetime data-time-prefix="Saved " class="mt-1.5 block text-[0.68rem] text-ink-950/40">Saved {{ $item->updated_at->utc()->format('M j, Y') }}</time>
@@ -61,7 +61,7 @@
 
                         <div class="mt-4 max-h-[28rem] space-y-1 overflow-y-auto pr-1" data-readlist-suggestions>
                             @forelse ($readlistSuggestions as $literature)
-                                @php($suggestionTitle = $literature->original_title ?? $literature->title)
+                                @php($suggestionTitle = $literature->displayTitle())
                                 <article class="flex items-center gap-3 border-b border-ink-950/10 py-2.5 last:border-b-0" data-readlist-suggestion data-suggestion-literature-id="{{ $literature->id }}" data-search-text="{{ Str::lower($suggestionTitle.' '.$literature->authors->pluck('name')->implode(' ')) }}">
                                     <a href="{{ route('literatures.show', $literature) }}" class="h-16 w-11 shrink-0 overflow-hidden rounded-sm border border-ink-950/10 bg-brand-sky/25">
                                         @if ($literature->cover_url)

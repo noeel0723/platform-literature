@@ -42,7 +42,7 @@
                                 @endif
                             </span>
                             <span class="min-w-0">
-                                <span class="block truncate font-serif text-xl font-bold text-ink-950 transition group-hover:text-brand-coral">{{ $literature->original_title ?? $literature->title }}</span>
+                                <span class="block truncate font-serif text-xl font-bold text-ink-950 transition group-hover:text-brand-coral">{{ $literature->displayTitle() }}</span>
                                 <span class="mt-1 block truncate text-xs text-ink-950/50">{{ $literature->authors->pluck('name')->implode(' & ') ?: 'Author unavailable' }}</span>
                             </span>
                         </a>
@@ -53,7 +53,7 @@
                             <span class="text-xs font-bold text-ink-950/50">{{ number_format($activity['rating'], 1) }}</span>
                         </div>
                         <span class="hidden text-sm font-semibold text-ink-950/55 md:block">{{ filled($activity['review']) ? ($activity['contains_spoiler'] ? 'Spoiler' : 'Written') : '—' }}</span>
-                        <a href="{{ route('literatures.show', $literature) }}?review=edit" class="hidden text-sm font-bold text-brand-coral hover:underline md:inline" aria-label="Edit rating or review for {{ $literature->original_title ?? $literature->title }}">Edit</a>
+                        <a href="{{ route('literatures.show', $literature) }}?review=edit" class="hidden text-sm font-bold text-brand-coral hover:underline md:inline" aria-label="Edit rating or review for {{ $literature->displayTitle() }}">Edit</a>
                     </li>
                 @empty
                     <li class="p-8 text-center text-ink-950/60">No rated literature yet. Give a title a rating to add it to your Diary.</li>

@@ -120,10 +120,7 @@ final class MangaDexAdapter
             return null;
         }
 
-        $title = $this->localizedText(
-            Arr::get($attributes, 'title'),
-            ['en', "{$originalLanguage}-ro", $originalLanguage],
-        );
+        $title = $this->displayTitle($attributes, $originalLanguage);
 
         if ($title === null) {
             return null;
@@ -148,6 +145,43 @@ final class MangaDexAdapter
             originalTitle: $this->originalTitle($attributes, $originalLanguage, $title),
             authorDetails: $authorDetails,
         );
+    }
+
+    /** @param array<string, mixed> $attributes */
+    private function displayTitle(array $attributes, string $originalLanguage): ?string
+    {
+        $titleSets = collect([
+            Arr::get($attributes, 'title'),
+            ...(array) Arr::get($attributes, 'altTitles', []),
+        ])->filter(fn (mixed $titleSet): bool => is_array($titleSet));
+
+        foreach (['en', 'en-us', 'en-gb', "{$originalLanguage}-ro"] as $language) {
+            foreach ($titleSets as $titleSet) {
+                $title = $this->localizedText($titleSet, [$language], false);
+
+                if ($title !== null) {
+                    return $title;
+                }
+            }
+        }
+
+        foreach ($titleSets as $titleSet) {
+            $title = $this->localizedText($titleSet, [$originalLanguage], false);
+
+            if ($title !== null) {
+                return $title;
+            }
+        }
+
+        foreach ($titleSets as $titleSet) {
+            $title = $this->localizedText($titleSet, [], true);
+
+            if ($title !== null) {
+                return $title;
+            }
+        }
+
+        return null;
     }
 
     /** @return list<NormalizedAuthor> */
