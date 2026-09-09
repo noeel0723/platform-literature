@@ -174,7 +174,7 @@ class GoogleBooksAdapterTest extends TestCase
         Http::assertSentCount(4);
     }
 
-    public function test_novel_search_keeps_broad_title_recall_and_classifies_ambiguous_results_as_novels(): void
+    public function test_novel_search_rejects_categoryless_results_without_an_author(): void
     {
         $this->configureGoogleBooks();
         Http::preventStrayRequests();
@@ -191,12 +191,40 @@ class GoogleBooksAdapterTest extends TestCase
             'https://www.wikidata.org/w/api.php*' => Http::response(['search' => []]),
         ]);
 
-        $novel = app(GoogleBooksAdapter::class)->search('A Story', 6, 'novel')->first();
+        $results = app(GoogleBooksAdapter::class)->search('A Story', 6, 'novel');
 
-        $this->assertSame('novel', $novel->type);
-        $this->assertSame('Novel', $novel->format);
+        $this->assertTrue($results->isEmpty());
         Http::assertSent(fn (Request $request): bool => str_starts_with($request->url(), 'https://www.googleapis.com/books/v1/volumes')
             && $request['q'] === '"A Story"');
+    }
+
+    public function test_novel_search_rejects_a_study_guide_even_when_google_labels_it_as_fiction(): void
+    {
+        $this->configureGoogleBooks();
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://www.googleapis.com/books/v1/volumes*' => Http::response([
+                'items' => [[
+                    'id' => 'narnia-study-guide',
+                    'volumeInfo' => [
+                        'title' => 'The Chronicles of Narnia Study Guide and Workbook',
+                        'authors' => ['Example Teacher'],
+                        'publisher' => 'Example Learning',
+                        'categories' => ['Fiction'],
+                        'industryIdentifiers' => [[
+                            'type' => 'ISBN_13',
+                            'identifier' => '9780066238500',
+                        ]],
+                        'printType' => 'BOOK',
+                    ],
+                ]],
+            ]),
+            'https://www.wikidata.org/w/api.php*' => Http::response(['search' => []]),
+        ]);
+
+        $results = app(GoogleBooksAdapter::class)->search('The Chronicles of Narnia');
+
+        $this->assertTrue($results->isEmpty());
     }
 
     public function test_search_returns_an_empty_collection_for_an_incomplete_response(): void

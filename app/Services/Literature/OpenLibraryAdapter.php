@@ -12,6 +12,8 @@ use Illuminate\Support\Str;
 
 final class OpenLibraryAdapter
 {
+    public function __construct(private NovelCatalogClassifier $novelClassifier) {}
+
     /** @return Collection<int, NormalizedLiterature> */
     public function search(string $query, int $limit = 6): Collection
     {
@@ -33,7 +35,7 @@ final class OpenLibraryAdapter
         );
 
         return collect($items)
-            ->map(fn (mixed $item): ?NormalizedLiterature => $this->normalize($item))
+            ->map(fn (mixed $item): ?NormalizedLiterature => $this->normalize($item, $query))
             ->filter()
             ->values();
     }
@@ -97,7 +99,7 @@ final class OpenLibraryAdapter
         return array_values($items);
     }
 
-    private function normalize(mixed $item): ?NormalizedLiterature
+    private function normalize(mixed $item, string $query): ?NormalizedLiterature
     {
         if (! is_array($item)) {
             return null;
@@ -116,20 +118,36 @@ final class OpenLibraryAdapter
             Arr::get($item, 'author_name'),
             Arr::get($item, 'author_key'),
         );
+        $categories = array_slice($this->stringList(Arr::get($item, 'subject')), 0, 12);
+        $synopsis = $this->firstSentence(Arr::get($item, 'first_sentence'));
+        $publisher = $this->stringList(Arr::get($item, 'publisher'))[0] ?? null;
+        $identifier = $this->identifier(Arr::get($item, 'isbn')) ?? "OPENLIBRARY:{$externalId}";
+
+        if (! $this->novelClassifier->accepts(
+            title: $englishTitle ?? $sourceTitle,
+            categories: $categories,
+            description: $synopsis,
+            authors: collect($authorDetails)->pluck('name')->all(),
+            publisher: $publisher,
+            identifier: $identifier,
+            query: $query,
+        )) {
+            return null;
+        }
 
         return new NormalizedLiterature(
             externalId: $externalId,
             title: $sourceTitle,
             type: 'novel',
             authors: collect($authorDetails)->pluck('name')->all(),
-            categories: array_slice($this->stringList(Arr::get($item, 'subject')), 0, 12),
+            categories: $categories,
             publicationYear: $this->publicationYear(Arr::get($item, 'first_publish_year')),
             tagline: null,
-            synopsis: $this->firstSentence(Arr::get($item, 'first_sentence')),
-            publisher: $this->stringList(Arr::get($item, 'publisher'))[0] ?? null,
+            synopsis: $synopsis,
+            publisher: $publisher,
             language: 'en',
             format: 'Novel',
-            identifier: $this->identifier(Arr::get($item, 'isbn')) ?? "OPENLIBRARY:{$externalId}",
+            identifier: $identifier,
             coverUrl: $this->coverUrl(Arr::get($item, 'cover_i')),
             originalTitle: $englishTitle !== null && $englishTitle !== $sourceTitle ? $englishTitle : null,
             authorDetails: $authorDetails,

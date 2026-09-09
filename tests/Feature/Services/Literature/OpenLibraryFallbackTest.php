@@ -87,7 +87,7 @@ class OpenLibraryFallbackTest extends TestCase
         Http::assertSentCount(2);
     }
 
-    public function test_open_library_is_aggregated_even_when_google_books_has_results(): void
+    public function test_open_library_official_novel_is_kept_when_google_books_only_returns_a_guide(): void
     {
         Http::preventStrayRequests();
         Http::fake([
@@ -119,10 +119,13 @@ class OpenLibraryFallbackTest extends TestCase
 
         $synced = app(CatalogSyncService::class)->syncGoogleBooks('The Silver Chair');
 
-        $this->assertSame(2, $synced);
+        $this->assertSame(1, $synced);
         $this->assertDatabaseHas('literatures', [
             'external_id' => 'OL71078W',
             'title' => 'The Silver Chair',
+        ]);
+        $this->assertDatabaseMissing('literatures', [
+            'external_id' => 'google-guide',
         ]);
         Http::assertSentCount(2);
     }

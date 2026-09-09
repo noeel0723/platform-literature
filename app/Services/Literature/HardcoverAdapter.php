@@ -12,6 +12,8 @@ use Illuminate\Support\Str;
 
 final class HardcoverAdapter
 {
+    public function __construct(private NovelCatalogClassifier $novelClassifier) {}
+
     private const SEARCH_QUERY = <<<'GRAPHQL'
         query SearchBooks($query: String!, $perPage: Int!) {
           search(
@@ -50,7 +52,7 @@ final class HardcoverAdapter
         );
 
         return collect($items)
-            ->map(fn (mixed $item): ?NormalizedLiterature => $this->normalize($item))
+            ->map(fn (mixed $item): ?NormalizedLiterature => $this->normalize($item, $query))
             ->filter()
             ->values();
     }
@@ -124,7 +126,7 @@ final class HardcoverAdapter
             ->all();
     }
 
-    private function normalize(mixed $item): ?NormalizedLiterature
+    private function normalize(mixed $item, string $query): ?NormalizedLiterature
     {
         if (! is_array($item)) {
             return null;
@@ -139,6 +141,19 @@ final class HardcoverAdapter
 
         $authors = $this->stringList(Arr::get($item, 'author_names'));
         $isbns = $this->stringList(Arr::get($item, 'isbns'));
+        $identifier = $this->identifier($isbns) ?? "HARDCOVER:{$externalId}";
+
+        if (! $this->novelClassifier->accepts(
+            title: $title,
+            categories: [],
+            description: $this->cleanText(Arr::get($item, 'subtitle')),
+            authors: $authors,
+            publisher: null,
+            identifier: $identifier,
+            query: $query,
+        )) {
+            return null;
+        }
 
         return new NormalizedLiterature(
             externalId: $externalId,
@@ -152,7 +167,7 @@ final class HardcoverAdapter
             publisher: null,
             language: 'en',
             format: 'Novel',
-            identifier: $this->identifier($isbns) ?? "HARDCOVER:{$externalId}",
+            identifier: $identifier,
             coverUrl: $this->secureUrl(Arr::get($item, 'image')),
         );
     }

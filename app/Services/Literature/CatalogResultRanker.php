@@ -8,6 +8,8 @@ use Illuminate\Support\Str;
 
 final class CatalogResultRanker
 {
+    public function __construct(private NovelCatalogClassifier $novelClassifier) {}
+
     /**
      * @param  Collection<int, Literature>  $literatures
      * @return Collection<int, Literature>
@@ -21,6 +23,7 @@ final class CatalogResultRanker
         }
 
         return $literatures
+            ->filter(fn (Literature $literature): bool => $this->isEligible($literature))
             ->sort(function (Literature $left, Literature $right) use ($query): int {
                 $scoreComparison = $this->score($right, $query) <=> $this->score($left, $query);
 
@@ -34,6 +37,18 @@ final class CatalogResultRanker
             })
             ->unique(fn (Literature $literature): string => $this->canonicalKey($literature))
             ->values();
+    }
+
+    private function isEligible(Literature $literature): bool
+    {
+        if ($literature->type !== 'novel') {
+            return true;
+        }
+
+        return ! $this->novelClassifier->isExplicitlyExcluded(
+            title: $literature->displayTitle(),
+            categories: $literature->categories->pluck('name')->all(),
+        );
     }
 
     private function score(Literature $literature, string $query): int

@@ -12,7 +12,10 @@ use InvalidArgumentException;
 
 final class GoogleBooksAdapter
 {
-    public function __construct(private WorkMetadataEnricher $metadataEnricher) {}
+    public function __construct(
+        private WorkMetadataEnricher $metadataEnricher,
+        private NovelCatalogClassifier $novelClassifier,
+    ) {}
 
     /** @return Collection<int, NormalizedLiterature> */
     public function search(string $query, int $limit = 6, string $requestedType = 'all'): Collection
@@ -80,12 +83,12 @@ final class GoogleBooksAdapter
         }
 
         return collect($items)
-            ->map(fn (mixed $item): ?NormalizedLiterature => $this->normalize($item))
+            ->map(fn (mixed $item): ?NormalizedLiterature => $this->normalize($item, $query))
             ->filter()
             ->values();
     }
 
-    private function normalize(mixed $item): ?NormalizedLiterature
+    private function normalize(mixed $item, string $query): ?NormalizedLiterature
     {
         if (! is_array($item)) {
             return null;
@@ -118,25 +121,34 @@ final class GoogleBooksAdapter
         $tagline = $sourceUsesContentLanguage ? $sourceTagline ?? $enrichment->tagline : $enrichment->tagline;
         $synopsis = $sourceUsesContentLanguage ? $sourceSynopsis ?? $enrichment->synopsis : $enrichment->synopsis;
         $usedEnrichmentSynopsis = $enrichment->synopsis !== null && $synopsis === $enrichment->synopsis;
-        $literatureType = $this->literatureType($title, $categories, $synopsis);
+        $publisher = $this->cleanText(Arr::get($item, 'volumeInfo.publisher'));
+        $identifier = $this->identifier(Arr::get($item, 'volumeInfo.industryIdentifiers'));
 
-        if ($literatureType === null) {
+        if (! $this->novelClassifier->accepts(
+            title: $title,
+            categories: $categories,
+            description: implode(' ', array_filter([$tagline, $synopsis])),
+            authors: $authors,
+            publisher: $publisher,
+            identifier: $identifier,
+            query: $query,
+        )) {
             return null;
         }
 
         return new NormalizedLiterature(
             externalId: $externalId,
             title: $title,
-            type: $literatureType,
+            type: 'novel',
             authors: $authors,
             categories: $categories,
             publicationYear: $publicationYear,
             tagline: $tagline,
             synopsis: $synopsis,
-            publisher: $this->cleanText(Arr::get($item, 'volumeInfo.publisher')),
+            publisher: $publisher,
             language: $language,
             format: $this->format(Arr::get($item, 'volumeInfo.printType')),
-            identifier: $this->identifier(Arr::get($item, 'volumeInfo.industryIdentifiers')),
+            identifier: $identifier,
             coverUrl: $this->coverUrl(Arr::get($item, 'volumeInfo.imageLinks')),
             originalTitle: $enrichment->originalTitle,
             synopsisSourceName: $usedEnrichmentSynopsis ? $enrichment->synopsisSourceName : null,
@@ -217,36 +229,6 @@ final class GoogleBooksAdapter
         $upgraded = preg_replace('/([?&])w=\d+/', '$1w=900', $upgraded) ?? $upgraded;
 
         return preg_replace('/([?&])edge=curl(?:&|$)/', '$1', $upgraded) ?? $upgraded;
-    }
-
-    /** @param list<string> $categories */
-    private function literatureType(string $title, array $categories, ?string $synopsis): ?string
-    {
-        $normalizedTitle = Str::lower($title);
-        $normalizedCategories = Str::lower(implode(' | ', $categories));
-        $normalizedSynopsis = Str::lower($synopsis ?? '');
-
-        if (preg_match('/\((?:light )?novel\)/u', $normalizedTitle) === 1) {
-            return 'novel';
-        }
-
-        if (preg_match('/\b(?:non[- ]?fiction|nonfiksi|comics?|graphic novels?|literary criticism|literary collections)\b/u', $normalizedCategories) === 1) {
-            return null;
-        }
-
-        if (preg_match('/\b(?:fiction|fiksi|novels?|romance|romansa|fantasy|fantasi)\b/u', $normalizedCategories) === 1) {
-            return 'novel';
-        }
-
-        if (preg_match('/\b(?:adventure|children(?:\x{2019}|\x{0027})?s|young adult) stories\b/u', $normalizedCategories) === 1) {
-            return 'novel';
-        }
-
-        if (preg_match('/\b(?:a novel|the novel|novel ini|sebuah novel)\b/u', $normalizedSynopsis) === 1) {
-            return 'novel';
-        }
-
-        return 'novel';
     }
 
     private function format(mixed $printType): string

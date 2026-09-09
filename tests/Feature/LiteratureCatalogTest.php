@@ -150,7 +150,8 @@ class LiteratureCatalogTest extends TestCase
         ]))->assertOk();
 
         $response
-            ->assertSeeInOrder(['The Chronicles of Narnia', 'Narnia Study Guide and Workbook'])
+            ->assertSeeText('The Chronicles of Narnia')
+            ->assertDontSeeText('Narnia Study Guide and Workbook')
             ->assertSeeText('C. S. Lewis');
     }
 
