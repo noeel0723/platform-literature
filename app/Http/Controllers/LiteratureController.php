@@ -30,7 +30,7 @@ class LiteratureController extends Controller
 
         if ($query !== '' && in_array($selectedType, ['', 'novel'], true)) {
             try {
-                $catalogSync->syncGoogleBooks(
+                $catalogSync->syncNovels(
                     $query,
                     $selectedType === '' ? 'all' : $selectedType,
                     $sourceLimit,

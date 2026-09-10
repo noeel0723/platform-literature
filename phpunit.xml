@@ -29,6 +29,7 @@
         <env name="MAIL_MAILER" value="array"/>
         <env name="GOOGLE_BOOKS_API_KEY" value="" force="true"/>
         <env name="GOOGLE_KNOWLEDGE_GRAPH_API_KEY" value="" force="true"/>
+        <env name="HARDCOVER_API_TOKEN" value="" force="true"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>

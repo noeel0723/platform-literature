@@ -28,44 +28,50 @@ final class CatalogSyncService
         private SemanticLiteratureResolver $semanticResolver,
     ) {}
 
-    public function syncGoogleBooks(string $query, string $literatureType = 'all', ?int $limit = null): int
+    public function syncNovels(string $query, string $literatureType = 'all', ?int $limit = null): int
     {
-        $normalizedLimit = $limit ?? (int) config('services.google_books.max_results', 6);
+        if (! in_array($literatureType, ['all', 'novel'], true)) {
+            throw new InvalidArgumentException('Novel sync only supports all and novel catalog types.');
+        }
+
+        $normalizedLimit = $limit ?? (int) config('services.hardcover.max_results', 6);
         $synced = 0;
         $availableSources = 0;
         $lastException = null;
-
-        try {
-            $items = $this->googleBooks->search($query, $normalizedLimit, $literatureType);
-            $availableSources++;
-            $synced += $this->sync(
-                sourceKey: 'google-books',
-                sourceName: 'Google Books',
-                baseUrl: (string) config('services.google_books.base_url'),
-                supportedTypes: ['novel'],
-                items: $items,
-            );
-        } catch (LiteratureSourceUnavailable $exception) {
-            $lastException = $exception;
-        }
-
-        try {
-            $items = $this->openLibrary->search($query, $normalizedLimit);
-            $availableSources++;
-            $synced += $this->sync(
-                sourceKey: 'open-library',
-                sourceName: 'Open Library',
-                baseUrl: (string) config('services.open_library.base_url'),
-                supportedTypes: ['novel'],
-                items: $items,
-            );
-        } catch (LiteratureSourceUnavailable $exception) {
-            $lastException = $exception;
-        }
+        $sourceAttempts = [];
 
         if (filled(config('services.hardcover.token'))) {
+            $sourceAttempts[] = [
+                'name' => 'Hardcover',
+                'sync' => fn (): int => $this->syncHardcover($query, $normalizedLimit),
+            ];
+        }
+
+        $sourceAttempts[] = [
+            'name' => 'Open Library',
+            'sync' => fn (): int => $this->syncOpenLibrary($query, $normalizedLimit),
+        ];
+
+        if (filled(config('services.google_books.key'))) {
+            $sourceAttempts[] = [
+                'name' => 'Google Books',
+                'sync' => function () use ($query, $normalizedLimit, $literatureType): int {
+                    $items = $this->googleBooks->search($query, $normalizedLimit, $literatureType);
+
+                    return $this->sync(
+                        sourceKey: 'google-books',
+                        sourceName: 'Google Books',
+                        baseUrl: (string) config('services.google_books.base_url'),
+                        supportedTypes: ['novel'],
+                        items: $items,
+                    );
+                },
+            ];
+        }
+
+        foreach ($sourceAttempts as $sourceAttempt) {
             try {
-                $synced += $this->syncHardcover($query, $normalizedLimit);
+                $synced += $sourceAttempt['sync']();
                 $availableSources++;
             } catch (LiteratureSourceUnavailable $exception) {
                 $lastException = $exception;
@@ -73,9 +79,9 @@ final class CatalogSyncService
         }
 
         if ($availableSources === 0) {
-            $sourceNames = filled(config('services.hardcover.token'))
-                ? 'Google Books, Open Library, and Hardcover'
-                : 'Google Books and Open Library';
+            $sourceNames = collect($sourceAttempts)
+                ->pluck('name')
+                ->join(', ', ' and ');
 
             throw new LiteratureSourceUnavailable(
                 $sourceNames,
@@ -85,6 +91,11 @@ final class CatalogSyncService
         }
 
         return $synced;
+    }
+
+    public function syncGoogleBooks(string $query, string $literatureType = 'all', ?int $limit = null): int
+    {
+        return $this->syncNovels($query, $literatureType, $limit);
     }
 
     public function syncOpenLibrary(string $query, ?int $limit = null): int
@@ -329,8 +340,10 @@ final class CatalogSyncService
             'knowledge_graph_url' => $entity?->sourceUrl ?? $entity?->officialUrl ?? $literature->knowledge_graph_url,
             'knowledge_graph_score' => $entity?->score ?? $literature->knowledge_graph_score,
             'slug' => $literature->exists ? $literature->slug : $this->uniqueSlug($source, $item),
-            'title' => $item->title,
-            'original_title' => $item->originalTitle ?? $literature->original_title,
+            'title' => Str::limit($item->title, 255, ''),
+            'original_title' => $item->originalTitle === null
+                ? $literature->original_title
+                : Str::limit($item->originalTitle, 255, ''),
             'type' => $item->type,
             'publication_year' => $item->publicationYear ?? $literature->publication_year,
             'tagline' => $item->tagline ?? $entity?->description ?? $literature->tagline,

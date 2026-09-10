@@ -93,4 +93,28 @@ class HardcoverAdapterTest extends TestCase
 
         app(HardcoverAdapter::class)->search('The Silver Chair');
     }
+
+    public function test_search_ignores_an_overlong_source_value_misidentified_as_a_title(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://api.hardcover.app/v1/graphql' => Http::response([
+                'data' => [
+                    'search' => [
+                        'results' => [[
+                            'id' => 111932,
+                            'title' => 'Bumi menyambut tahun baru. '.str_repeat('Manusia menghadapi berbagai tantangan sepanjang perjalanan ini. ', 8),
+                            'author_names' => ['Example Author'],
+                            'isbns' => ['9789795430728'],
+                        ]],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $results = app(HardcoverAdapter::class)->search('Bumi Manusia');
+
+        $this->assertCount(0, $results);
+        Http::assertSentCount(1);
+    }
 }

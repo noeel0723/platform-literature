@@ -128,6 +128,38 @@ class CanonicalLiteratureProjectionTest extends TestCase
         $this->assertTrue($preferred->is($largeCover));
     }
 
+    public function test_manual_curation_then_hardcover_are_the_preferred_novel_sources(): void
+    {
+        $author = Author::factory()->create(['name' => 'Andrea Hirata']);
+        $work = CanonicalWork::factory()->for($author, 'primaryAuthor')->create([
+            'canonical_title' => 'Laskar Pelangi',
+            'normalized_title' => 'laskar pelangi',
+            'type' => 'novel',
+            'publication_year' => 2005,
+        ]);
+        $googleBooks = ApiSource::factory()->create(['key' => 'google-books']);
+        $openLibrary = ApiSource::factory()->create(['key' => 'open-library']);
+        $hardcover = ApiSource::factory()->create(['key' => 'hardcover']);
+        $manual = ApiSource::factory()->create(['key' => 'manual-curated']);
+        $records = collect([
+            'google-books' => Literature::factory()->for($googleBooks)->create(['title' => 'Laskar Pelangi']),
+            'open-library' => Literature::factory()->for($openLibrary)->create(['title' => 'Laskar Pelangi']),
+            'hardcover' => Literature::factory()->for($hardcover)->create(['title' => 'Laskar Pelangi']),
+            'manual-curated' => Literature::factory()->for($manual)->create(['title' => 'Laskar Pelangi']),
+        ]);
+        $records->each(function (Literature $literature) use ($author, $work): void {
+            $literature->authors()->attach($author, ['role' => 'author', 'position' => 0]);
+            $this->map($work, $literature);
+        });
+
+        $preferredWithCuration = app(CanonicalLiteratureProjector::class)->refresh($work);
+        $records->get('manual-curated')->sourceMapping()->delete();
+        $preferredWithoutCuration = app(CanonicalLiteratureProjector::class)->refresh($work->fresh());
+
+        $this->assertTrue($preferredWithCuration->is($records->get('manual-curated')));
+        $this->assertTrue($preferredWithoutCuration->is($records->get('hardcover')));
+    }
+
     public function test_latest_catalog_paginates_canonical_works_and_keeps_unmapped_legacy_records(): void
     {
         $this->createProjectedPair();

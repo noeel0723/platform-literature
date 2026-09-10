@@ -36,11 +36,12 @@ class CatalogSeeder extends Seeder
             unset($item['authors'], $item['categories'], $item['source_key']);
 
             $literature = Literature::query()->updateOrCreate(
+                ['slug' => $item['slug']],
                 [
                     'api_source_id' => $sources[$sourceKey]->id,
                     'external_id' => $item['external_id'],
+                    ...$item,
                 ],
-                $item,
             );
 
             $authorLinks = [];
@@ -78,6 +79,12 @@ class CatalogSeeder extends Seeder
     private function sourceData(): array
     {
         return [
+            'manual-curated' => [
+                'name' => 'Literahaven Curation',
+                'base_url' => null,
+                'supported_types' => ['novel'],
+                'is_active' => true,
+            ],
             'google-books' => [
                 'name' => 'Google Books',
                 'base_url' => 'https://www.googleapis.com/books/v1',
@@ -106,8 +113,8 @@ class CatalogSeeder extends Seeder
     {
         return [
             [
-                'source_key' => 'google-books',
-                'external_id' => 'isbn-9789799731234',
+                'source_key' => 'manual-curated',
+                'external_id' => 'curated-bumi-manusia-1980',
                 'slug' => 'bumi-manusia',
                 'title' => 'Bumi Manusia',
                 'type' => 'novel',

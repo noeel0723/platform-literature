@@ -12,9 +12,10 @@ final class CanonicalLiteratureProjector
     /** @var array<string, array<string, int>> */
     private const SOURCE_PRIORITY = [
         'novel' => [
-            'google-books' => 60,
-            'hardcover' => 55,
-            'open-library' => 45,
+            'manual-curated' => 120,
+            'hardcover' => 90,
+            'open-library' => 60,
+            'google-books' => 40,
         ],
         'manga' => [
             'anilist' => 60,

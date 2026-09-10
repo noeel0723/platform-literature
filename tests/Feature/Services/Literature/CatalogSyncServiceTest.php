@@ -10,6 +10,7 @@ use App\Services\Literature\CatalogSyncService;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class CatalogSyncServiceTest extends TestCase
@@ -189,6 +190,7 @@ class CatalogSyncServiceTest extends TestCase
 
         $literature = Literature::query()->where('external_id', 'very-long-google-title')->sole();
         $this->assertLessThanOrEqual(255, strlen($literature->slug));
+        $this->assertLessThanOrEqual(255, Str::length($literature->title));
         $this->assertDatabaseCount('literatures', 1);
     }
 

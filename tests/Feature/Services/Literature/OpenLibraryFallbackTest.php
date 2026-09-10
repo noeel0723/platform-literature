@@ -3,11 +3,14 @@
 namespace Tests\Feature\Services\Literature;
 
 use App\Exceptions\LiteratureSourceUnavailable;
+use App\Models\CanonicalWork;
 use App\Models\Literature;
 use App\Services\Literature\CatalogSyncService;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use InvalidArgumentException;
 use Tests\TestCase;
 
 class OpenLibraryFallbackTest extends TestCase
@@ -35,6 +38,14 @@ class OpenLibraryFallbackTest extends TestCase
             'services.knowledge_graph.key' => null,
             'services.hardcover.token' => null,
         ]);
+    }
+
+    public function test_novel_discovery_rejects_removed_catalog_types(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Novel sync only supports all and novel catalog types.');
+
+        app(CatalogSyncService::class)->syncNovels('Dune', 'book');
     }
 
     public function test_open_library_is_used_when_google_books_is_unavailable(): void
@@ -68,6 +79,91 @@ class OpenLibraryFallbackTest extends TestCase
             'source_external_id' => 'OL893415W',
         ]);
         Http::assertSentCount(2);
+    }
+
+    public function test_novel_discovery_queries_hardcover_before_validation_and_fallback_sources(): void
+    {
+        config()->set([
+            'services.hardcover.base_url' => 'https://api.hardcover.app/v1/graphql',
+            'services.hardcover.token' => 'test-hardcover-token',
+            'services.hardcover.user_agent' => 'Literahaven/1.0 test-suite',
+            'services.hardcover.cache_minutes' => 1,
+            'services.hardcover.connect_timeout' => 1,
+            'services.hardcover.timeout' => 2,
+        ]);
+        $requestedSources = [];
+        Http::preventStrayRequests();
+        Http::fake(function (Request $request) use (&$requestedSources) {
+            if ($request->url() === 'https://api.hardcover.app/v1/graphql') {
+                $requestedSources[] = 'hardcover';
+
+                return Http::response(['data' => ['search' => ['results' => []]]]);
+            }
+
+            if (str_starts_with($request->url(), 'https://openlibrary.org/search.json')) {
+                $requestedSources[] = 'open-library';
+
+                return Http::response(['docs' => []]);
+            }
+
+            $requestedSources[] = 'google-books';
+
+            return Http::response(['items' => []]);
+        });
+
+        $synced = app(CatalogSyncService::class)->syncNovels('The Silver Chair');
+
+        $this->assertSame(0, $synced);
+        $this->assertSame(['hardcover', 'open-library', 'google-books'], $requestedSources);
+    }
+
+    public function test_novel_sources_map_matching_isbn_records_to_one_hardcover_led_work(): void
+    {
+        config()->set([
+            'services.hardcover.base_url' => 'https://api.hardcover.app/v1/graphql',
+            'services.hardcover.token' => 'test-hardcover-token',
+            'services.hardcover.user_agent' => 'Literahaven/1.0 test-suite',
+            'services.hardcover.cache_minutes' => 1,
+            'services.hardcover.connect_timeout' => 1,
+            'services.hardcover.timeout' => 2,
+        ]);
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://api.hardcover.app/v1/graphql' => Http::response([
+                'data' => ['search' => ['results' => [[
+                    'id' => 93279,
+                    'title' => 'The Silver Chair',
+                    'release_year' => 1953,
+                    'author_names' => ['C. S. Lewis'],
+                    'image' => 'https://images.hardcover.app/silver-chair.jpg',
+                    'isbns' => ['9780064471091'],
+                ]]]],
+            ]),
+            'https://openlibrary.org/search.json*' => Http::response([
+                'docs' => [[
+                    ...$this->duneWork(),
+                    'key' => '/works/OL71078W',
+                    'title' => 'The Silver Chair',
+                    'author_name' => ['C. S. Lewis'],
+                    'author_key' => ['OL31574A'],
+                    'first_publish_year' => 1953,
+                    'cover_i' => null,
+                    'isbn' => ['9780064471091'],
+                    'publisher' => [],
+                    'subject' => [],
+                    'first_sentence' => [],
+                ]],
+            ]),
+            'https://www.googleapis.com/books/v1/volumes*' => Http::response(['items' => []]),
+        ]);
+
+        $synced = app(CatalogSyncService::class)->syncNovels('The Silver Chair');
+
+        $this->assertSame(2, $synced);
+        $this->assertDatabaseCount('canonical_works', 1);
+        $this->assertDatabaseCount('literature_source_mappings', 2);
+        $preferred = CanonicalWork::query()->sole()->preferredLiterature()->with('apiSource')->firstOrFail();
+        $this->assertSame('hardcover', $preferred->apiSource->key);
     }
 
     public function test_open_library_is_used_when_google_books_has_no_results(): void
@@ -142,14 +238,14 @@ class OpenLibraryFallbackTest extends TestCase
             app(CatalogSyncService::class)->syncGoogleBooks('Dune');
             $this->fail('The combined source exception was not thrown.');
         } catch (LiteratureSourceUnavailable $exception) {
-            $this->assertSame('Google Books and Open Library', $exception->source);
+            $this->assertSame('Open Library and Google Books', $exception->source);
             $this->assertStringContainsString('are unavailable', $exception->getMessage());
         }
 
         Http::assertSentCount(2);
     }
 
-    public function test_configured_hardcover_is_used_as_a_third_novel_source(): void
+    public function test_configured_hardcover_is_used_as_the_primary_novel_source(): void
     {
         config()->set([
             'services.hardcover.base_url' => 'https://api.hardcover.app/v1/graphql',

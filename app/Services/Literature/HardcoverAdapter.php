@@ -135,7 +135,7 @@ final class HardcoverAdapter
         $externalId = $this->cleanText(Arr::get($item, 'id'));
         $title = $this->cleanText(Arr::get($item, 'title'));
 
-        if ($externalId === null || $title === null) {
+        if ($externalId === null || $title === null || Str::length($title) > 255) {
             return null;
         }
 
