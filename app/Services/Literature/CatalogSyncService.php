@@ -22,6 +22,7 @@ final class CatalogSyncService
         private MangaDexAdapter $mangaDex,
         private KitsuAdapter $kitsu,
         private ComicVineAdapter $comicVine,
+        private MetronAdapter $metron,
         private KnowledgeGraphEnricher $knowledgeGraph,
         private AuthorNameNormalizer $authorNames,
         private AuthorEntityResolver $authors,
@@ -223,6 +224,74 @@ final class CatalogSyncService
             supportedTypes: ['western-comic'],
             items: $items,
         );
+    }
+
+    public function syncMetron(string $query, ?int $limit = null): int
+    {
+        $items = $this->metron->search(
+            $query,
+            $limit ?? (int) config('services.metron.max_results', 6),
+        );
+
+        return $this->sync(
+            sourceKey: 'metron',
+            sourceName: 'Metron',
+            baseUrl: (string) config('services.metron.base_url'),
+            supportedTypes: ['western-comic'],
+            items: $items,
+        );
+    }
+
+    public function syncComics(string $query, ?int $limit = null): int
+    {
+        $normalizedLimit = $limit ?? (int) config('services.comic_vine.max_results', 6);
+        $sourceAttempts = [];
+
+        if (filled(config('services.comic_vine.key'))) {
+            $sourceAttempts[] = [
+                'name' => 'Comic Vine',
+                'sync' => fn (): int => $this->syncComicVine($query, $normalizedLimit),
+            ];
+        }
+
+        if ($this->metron->isConfigured()) {
+            $sourceAttempts[] = [
+                'name' => 'Metron',
+                'sync' => fn (): int => $this->syncMetron($query, $normalizedLimit),
+            ];
+        }
+
+        if ($sourceAttempts === []) {
+            throw new LiteratureSourceUnavailable(
+                'Comic Vine and Metron',
+                'Comic Vine and Metron credentials are not configured.',
+            );
+        }
+
+        $synced = 0;
+        $availableSources = 0;
+        $lastException = null;
+
+        foreach ($sourceAttempts as $sourceAttempt) {
+            try {
+                $synced += $sourceAttempt['sync']();
+                $availableSources++;
+            } catch (LiteratureSourceUnavailable $exception) {
+                $lastException = $exception;
+            }
+        }
+
+        if ($availableSources === 0) {
+            $sourceNames = collect($sourceAttempts)->pluck('name')->join(', ', ' and ');
+
+            throw new LiteratureSourceUnavailable(
+                $sourceNames,
+                "{$sourceNames} are unavailable.",
+                $lastException,
+            );
+        }
+
+        return $synced;
     }
 
     /**

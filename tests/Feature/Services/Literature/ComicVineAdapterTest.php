@@ -25,6 +25,31 @@ class ComicVineAdapterTest extends TestCase
                     ['resource_type' => 'volume', 'id' => 100],
                 ],
             ]),
+            'https://comicvine.gamespot.com/api/issue/4000-367155/*' => Http::response([
+                'status_code' => 1,
+                'error' => 'OK',
+                'results' => [
+                    'id' => 367155,
+                    'person_credits' => [
+                        [
+                            'role' => 'writer',
+                            'person' => [
+                                'id' => 40382,
+                                'name' => 'Alan Moore',
+                                'site_detail_url' => 'https://comicvine.gamespot.com/alan-moore/4040-40382/',
+                            ],
+                        ],
+                        [
+                            'role' => 'artist',
+                            'person' => ['id' => 4941, 'name' => 'Dave Gibbons'],
+                        ],
+                        [
+                            'role' => 'colorist',
+                            'person' => ['id' => 7454, 'name' => 'John Higgins'],
+                        ],
+                    ],
+                ],
+            ]),
         ]);
 
         $results = app(ComicVineAdapter::class)->search('Watchmen', 4);
@@ -35,17 +60,20 @@ class ComicVineAdapterTest extends TestCase
         $this->assertSame('1815', $comic->externalId);
         $this->assertSame('Watchmen', $comic->title);
         $this->assertSame('western-comic', $comic->type);
-        $this->assertSame([], $comic->authors);
+        $this->assertSame(['Alan Moore', 'Dave Gibbons'], $comic->authors);
         $this->assertSame(1986, $comic->publicationYear);
         $this->assertSame('DC Comics', $comic->publisher);
         $this->assertSame('COMICVINE:4050-1815', $comic->identifier);
         $this->assertSame('https://comicvine.gamespot.com/a/uploads/scale_large/watchmen.jpg', $comic->coverUrl);
         $this->assertSame('A landmark superhero story.', $comic->synopsis);
+        $this->assertCount(2, $comic->authorDetails);
+        $this->assertSame('40382', $comic->authorDetails[0]->externalId);
 
         Http::assertSent(function (Request $request): bool {
             $data = $request->data();
 
-            return $request->method() === 'GET'
+            return str_contains($request->url(), '/api/search/')
+                && $request->method() === 'GET'
                 && $request->hasHeader('User-Agent', 'LiteratureSocialDiscovery/1.0 test-suite')
                 && $data['query'] === 'Watchmen'
                 && $data['resources'] === 'volume'
@@ -53,6 +81,7 @@ class ComicVineAdapterTest extends TestCase
                 && $data['limit'] === 4
                 && $data['api_key'] === 'test-comic-vine-key';
         });
+        Http::assertSentCount(2);
     }
 
     public function test_search_returns_an_empty_collection_when_no_volumes_are_found(): void
@@ -137,6 +166,7 @@ class ComicVineAdapterTest extends TestCase
             'services.comic_vine.key' => 'test-comic-vine-key',
             'services.comic_vine.user_agent' => 'LiteratureSocialDiscovery/1.0 test-suite',
             'services.comic_vine.max_results' => 6,
+            'services.comic_vine.creator_enrichment_limit' => 4,
             'services.comic_vine.cache_minutes' => 30,
             'services.comic_vine.connect_timeout' => 1,
             'services.comic_vine.timeout' => 2,
@@ -154,6 +184,7 @@ class ComicVineAdapterTest extends TestCase
             'description' => '<p>A landmark <strong>superhero</strong> story.</p>',
             'start_year' => '1986',
             'publisher' => ['name' => 'DC Comics'],
+            'first_issue' => ['id' => 367155],
             'image' => [
                 'super_url' => 'http://comicvine.gamespot.com/a/uploads/scale_large/watchmen.jpg',
             ],

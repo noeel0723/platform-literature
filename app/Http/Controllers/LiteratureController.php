@@ -54,7 +54,7 @@ class LiteratureController extends Controller
 
         if ($query !== '' && in_array($selectedType, ['', 'western-comic'], true)) {
             try {
-                $catalogSync->syncComicVine($query, $sourceLimit);
+                $catalogSync->syncComics($query, $sourceLimit);
             } catch (LiteratureSourceUnavailable $exception) {
                 $unavailableSources[] = $exception->source;
             }

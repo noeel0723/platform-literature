@@ -119,9 +119,23 @@ return [
         'key' => env('COMIC_VINE_API_KEY'),
         'user_agent' => env('COMIC_VINE_USER_AGENT', 'Literahaven/1.0 academic-project'),
         'max_results' => (int) env('COMIC_VINE_MAX_RESULTS', 6),
+        'creator_enrichment_limit' => (int) env('COMIC_VINE_CREATOR_ENRICHMENT_LIMIT', 4),
         'cache_minutes' => (int) env('COMIC_VINE_CACHE_MINUTES', 30),
         'connect_timeout' => (int) env('COMIC_VINE_CONNECT_TIMEOUT', 3),
         'timeout' => (int) env('COMIC_VINE_TIMEOUT', 12),
+    ],
+
+    'metron' => [
+        'base_url' => env('METRON_BASE_URL', 'https://metron.cloud/api'),
+        'token' => env('METRON_API_TOKEN'),
+        'username' => env('METRON_USERNAME'),
+        'password' => env('METRON_PASSWORD'),
+        'user_agent' => env('METRON_USER_AGENT', 'Literahaven/1.0 academic-project'),
+        'max_results' => (int) env('METRON_MAX_RESULTS', 6),
+        'detail_enrichment_limit' => (int) env('METRON_DETAIL_ENRICHMENT_LIMIT', 4),
+        'cache_minutes' => (int) env('METRON_CACHE_MINUTES', 30),
+        'connect_timeout' => (int) env('METRON_CONNECT_TIMEOUT', 3),
+        'timeout' => (int) env('METRON_TIMEOUT', 12),
     ],
 
 ];
