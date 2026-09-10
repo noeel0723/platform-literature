@@ -5,6 +5,7 @@ namespace App\Services\Literature;
 use App\Models\CanonicalWork;
 use App\Models\Literature;
 use App\Models\LiteratureSourceMapping;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 final class CanonicalLiteratureProjector
@@ -60,13 +61,51 @@ final class CanonicalLiteratureProjector
                     : $left->literature_id <=> $right->literature_id;
             });
 
-        $preferred = $rankedMappings->first()?->literature;
+        $preferredMapping = $rankedMappings->first();
+        $preferred = $preferredMapping?->literature;
+
+        if ($preferred !== null && $preferredMapping !== null) {
+            $this->inheritFallbackCover($preferred, $preferredMapping, $rankedMappings);
+        }
 
         if ($canonicalWork->preferred_literature_id !== $preferred?->id) {
             $canonicalWork->forceFill(['preferred_literature_id' => $preferred?->id])->save();
         }
 
         return $preferred;
+    }
+
+    /** @param Collection<int, LiteratureSourceMapping> $rankedMappings */
+    private function inheritFallbackCover(
+        Literature $preferred,
+        LiteratureSourceMapping $preferredMapping,
+        Collection $rankedMappings,
+    ): void {
+        $coverMapping = filled($preferred->cover_url)
+            ? $rankedMappings->first(fn (LiteratureSourceMapping $mapping): bool => $mapping->id !== $preferredMapping->id
+                && $mapping->literature?->cover_url === $preferred->cover_url)
+            : $rankedMappings
+                ->filter(fn (LiteratureSourceMapping $mapping): bool => filled($mapping->literature?->cover_url))
+                ->sortByDesc(fn (LiteratureSourceMapping $mapping): int => $this->coverQualityScore($mapping->literature?->cover_url))
+                ->first();
+
+        if ($coverMapping === null) {
+            return;
+        }
+
+        if (blank($preferred->cover_url)) {
+            $preferred->forceFill(['cover_url' => $coverMapping->literature->cover_url])->save();
+        }
+
+        $fieldProvenance = $preferredMapping->field_provenance ?? [];
+        $fieldProvenance['cover_url'] = $coverMapping->apiSource?->key
+            ?? $coverMapping->literature->apiSource?->key
+            ?? 'fallback';
+
+        $preferredMapping->forceFill([
+            'field_provenance' => $fieldProvenance,
+            'quality_score' => $this->score($preferredMapping),
+        ])->save();
     }
 
     private function score(LiteratureSourceMapping $mapping): int
@@ -98,6 +137,7 @@ final class CanonicalLiteratureProjector
         $url = Str::lower($coverUrl);
 
         return match (true) {
+            str_contains($url, 'assets.hardcover.app') => 60,
             str_contains($url, 'covers.openlibrary.org') && str_contains($url, '-l.') => 60,
             str_contains($url, 'books.google') && preg_match('/(?:zoom=6|w=(?:9\d\d|[1-9]\d{3,}))/', $url) === 1 => 60,
             str_contains($url, 'books.google') && preg_match('/(?:zoom=[34]|w=[5-8]\d\d)/', $url) === 1 => 52,

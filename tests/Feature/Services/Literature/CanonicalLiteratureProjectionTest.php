@@ -128,6 +128,52 @@ class CanonicalLiteratureProjectionTest extends TestCase
         $this->assertTrue($preferred->is($largeCover));
     }
 
+    public function test_a_preferred_hardcover_record_inherits_a_fallback_cover_with_provenance(): void
+    {
+        $author = Author::factory()->create(['name' => 'C. S. Lewis']);
+        $work = CanonicalWork::factory()->for($author, 'primaryAuthor')->create([
+            'canonical_title' => 'The Silver Chair',
+            'normalized_title' => 'the silver chair',
+            'type' => 'novel',
+            'publication_year' => 1953,
+        ]);
+        $hardcover = ApiSource::factory()->create(['key' => 'hardcover']);
+        $openLibrary = ApiSource::factory()->create(['key' => 'open-library']);
+        $primary = Literature::factory()->for($hardcover)->create([
+            'title' => 'The Silver Chair',
+            'type' => 'novel',
+            'identifier' => '9780064471091',
+            'cover_url' => null,
+            'synopsis' => 'A complete Hardcover synopsis keeps this the preferred source record.',
+            'publisher' => 'HarperCollins',
+            'publication_year' => 1953,
+        ]);
+        $fallback = Literature::factory()->for($openLibrary)->create([
+            'title' => 'The Silver Chair',
+            'type' => 'novel',
+            'identifier' => null,
+            'cover_url' => 'https://covers.openlibrary.org/b/id/14325438-L.jpg?default=false',
+            'synopsis' => null,
+            'publisher' => null,
+            'publication_year' => 1953,
+        ]);
+        $primary->authors()->attach($author, ['role' => 'author', 'position' => 0]);
+        $fallback->authors()->attach($author, ['role' => 'author', 'position' => 0]);
+        $primaryMapping = $this->map($work, $primary);
+        $this->map($work, $fallback);
+
+        $preferred = app(CanonicalLiteratureProjector::class)->refresh($work);
+
+        $this->assertTrue($preferred->is($primary));
+        $this->assertSame($fallback->cover_url, $primary->fresh()->cover_url);
+        $this->assertSame('open-library', $primaryMapping->fresh()->field_provenance['cover_url']);
+
+        $primaryMapping->update(['field_provenance' => ['cover_url' => 'hardcover']]);
+        app(CanonicalLiteratureProjector::class)->refresh($work->fresh());
+
+        $this->assertSame('open-library', $primaryMapping->fresh()->field_provenance['cover_url']);
+    }
+
     public function test_manual_curation_then_hardcover_are_the_preferred_novel_sources(): void
     {
         $author = Author::factory()->create(['name' => 'Andrea Hirata']);

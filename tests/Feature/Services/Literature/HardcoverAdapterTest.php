@@ -40,7 +40,11 @@ class HardcoverAdapterTest extends TestCase
                             'subtitle' => 'The Chronicles of Narnia',
                             'release_year' => 1953,
                             'author_names' => ['C. S. Lewis'],
-                            'image' => 'http://images.hardcover.app/silver-chair.jpg',
+                            'image' => [
+                                'height' => 1200,
+                                'url' => 'http://images.hardcover.app/silver-chair.jpg',
+                                'width' => 800,
+                            ],
                             'isbns' => ['9780064471091'],
                         ]],
                     ],
@@ -66,6 +70,31 @@ class HardcoverAdapterTest extends TestCase
             && $request->hasHeader('User-Agent', 'Literahaven/1.0 test-suite')
             && $request['variables']['query'] === 'The Silver Chair'
             && $request['variables']['perPage'] === 15);
+    }
+
+    public function test_search_keeps_supporting_a_legacy_scalar_cover_url(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://api.hardcover.app/v1/graphql' => Http::response([
+                'data' => [
+                    'search' => [
+                        'results' => [[
+                            'id' => 93280,
+                            'title' => 'Prince Caspian',
+                            'author_names' => ['C. S. Lewis'],
+                            'image' => 'http://images.hardcover.app/prince-caspian.jpg',
+                            'isbns' => ['9780064471053'],
+                        ]],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $novel = app(HardcoverAdapter::class)->search('Prince Caspian')->first();
+
+        $this->assertSame('https://images.hardcover.app/prince-caspian.jpg', $novel->coverUrl);
+        Http::assertSentCount(1);
     }
 
     public function test_search_requires_a_token_before_sending_a_request(): void

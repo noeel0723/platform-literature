@@ -168,8 +168,18 @@ final class HardcoverAdapter
             language: 'en',
             format: 'Novel',
             identifier: $identifier,
-            coverUrl: $this->secureUrl(Arr::get($item, 'image')),
+            coverUrl: $this->coverUrl($item),
         );
+    }
+
+    /** @param array<string, mixed> $item */
+    private function coverUrl(array $item): ?string
+    {
+        $image = Arr::get($item, 'image');
+
+        return $this->secureUrl(is_array($image) ? Arr::get($image, 'url') : $image)
+            ?? $this->secureUrl(Arr::get($item, 'image_url'))
+            ?? $this->secureUrl(Arr::get($item, 'cover_url'));
     }
 
     /** @return list<string> */
