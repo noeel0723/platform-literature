@@ -39,5 +39,5 @@
     ];
 @endphp
 
-<script type="application/json" data-react-profile-subnav-props>{{ Illuminate\Support\Js::encode(['navigation' => $navigation]) }}</script>
+<script type="application/json" data-react-profile-subnav-props>{!! Illuminate\Support\Js::encode(['navigation' => $navigation]) !!}</script>
 <div {{ $attributes }} data-react-profile-subnav></div>

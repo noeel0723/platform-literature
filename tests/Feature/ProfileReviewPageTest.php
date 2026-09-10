@@ -52,7 +52,7 @@ class ProfileReviewPageTest extends TestCase
             ->get(route('profiles.reviews', $reader))
             ->assertOk()
             ->assertSee('data-react-profile-subnav', false)
-            ->assertSee('&quot;current&quot;:&quot;reviews&quot;', false)
+            ->assertSee('"current":"reviews"', false)
             ->assertSeeInOrder(['Profile', 'Activity', 'Literature', 'Diary', 'Reviews', 'Readlist'])
             ->assertSee(route('literatures.show', $literature).'?review=edit', false);
     }

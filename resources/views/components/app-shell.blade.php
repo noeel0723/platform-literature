@@ -49,7 +49,7 @@
             ] : null,
         ];
     @endphp
-    <script type="application/json" data-react-header-props>{{ Illuminate\Support\Js::encode($headerProps) }}</script>
+    <script type="application/json" data-react-header-props>{!! Illuminate\Support\Js::encode($headerProps) !!}</script>
     <div data-react-header></div>
 
     <main id="main-content">

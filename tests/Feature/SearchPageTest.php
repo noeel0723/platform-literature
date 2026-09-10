@@ -59,11 +59,14 @@ class SearchPageTest extends TestCase
 
     public function test_global_header_search_submits_to_the_combined_search_page(): void
     {
-        $this->get(route('home'))
+        $response = $this->get(route('home'))
             ->assertOk()
             ->assertSee('data-react-header-props', false)
-            ->assertSee('data-react-header', false)
-            ->assertSee('&quot;search&quot;:&quot;', false);
+            ->assertSee('data-react-header', false);
+
+        $props = $this->embeddedReactProps($response->getContent(), 'data-react-header-props');
+
+        $this->assertSame(route('search.index'), $props['routes']['search']);
     }
 
     public function test_global_search_displays_a_mangas_global_title_while_native_title_remains_searchable(): void
@@ -115,7 +118,7 @@ class SearchPageTest extends TestCase
             ->assertSee('data-react-header-props', false)
             ->assertSeeText('axellgab')
             ->assertSeeInOrder(['Profile', 'Activity', 'Literature', 'Reviews', 'Readlist'])
-            ->assertSee('&quot;logout_url&quot;:&quot;', false);
+            ->assertSee('"logout_url":"', false);
     }
 
     public function test_search_does_not_show_a_non_english_synopsis_as_english_copy(): void
@@ -151,5 +154,15 @@ class SearchPageTest extends TestCase
             ->assertSee('data-search-literature', false)
             ->assertDontSee('data-search-author', false)
             ->assertDontSee('data-search-member', false);
+    }
+
+    /** @return array<string, mixed> */
+    private function embeddedReactProps(string $content, string $attribute): array
+    {
+        $matched = preg_match('/<script[^>]*'.preg_quote($attribute, '/').'[^>]*>(.*?)<\/script>/s', $content, $matches);
+
+        $this->assertSame(1, $matched);
+
+        return json_decode($matches[1], true, flags: JSON_THROW_ON_ERROR);
     }
 }
