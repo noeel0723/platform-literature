@@ -189,26 +189,34 @@ class LiteratureCatalogTest extends TestCase
         $firstPage = $this->get(route('literatures.latest', [
             'q' => 'Narnia',
             'type' => 'novel',
-        ]))->assertOk();
+        ]));
 
-        $this->assertSame(15, substr_count($firstPage->getContent(), 'data-literature-card-size="compact"'));
-        $firstPage
-            ->assertSeeText('18 matches · 15 per page')
-            ->assertSeeText('Page 1 of 2')
-            ->assertSeeText('Previous')
-            ->assertSeeText('Next')
-            ->assertSee('data-latest-literature-grid', false);
+        $firstPage->assertInertia(fn (Assert $page) => $page
+            ->component('Catalog/Latest')
+            ->where('query', 'Narnia')
+            ->where('selectedType', 'novel')
+            ->where('literatures.total', 18)
+            ->where('literatures.per_page', 15)
+            ->where('literatures.current_page', 1)
+            ->where('literatures.last_page', 2)
+            ->where('literatures.prev_page_url', null)
+            ->has('literatures.next_page_url')
+            ->has('literatures.data', 15)
+            ->has('routes.catalog'));
 
         $secondPage = $this->get(route('literatures.latest', [
             'q' => 'Narnia',
             'type' => 'novel',
             'page' => 2,
-        ]))->assertOk();
+        ]));
 
-        $this->assertSame(3, substr_count($secondPage->getContent(), 'data-literature-card-size="compact"'));
-        $secondPage
-            ->assertSeeText('Page 2 of 2')
-            ->assertSee('rel="prev"', false);
+        $secondPage->assertInertia(fn (Assert $page) => $page
+            ->component('Catalog/Latest')
+            ->where('literatures.current_page', 2)
+            ->where('literatures.last_page', 2)
+            ->has('literatures.prev_page_url')
+            ->where('literatures.next_page_url', null)
+            ->has('literatures.data', 3));
     }
 
     public function test_catalog_can_be_filtered_by_query_and_type(): void

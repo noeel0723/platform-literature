@@ -190,11 +190,11 @@ class CanonicalLiteratureProjectionTest extends TestCase
             'type' => 'manga',
         ]));
 
-        $firstPage
-            ->assertOk()
-            ->assertSeeText('15 matches · 15 per page')
-            ->assertSeeText('Page 1 of 1');
-        $this->assertSame(15, substr_count($firstPage->getContent(), 'data-literature-card-size="compact"'));
+        $this->assertSame(15, $firstPage->inertiaProps('literatures.total'));
+        $this->assertSame(15, $firstPage->inertiaProps('literatures.per_page'));
+        $this->assertSame(1, $firstPage->inertiaProps('literatures.current_page'));
+        $this->assertSame(1, $firstPage->inertiaProps('literatures.last_page'));
+        $this->assertCount(15, $firstPage->inertiaProps('literatures.data'));
     }
 
     public function test_quick_log_uses_one_canonical_result_and_finds_a_review_on_an_alternate_record(): void

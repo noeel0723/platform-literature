@@ -120,9 +120,9 @@ export default function CatalogIndex({
                         <div className="flex items-center gap-5">
                             <p className="text-sm text-ink-950/50">Showing {literatures.length} of the best matches</p>
                             {canExpand && (
-                                <a href={routes.latest} className="text-xs font-bold uppercase tracking-[0.16em] text-ink-950 transition hover:text-brand-coral">
+                                <Link href={routes.latest} className="text-xs font-bold uppercase tracking-[0.16em] text-ink-950 transition hover:text-brand-coral">
                                     More
-                                </a>
+                                </Link>
                             )}
                         </div>
                     )}

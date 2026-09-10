@@ -102,7 +102,7 @@ class LiteratureController extends Controller
         ]);
     }
 
-    public function latest(Request $request, CanonicalLiteratureSearch $canonicalSearch): View
+    public function latest(Request $request, CanonicalLiteratureSearch $canonicalSearch): Response
     {
         $query = trim((string) $request->query('q', ''));
         $selectedType = trim((string) $request->query('type', ''));
@@ -114,11 +114,17 @@ class LiteratureController extends Controller
             ->withQueryString()
             ->through(fn (Literature $literature): array => $this->present($literature));
 
-        return view('catalog.latest', [
+        return Inertia::render('Catalog/Latest', [
             'literatures' => $literatures,
             'query' => $query,
             'selectedType' => $selectedType,
             'types' => Literature::TYPE_LABELS,
+            'routes' => [
+                'catalog' => route('literatures.index', array_filter([
+                    'q' => $query,
+                    'type' => $selectedType,
+                ])),
+            ],
         ]);
     }
 
