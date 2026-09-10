@@ -9,6 +9,7 @@ use App\Models\Literature;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\TestWith;
 use Tests\TestCase;
 
@@ -31,17 +32,16 @@ class LiteratureCatalogTest extends TestCase
 
         $response = $this->get(route('literatures.index'));
 
-        $response
-            ->assertOk()
-            ->assertSeeText('Browse by format')
-            ->assertSeeText('Search the catalog')
-            ->assertSeeText('Literahaven')
-            ->assertDontSeeText('Discover your next read')
-            ->assertDontSeeText('Search books, novels, comics, manga, manhwa, and light novels in one place.')
-            ->assertDontSeeText('Bumi Manusia')
-            ->assertDontSeeText('Metadata sources')
-            ->assertDontSeeText('Current scope')
-            ->assertDontSeeText('Increments 1-3 / Catalog, reading, and reviews');
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('Catalog/Index')
+            ->where('query', '')
+            ->where('selectedType', '')
+            ->where('canExpand', false)
+            ->where('sourceWarning', null)
+            ->has('literatures', 0)
+            ->where('types', Literature::TYPE_LABELS)
+            ->has('routes.catalog')
+            ->has('routes.latest'));
     }
 
     public function test_catalog_exposes_only_the_supported_literature_types(): void
@@ -61,14 +61,14 @@ class LiteratureCatalogTest extends TestCase
             'type' => 'book',
         ]));
 
-        $response
-            ->assertOk()
-            ->assertSeeText('Novel')
-            ->assertSeeText('Comic')
-            ->assertSeeText('Manga')
-            ->assertSeeText('Manhwa')
-            ->assertDontSeeText('Light Novel')
-            ->assertDontSeeText($legacyBook->title);
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('Catalog/Index')
+            ->where('selectedType', '')
+            ->where('types', Literature::TYPE_LABELS)
+            ->has('literatures', 0));
+
+        $this->assertNotContains('Light Novel', $response->inertiaProps('types'));
+        $this->assertNotContains($legacyBook->title, collect($response->inertiaProps('literatures'))->pluck('title')->all());
     }
 
     public function test_catalog_only_displays_the_four_newest_search_matches(): void
@@ -98,13 +98,11 @@ class LiteratureCatalogTest extends TestCase
             'type' => 'novel',
         ]))->assertOk();
 
-        $this->assertSame(4, substr_count($response->getContent(), 'data-literature-card'));
-        $response
-            ->assertSeeText('Search Match 5')
-            ->assertSeeText('Search Match 2')
-            ->assertDontSeeText('Search Match 1')
-            ->assertSeeText('Showing 4 of the best matches')
-            ->assertSeeText('More');
+        $this->assertSame(
+            ['Search Match 5', 'Search Match 4', 'Search Match 3', 'Search Match 2'],
+            collect($response->inertiaProps('literatures'))->pluck('title')->all(),
+        );
+        $this->assertTrue($response->inertiaProps('canExpand'));
     }
 
     public function test_catalog_prioritizes_canonical_books_over_guides_and_unofficial_matches(): void
@@ -147,10 +145,10 @@ class LiteratureCatalogTest extends TestCase
             'type' => 'novel',
         ]))->assertOk();
 
-        $response
-            ->assertSeeText('The Chronicles of Narnia')
-            ->assertDontSeeText('Narnia Study Guide and Workbook')
-            ->assertSeeText('C. S. Lewis');
+        $result = collect($response->inertiaProps('literatures'))->first();
+
+        $this->assertSame('The Chronicles of Narnia', $result['title']);
+        $this->assertSame('C. S. Lewis', $result['author']);
     }
 
     public function test_more_link_opens_a_compact_fifteen_item_paginated_catalog(): void
@@ -179,10 +177,12 @@ class LiteratureCatalogTest extends TestCase
             'type' => 'novel',
         ]))->assertOk();
 
-        $catalogResponse
-            ->assertSeeText('More')
-            ->assertSee(route('literatures.latest', ['q' => 'Narnia', 'type' => 'novel']));
-        $this->assertSame(4, substr_count($catalogResponse->getContent(), 'data-literature-card'));
+        $this->assertTrue($catalogResponse->inertiaProps('canExpand'));
+        $this->assertSame(
+            route('literatures.latest', ['q' => 'Narnia', 'type' => 'novel']),
+            $catalogResponse->inertiaProps('routes.latest'),
+        );
+        $this->assertCount(4, $catalogResponse->inertiaProps('literatures'));
         Http::assertSent(fn ($request): bool => str_starts_with($request->url(), 'https://www.googleapis.com/books/v1/volumes')
             && $request['maxResults'] === 20);
 
@@ -235,10 +235,10 @@ class LiteratureCatalogTest extends TestCase
             'type' => 'novel',
         ]));
 
-        $response
-            ->assertOk()
-            ->assertSeeText('Bumi Manusia')
-            ->assertDontSeeText('Fullmetal Alchemist');
+        $this->assertSame(
+            ['Bumi Manusia'],
+            collect($response->inertiaProps('literatures'))->pluck('title')->all(),
+        );
     }
 
     #[TestWith(['Alan Moore'])]
@@ -254,12 +254,12 @@ class LiteratureCatalogTest extends TestCase
             ['Misteri'],
         );
 
-        $this->get(route('literatures.index', [
+        $response = $this->get(route('literatures.index', [
             'q' => $query,
             'type' => 'western-comic',
-        ]))
-            ->assertOk()
-            ->assertSeeText('Watchmen');
+        ]));
+
+        $this->assertSame('Watchmen', $response->inertiaProps('literatures.0.title'));
     }
 
     public function test_literature_detail_renders_catalog_metadata(): void
@@ -327,12 +327,14 @@ class LiteratureCatalogTest extends TestCase
             'type' => 'novel',
         ]));
 
-        $response
-            ->assertOk()
-            ->assertSeeText('Dune')
-            ->assertSeeText('Frank Herbert')
-            ->assertSee('Cover of Dune')
-            ->assertDontSeeText('The local catalog remains available.');
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('Catalog/Index')
+            ->where('sourceWarning', null)
+            ->has('literatures', 1, fn (Assert $literature) => $literature
+                ->where('title', 'Dune')
+                ->where('author', 'Frank Herbert')
+                ->where('cover_url', 'https://books.google.com/dune-cover.jpg')
+                ->etc()));
         $this->assertDatabaseHas('literatures', [
             'external_id' => 'google-dune',
             'title' => 'Dune',
@@ -360,11 +362,11 @@ class LiteratureCatalogTest extends TestCase
             'type' => 'novel',
         ]));
 
-        $response
-            ->assertOk()
-            ->assertSeeText('Dune')
-            ->assertSeeText('The local catalog remains available.')
-            ->assertSeeText('Results from the local catalog are still available.');
+        $this->assertSame('Dune', $response->inertiaProps('literatures.0.title'));
+        $this->assertStringContainsString(
+            'Results from the local catalog are still available.',
+            $response->inertiaProps('sourceWarning'),
+        );
         $this->assertDatabaseCount('literatures', 1);
         Http::assertSentCount(1);
     }
@@ -408,12 +410,10 @@ class LiteratureCatalogTest extends TestCase
             'type' => 'manga',
         ]));
 
-        $response
-            ->assertOk()
-            ->assertSeeText('Fullmetal Alchemist')
-            ->assertSeeText('Hiromu Arakawa')
-            ->assertSeeText('AniList')
-            ->assertDontSeeText('The local catalog remains available.');
+        $this->assertSame('Fullmetal Alchemist', $response->inertiaProps('literatures.0.title'));
+        $this->assertSame('Hiromu Arakawa', $response->inertiaProps('literatures.0.author'));
+        $this->assertSame('AniList', $response->inertiaProps('literatures.0.source'));
+        $this->assertNull($response->inertiaProps('sourceWarning'));
         $this->assertDatabaseHas('literatures', [
             'external_id' => '5114',
             'title' => 'Fullmetal Alchemist',
@@ -455,11 +455,9 @@ class LiteratureCatalogTest extends TestCase
             'type' => 'manhwa',
         ]));
 
-        $response
-            ->assertOk()
-            ->assertSeeText('Solo Leveling')
-            ->assertSeeText('Manhwa')
-            ->assertDontSeeText('The local catalog remains available.');
+        $this->assertSame('Solo Leveling', $response->inertiaProps('literatures.0.title'));
+        $this->assertSame('Manhwa', $response->inertiaProps('literatures.0.type_label'));
+        $this->assertNull($response->inertiaProps('sourceWarning'));
         $this->assertDatabaseHas('literatures', [
             'external_id' => '105398',
             'title' => 'Solo Leveling',
@@ -495,11 +493,9 @@ class LiteratureCatalogTest extends TestCase
             'type' => 'western-comic',
         ]));
 
-        $response
-            ->assertOk()
-            ->assertSeeText('Watchmen')
-            ->assertSeeText('Comic Vine')
-            ->assertDontSeeText('The local catalog remains available.');
+        $this->assertSame('Watchmen', $response->inertiaProps('literatures.0.title'));
+        $this->assertSame('Comic Vine', $response->inertiaProps('literatures.0.source'));
+        $this->assertNull($response->inertiaProps('sourceWarning'));
         $this->assertDatabaseHas('literatures', [
             'external_id' => '1815',
             'title' => 'Watchmen',

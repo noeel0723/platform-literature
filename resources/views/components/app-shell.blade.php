@@ -1,4 +1,4 @@
-@props(['title' => null])
+@props(['title' => null, 'inertia' => false])
 
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
@@ -8,7 +8,13 @@
     <meta name="description" content="Discover novels, comics, manga, and manhwa in one social catalog.">
     <title>{{ $title ? $title.' - ' : '' }}{{ config('app.name') }}</title>
     @fonts
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @if ($inertia)
+        @viteReactRefresh
+    @endif
+    @vite(['resources/css/app.css', 'resources/js/app.jsx'])
+    @if ($inertia)
+        <x-inertia::head />
+    @endif
 </head>
 <body class="min-h-screen bg-brand-plate text-brand-blueberry antialiased">
     <a href="#main-content" class="sr-only z-50 bg-ink-950 px-4 py-3 text-brand-cream focus:not-sr-only focus:fixed focus:left-4 focus:top-4">Skip to main content</a>

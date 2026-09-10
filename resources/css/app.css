@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 @source '../views/**/*.blade.php';
-@source '../js/**/*.js';
+@source '../js/**/*.{js,jsx}';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 

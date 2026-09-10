@@ -12,6 +12,8 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class LiteratureController extends Controller
 {
@@ -20,7 +22,7 @@ class LiteratureController extends Controller
         CatalogSyncService $catalogSync,
         CatalogResultRanker $resultRanker,
         CanonicalLiteratureSearch $canonicalSearch,
-    ): View {
+    ): Response {
         $query = trim((string) $request->query('q', ''));
         $selectedType = trim((string) $request->query('type', ''));
         $selectedType = array_key_exists($selectedType, Literature::TYPE_LABELS) ? $selectedType : '';
@@ -83,13 +85,20 @@ class LiteratureController extends Controller
             $canExpand = false;
         }
 
-        return view('catalog.index', [
-            'literatures' => $literatures,
+        return Inertia::render('Catalog/Index', [
+            'literatures' => $literatures->values()->all(),
             'query' => $query,
             'selectedType' => $selectedType,
             'canExpand' => $canExpand,
             'sourceWarning' => $sourceWarning,
             'types' => Literature::TYPE_LABELS,
+            'routes' => [
+                'catalog' => route('literatures.index'),
+                'latest' => route('literatures.latest', array_filter([
+                    'q' => $query,
+                    'type' => $selectedType,
+                ])),
+            ],
         ]);
     }
 
@@ -242,6 +251,7 @@ class LiteratureController extends Controller
 
         return [
             'slug' => $literature->slug,
+            'url' => route('literatures.show', $literature),
             'title' => $displayTitle,
             'edition_title' => $literature->alternateTitle(),
             'alternate_title_label' => in_array($literature->type, ['manga', 'manhwa'], true)
