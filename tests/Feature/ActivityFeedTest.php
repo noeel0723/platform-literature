@@ -215,22 +215,17 @@ class ActivityFeedTest extends TestCase
 
         $this->get(route('activity.index'))->assertRedirect(route('login'));
 
-        $this->actingAs($viewer)->get(route('activity.index'))
-            ->assertOk()
-            ->assertSeeText('Latest Activity')
-            ->assertSeeText('Owner Activity')
-            ->assertSeeText('Friend Activity')
-            ->assertDontSeeText('Stranger Activity')
-            ->assertSee('data-activity-stream', false)
-            ->assertSee('data-activity-density="compact"', false)
-            ->assertSeeText('You + friends')
-            ->assertSeeText('Your activity')
-            ->assertSeeText('Following');
+        $response = $this->actingAs($viewer)->get(route('activity.index'))->assertOk();
 
-        $this->actingAs($viewer)->get(route('activity.index', ['scope' => 'friends']))
-            ->assertOk()
-            ->assertSeeText('Friend Activity')
-            ->assertDontSeeText('Owner Activity');
+        $this->assertSame('Activity/Index', $response->inertiaPage()['component']);
+        $this->assertSame(['Friend Activity', 'Owner Activity'], collect($response->inertiaProps('activities.data'))->pluck('literature.title')->sort()->values()->all());
+        $this->assertSame(['You + friends', 'Your activity', 'Following'], collect($response->inertiaProps('scopes'))->pluck('label')->all());
+        $this->assertSame('all', $response->inertiaProps('scope'));
+
+        $friendsResponse = $this->actingAs($viewer)->get(route('activity.index', ['scope' => 'friends']))->assertOk();
+
+        $this->assertSame(['Friend Activity'], collect($friendsResponse->inertiaProps('activities.data'))->pluck('literature.title')->all());
+        $this->assertSame('friends', $friendsResponse->inertiaProps('scope'));
     }
 
     public function test_readlist_discussion_and_comment_actions_are_recorded_for_the_activity_page(): void
@@ -269,12 +264,13 @@ class ActivityFeedTest extends TestCase
             'type' => Activity::TYPE_COMMENT,
         ]);
 
-        $this->actingAs($user)->get(route('activity.index', ['scope' => 'you']))
-            ->assertOk()
-            ->assertSeeText('added to Readlist')
-            ->assertSeeText('started a discussion about')
-            ->assertSeeText('commented on a discussion about')
-            ->assertSeeText('A closer look at the ending');
+        $response = $this->actingAs($user)->get(route('activity.index', ['scope' => 'you']))->assertOk();
+
+        $this->assertEqualsCanonicalizing(
+            ['added to Readlist', 'started a discussion about', 'commented on a discussion about'],
+            collect($response->inertiaProps('activities.data'))->pluck('action')->all(),
+        );
+        $this->assertContains('A closer look at the ending', collect($response->inertiaProps('activities.data'))->pluck('discussion_title')->filter()->all());
     }
 
     public function test_hidden_discussions_and_comments_are_excluded_from_activity(): void
@@ -298,9 +294,8 @@ class ActivityFeedTest extends TestCase
             'type' => Activity::TYPE_COMMENT,
         ]);
 
-        $this->actingAs($viewer)->get(route('activity.index'))
-            ->assertOk()
-            ->assertDontSeeText('Moderated Activity Story')
-            ->assertDontSee('data-activity-item', false);
+        $response = $this->actingAs($viewer)->get(route('activity.index'))->assertOk();
+
+        $this->assertSame([], $response->inertiaProps('activities.data'));
     }
 }

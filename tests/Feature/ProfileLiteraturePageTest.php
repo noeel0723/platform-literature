@@ -45,7 +45,7 @@ class ProfileLiteraturePageTest extends TestCase
             ->assertSee('data-profile-literature-grid', false)
             ->assertSee('data-density="compact"', false)
             ->assertSee('data-profile-literature-item', false)
-            ->assertSee('aria-current="page"', false)
+            ->assertSee('&quot;current&quot;:&quot;literature&quot;', false)
             ->assertSee('4.5 out of 5 stars', false);
 
         $this->assertSame(1, substr_count($response->getContent(), 'data-profile-literature-item'));

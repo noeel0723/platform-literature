@@ -4,6 +4,9 @@ import { createInertiaApp } from '@inertiajs/react';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
+import AppHeader from './Components/AppHeader';
+import ProfileSubNavigation from './Components/ProfileSubNavigation';
+
 const inertiaRoot = document.getElementById('app');
 const inertiaPage = document.querySelector('script[data-page="app"]');
 
@@ -31,3 +34,26 @@ if (inertiaRoot && (inertiaRoot.dataset.page || inertiaPage)) {
         },
     });
 }
+
+const headerRoot = document.querySelector('[data-react-header]');
+const headerProps = document.querySelector('[data-react-header-props]');
+
+if (headerRoot && headerProps) {
+    createRoot(headerRoot).render(
+        <StrictMode>
+            <AppHeader {...JSON.parse(headerProps.textContent)} />
+        </StrictMode>,
+    );
+}
+
+document.querySelectorAll('[data-react-profile-subnav]').forEach((element) => {
+    const propsElement = element.previousElementSibling;
+
+    if (propsElement?.matches('[data-react-profile-subnav-props]')) {
+        createRoot(element).render(
+            <StrictMode>
+                <ProfileSubNavigation {...JSON.parse(propsElement.textContent)} />
+            </StrictMode>,
+        );
+    }
+});

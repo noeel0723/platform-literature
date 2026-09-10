@@ -25,8 +25,7 @@ class QuickLogTest extends TestCase
 
         $this->actingAs($user)->get(route('home'))
             ->assertOk()
-            ->assertSee('data-quick-log-open', false)
-            ->assertSeeText('+ Log')
+            ->assertSee('data-react-header-props', false)
             ->assertSee('id="quick-log-search-dialog"', false)
             ->assertSee('id="quick-log-review-dialog"', false)
             ->assertSee('data-search-url="'.route('quick-log.literatures').'"', false)

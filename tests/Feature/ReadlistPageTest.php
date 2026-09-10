@@ -47,13 +47,12 @@ class ReadlistPageTest extends TestCase
 
         $response = $this->get(route('profiles.show', $user))->assertOk();
 
-        $response
-            ->assertSee('data-profile-readlist-preview', false)
-            ->assertSee('href="'.route('profiles.readlist', $user).'"', false)
-            ->assertSeeText('View full Readlist')
-            ->assertSee('title="Saved Title 1"', false)
-            ->assertSee('title="Saved Title 4"', false)
-            ->assertDontSee('title="Saved Title 5"', false);
+        $this->assertSame(route('profiles.readlist', $user), $response->inertiaProps('routes.readlist'));
+        $this->assertSame(5, $response->inertiaProps('profile.stats.readlist'));
+        $this->assertSame(
+            ['Saved Title 1', 'Saved Title 2', 'Saved Title 3', 'Saved Title 4'],
+            collect($response->inertiaProps('readlistPreview'))->pluck('title')->all(),
+        );
     }
 
     public function test_readlist_is_paginated_after_twenty_four_titles(): void

@@ -8,6 +8,7 @@ use App\Models\ReadingList;
 use App\Models\Review;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class ProfileManagementTest extends TestCase
@@ -38,33 +39,26 @@ class ProfileManagementTest extends TestCase
         ReadingList::factory()->for($user)->for(Literature::factory())->create(['status' => 'completed']);
         Review::factory()->for($user)->for(Literature::factory())->create();
 
-        $this->get(route('profiles.show', $user))
-            ->assertOk()
-            ->assertSee('data-profile-header', false)
-            ->assertSee('data-profile-compact-header', false)
-            ->assertSeeText('Imanuel Reader')
-            ->assertSeeText('@imanuel_reader')
-            ->assertSeeText('Makassar, Indonesia')
-            ->assertSeeText('I read fantasy novels and graphic narratives.')
-            ->assertSeeText('Member since '.$user->created_at->format('F Y'))
-            ->assertSee('data-favorite-literature-grid', false)
-            ->assertSee('data-favorite-author-grid', false)
-            ->assertSee('data-profile-readlist-preview', false)
-            ->assertSee('data-profile-stats', false)
-            ->assertSee('data-profile-stat="literature"', false)
-            ->assertSee('data-profile-stat="reviews"', false)
-            ->assertSee('data-profile-stat="following"', false)
-            ->assertSee('data-profile-stat="followers"', false)
-            ->assertDontSee('data-profile-stat="tracked"', false)
-            ->assertDontSee('data-profile-stat="discussions"', false)
-            ->assertSee('href="'.route('profiles.readlist', $user).'"', false)
-            ->assertSee('href="'.route('profiles.reviews', $user).'"', false)
-            ->assertSee('href="'.route('profiles.literature', $user).'"', false)
-            ->assertSee('data-profile-subnav', false)
-            ->assertSeeInOrder(['First Favorite', 'Second Favorite'])
-            ->assertSeeInOrder(['First Author', 'Second Author'])
-            ->assertDontSeeText('Edit profile')
-            ->assertDontSee(route('diary.index'), false);
+        $response = $this->get(route('profiles.show', $user))->assertOk();
+
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('Profile/Show')
+            ->where('profile.name', 'Imanuel Reader')
+            ->where('profile.username', 'imanuel_reader')
+            ->where('profile.location', 'Makassar, Indonesia')
+            ->where('profile.bio', 'I read fantasy novels and graphic narratives.')
+            ->where('profile.is_owner', false)
+            ->where('profile.stats.literature', 1)
+            ->where('profile.stats.reviews', 1)
+            ->where('routes.diary', null)
+            ->where('navigation.current', 'profile')
+            ->has('favoriteLiteratures', 2)
+            ->has('favoriteAuthors', 2)
+            ->has('ratingDistribution', 10)
+        );
+        $this->assertSame(['First Favorite', 'Second Favorite'], collect($response->inertiaProps('favoriteLiteratures'))->pluck('title')->all());
+        $this->assertSame(['First Author', 'Second Author'], collect($response->inertiaProps('favoriteAuthors'))->pluck('name')->all());
+        $this->assertSame(['Profile', 'Literature', 'Reviews', 'Readlist'], collect($response->inertiaProps('navigation.links'))->pluck('label')->all());
     }
 
     public function test_owner_profile_is_the_only_navigation_entry_point_to_the_diary(): void
@@ -85,18 +79,19 @@ class ProfileManagementTest extends TestCase
             ->assertDontSeeText('Manage your reading')
             ->assertDontSee('href="'.route('diary.index').'"', false);
 
-        $this->actingAs($user)->get(route('profiles.show', $user))
-            ->assertOk()
-            ->assertSeeText('This reader has not added a bio yet.')
-            ->assertSeeText('Edit profile')
-            ->assertSeeInOrder(['Diary Reader', 'Edit profile', '&#64;diary_reader'], false)
-            ->assertSee('aria-label="Profile navigation"', false)
-            ->assertSee('href="'.route('activity.index').'"', false)
-            ->assertSeeInOrder(['Activity', 'Literature', 'Diary'])
-            ->assertSee('data-profile-diary-preview', false)
-            ->assertSee('data-profile-ratings', false)
-            ->assertSee('data-profile-activity-preview', false)
-            ->assertSee('href="'.route('diary.index').'"', false);
+        $response = $this->actingAs($user)->get(route('profiles.show', $user))->assertOk();
+
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('Profile/Show')
+            ->where('profile.name', 'Diary Reader')
+            ->where('profile.username', 'diary_reader')
+            ->where('profile.bio', null)
+            ->where('profile.is_owner', true)
+            ->where('routes.edit', route('profiles.edit'))
+            ->where('routes.diary', route('diary.index'))
+            ->where('routes.activity', route('activity.index'))
+        );
+        $this->assertSame(['Profile', 'Activity', 'Literature', 'Diary', 'Reviews', 'Readlist'], collect($response->inertiaProps('navigation.links'))->pluck('label')->all());
     }
 
     public function test_owner_profile_pages_use_one_consistent_shared_sub_navigation(): void
@@ -112,18 +107,20 @@ class ProfileManagementTest extends TestCase
             route('profiles.readlist', $user),
         ];
 
-        foreach ($routes as $route) {
+        foreach ($routes as $index => $route) {
             $response = $this->actingAs($user)->get($route)->assertOk();
-            $content = $response->getContent();
 
-            $response
-                ->assertSeeInOrder(['Profile', 'Activity', 'Literature', 'Diary', 'Reviews', 'Readlist'])
-                ->assertSee('data-profile-subnav-shell', false)
-                ->assertSee('data-profile-subnav-container', false)
-                ->assertSee('aria-current="page"', false);
+            if ($index < 2) {
+                $this->assertSame(['Profile', 'Activity', 'Literature', 'Diary', 'Reviews', 'Readlist'], collect($response->inertiaProps('navigation.links'))->pluck('label')->all());
+                $this->assertContains($response->inertiaProps('navigation.current'), ['profile', 'activity']);
+            } else {
+                $response
+                    ->assertSeeInOrder(['Profile', 'Activity', 'Literature', 'Diary', 'Reviews', 'Readlist'])
+                    ->assertSee('data-react-profile-subnav-props', false)
+                    ->assertSee('data-react-profile-subnav', false);
 
-            $this->assertSame(1, substr_count($content, 'data-profile-subnav-shell'));
-            $this->assertSame(1, substr_count($content, 'data-profile-subnav-container'));
+                $this->assertSame(1, substr_count($response->getContent(), 'data-react-profile-subnav></div>'));
+            }
         }
     }
 

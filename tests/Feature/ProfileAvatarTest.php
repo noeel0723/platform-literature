@@ -26,10 +26,9 @@ class ProfileAvatarTest extends TestCase
         $this->assertNotNull($user->avatar_path);
         Storage::disk('public')->assertExists($user->avatar_path);
 
-        $this->get(route('profiles.show', $user))
-            ->assertOk()
-            ->assertSee($user->avatarUrl(), false)
-            ->assertSee('profile photo', false);
+        $response = $this->get(route('profiles.show', $user))->assertOk();
+
+        $this->assertSame($user->avatarUrl(), $response->inertiaProps('profile.avatar_url'));
     }
 
     public function test_replacing_a_profile_photo_removes_the_previous_file(): void

@@ -79,11 +79,13 @@ class SocialConnectionTest extends TestCase
         ]);
         $profileOwner->followers()->attach($follower);
 
-        $this->actingAs(User::factory()->create())
+        $profileResponse = $this->actingAs(User::factory()->create())
             ->get(route('profiles.show', $profileOwner))
-            ->assertOk()
-            ->assertSeeText('Followers')
-            ->assertSeeText('Follow');
+            ->assertOk();
+
+        $this->assertSame(1, $profileResponse->inertiaProps('profile.stats.followers'));
+        $this->assertFalse($profileResponse->inertiaProps('profile.is_following'));
+        $this->assertTrue($profileResponse->inertiaProps('profile.viewer_authenticated'));
 
         $this->get(route('profiles.followers', $profileOwner))
             ->assertOk()

@@ -51,10 +51,9 @@ class ProfileReviewPageTest extends TestCase
         $this->actingAs($reader)
             ->get(route('profiles.reviews', $reader))
             ->assertOk()
-            ->assertSee('data-profile-subnav', false)
-            ->assertSee('href="'.route('diary.index').'"', false)
-            ->assertSee('href="'.route('profiles.reviews', $reader).'"', false)
-            ->assertSee('aria-current="page"', false)
+            ->assertSee('data-react-profile-subnav', false)
+            ->assertSee('&quot;current&quot;:&quot;reviews&quot;', false)
+            ->assertSeeInOrder(['Profile', 'Activity', 'Literature', 'Diary', 'Reviews', 'Readlist'])
             ->assertSee(route('literatures.show', $literature).'?review=edit', false);
     }
 

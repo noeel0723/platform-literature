@@ -61,10 +61,9 @@ class SearchPageTest extends TestCase
     {
         $this->get(route('home'))
             ->assertOk()
-            ->assertSee('action="'.route('search.index').'"', false)
-            ->assertSee('data-header-search', false)
-            ->assertSee('data-expanded="false"', false)
-            ->assertSeeText('Search literature, authors, or readers');
+            ->assertSee('data-react-header-props', false)
+            ->assertSee('data-react-header', false)
+            ->assertSee('&quot;search&quot;:&quot;', false);
     }
 
     public function test_global_search_displays_a_mangas_global_title_while_native_title_remains_searchable(): void
@@ -113,14 +112,10 @@ class SearchPageTest extends TestCase
         $this->actingAs($user)
             ->get(route('home'))
             ->assertOk()
-            ->assertSee('data-account-menu', false)
+            ->assertSee('data-react-header-props', false)
             ->assertSeeText('axellgab')
-            ->assertSee('href="'.route('profiles.show', $user).'"', false)
-            ->assertSee('href="'.route('activity.index').'"', false)
-            ->assertSee('href="'.route('profiles.literature', $user).'"', false)
-            ->assertSee('href="'.route('profiles.reviews', $user).'"', false)
-            ->assertSee('href="'.route('profiles.readlist', $user).'"', false)
-            ->assertSee('action="'.route('logout').'"', false);
+            ->assertSeeInOrder(['Profile', 'Activity', 'Literature', 'Reviews', 'Readlist'])
+            ->assertSee('&quot;logout_url&quot;:&quot;', false);
     }
 
     public function test_search_does_not_show_a_non_english_synopsis_as_english_copy(): void
