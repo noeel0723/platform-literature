@@ -283,6 +283,8 @@ class LiteratureCatalogTest extends TestCase
 
         $response
             ->assertOk()
+            ->assertSee('data-react-literature-detail-hero', false)
+            ->assertSee('data-react-literature-detail-hero-props', false)
             ->assertSeeText('Watchmen')
             ->assertSeeText('Alan Moore')
             ->assertSee(route('authors.show', $literature->authors()->where('name', 'Alan Moore')->firstOrFail()), false)
