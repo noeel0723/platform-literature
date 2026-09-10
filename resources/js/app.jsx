@@ -4,8 +4,6 @@ import { createInertiaApp } from '@inertiajs/react';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
-import LiteratureDetailHero from './Components/LiteratureDetailHero';
-
 const inertiaRoot = document.getElementById('app');
 const inertiaPage = document.querySelector('script[data-page="app"]');
 
@@ -32,17 +30,4 @@ if (inertiaRoot && (inertiaRoot.dataset.page || inertiaPage)) {
             color: '#ff6b58',
         },
     });
-}
-
-const literatureDetailHeroRoot = document.querySelector('[data-react-literature-detail-hero]');
-const literatureDetailHeroProps = document.querySelector('[data-react-literature-detail-hero-props]');
-
-if (literatureDetailHeroRoot && literatureDetailHeroProps) {
-    const literature = JSON.parse(literatureDetailHeroProps.textContent);
-
-    createRoot(literatureDetailHeroRoot).render(
-        <StrictMode>
-            <LiteratureDetailHero literature={literature} />
-        </StrictMode>,
-    );
 }

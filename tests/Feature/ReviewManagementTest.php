@@ -156,13 +156,14 @@ class ReviewManagementTest extends TestCase
             'contains_spoiler' => true,
         ]);
 
-        $this->get(route('literatures.show', $literature))
-            ->assertOk()
-            ->assertSeeText('4.0')
-            ->assertSeeText('Reader One')
-            ->assertSeeText('Reveal spoiler review')
-            ->assertSee('id="review-body-'.$review->id.'" hidden', false)
-            ->assertSeeText('The final chapter changes everything.');
+        $response = $this->get(route('literatures.show', $literature));
+
+        $response->assertOk();
+        $this->assertEquals(4.0, $response->inertiaProps('ratingSummary.average'));
+        $this->assertSame($review->id, $response->inertiaProps('reviews.0.id'));
+        $this->assertSame('Reader One', $response->inertiaProps('reviews.0.user.name'));
+        $this->assertTrue($response->inertiaProps('reviews.0.contains_spoiler'));
+        $this->assertSame('The final chapter changes everything.', $response->inertiaProps('reviews.0.body'));
     }
 
     public function test_authenticated_detail_page_uses_review_dialog_and_half_star_controls(): void
@@ -170,27 +171,14 @@ class ReviewManagementTest extends TestCase
         $user = User::factory()->create();
         $literature = Literature::factory()->create();
 
-        $this->actingAs($user)->get(route('literatures.show', $literature))
-            ->assertOk()
-            ->assertSee('id="review-dialog"', false)
-            ->assertSee('data-dialog-open="review-dialog"', false)
-            ->assertSee('data-rating-value="1.5"', false)
-            ->assertSee('data-rating-value="2.5"', false)
-            ->assertSee('data-rating-value="1.5" class="h-12 w-5 overflow-hidden text-left text-4xl leading-12 text-ink-950', false)
-            ->assertSeeText('Hover to preview a rating')
-            ->assertSeeText('Community rating')
-            ->assertSeeText('Your Rating')
-            ->assertSee('data-community-rating', false)
-            ->assertSee('data-your-rating', false)
-            ->assertSee('data-literature-actions', false)
-            ->assertSee('data-reading-toggle="completed"', false)
-            ->assertSee('data-reading-toggle="readlist"', false)
-            ->assertSeeTextInOrder(['Completed', 'Rate & Review', 'Readlist'])
-            ->assertSee('name="status" value="completed"', false)
-            ->assertDontSee('id="quick-status"', false)
-            ->assertDontSee('<dt class="text-ink-950/55">Source</dt>', false)
-            ->assertDontSee('<dt class="text-ink-950/55">Format</dt>', false)
-            ->assertDontSee('<dt class="text-ink-950/55">Language</dt>', false);
+        $response = $this->actingAs($user)->get(route('literatures.show', $literature));
+
+        $response->assertOk();
+        $this->assertTrue($response->inertiaProps('viewer.authenticated'));
+        $this->assertNull($response->inertiaProps('viewer.current_review'));
+        $this->assertSame(route('reviews.update', $literature), $response->inertiaProps('routes.review_update'));
+        $this->assertSame(route('reading-list.update', $literature), $response->inertiaProps('routes.reading_update'));
+        $this->assertSame(route('reading-list.destroy', $literature), $response->inertiaProps('routes.reading_destroy'));
     }
 
     public function test_edit_review_dialog_offers_review_deletion(): void
@@ -199,11 +187,10 @@ class ReviewManagementTest extends TestCase
         $literature = Literature::factory()->create();
         Review::factory()->for($user)->for($literature)->create();
 
-        $this->actingAs($user)->get(route('literatures.show', $literature))
-            ->assertOk()
-            ->assertSeeText('Edit Review')
-            ->assertSeeText('Delete review')
-            ->assertSee('id="delete-review-form"', false)
-            ->assertSee('data-confirm-submit=', false);
+        $response = $this->actingAs($user)->get(route('literatures.show', $literature));
+
+        $response->assertOk();
+        $this->assertNotNull($response->inertiaProps('viewer.current_review'));
+        $this->assertSame(route('reviews.destroy', $literature), $response->inertiaProps('routes.review_destroy'));
     }
 }

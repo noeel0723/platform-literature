@@ -43,18 +43,15 @@ class LiteratureDiscoveryTest extends TestCase
 
         $response = $this->get(route('literatures.show', $literature));
 
-        $response
-            ->assertOk()
-            ->assertSee('Relationship Explorer')
-            ->assertDontSee('Increment 4 / Literature Discovery')
-            ->assertSee('Sequel')
-            ->assertSee('The Next Story')
-            ->assertSee('Adaptation')
-            ->assertSee('The Graphic Adaptation')
-            ->assertSee('AniList')
-            ->assertSee('data-literature-card-size="compact"', false)
-            ->assertSee(route('literatures.show', $sequel), false)
-            ->assertSee(route('literatures.show', $adaptation), false);
+        $groups = collect($response->inertiaProps('relationshipGroups'))->keyBy('type');
+
+        $response->assertOk();
+        $this->assertSame('Catalog/Show', $response->inertiaPage()['component']);
+        $this->assertSame('The Next Story', $groups['sequel']['items'][0]['title']);
+        $this->assertSame('AniList', $groups['sequel']['items'][0]['relation_source']);
+        $this->assertSame(route('literatures.show', $sequel), $groups['sequel']['items'][0]['url']);
+        $this->assertSame('The Graphic Adaptation', $groups['adaptation']['items'][0]['title']);
+        $this->assertSame(route('literatures.show', $adaptation), $groups['adaptation']['items'][0]['url']);
     }
 
     public function test_detail_page_discovers_other_catalog_entries_by_the_same_author(): void
@@ -77,13 +74,10 @@ class LiteratureDiscoveryTest extends TestCase
 
         $response = $this->get(route('literatures.show', $literature));
 
-        $response
-            ->assertOk()
-            ->assertSee('More by these authors')
-            ->assertSee('Second Work')
-            ->assertDontSee('Unrelated Work')
-            ->assertSee('data-literature-card-size="compact"', false)
-            ->assertSee(route('literatures.show', $otherWork), false);
+        $response->assertOk();
+        $this->assertSame('Catalog/Show', $response->inertiaPage()['component']);
+        $this->assertSame(['Second Work'], collect($response->inertiaProps('authorDiscoveries'))->pluck('title')->all());
+        $this->assertSame(route('literatures.show', $otherWork), $response->inertiaProps('authorDiscoveries.0.url'));
     }
 
     public function test_relation_types_have_navigable_inverse_meanings(): void

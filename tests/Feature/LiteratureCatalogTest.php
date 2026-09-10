@@ -281,24 +281,16 @@ class LiteratureCatalogTest extends TestCase
 
         $response = $this->get(route('literatures.show', 'watchmen'));
 
-        $response
-            ->assertOk()
-            ->assertSee('data-react-literature-detail-hero', false)
-            ->assertSee('data-react-literature-detail-hero-props', false)
-            ->assertSeeText('Watchmen')
-            ->assertSeeText('Alan Moore')
-            ->assertSee(route('authors.show', $literature->authors()->where('name', 'Alan Moore')->firstOrFail()), false)
-            ->assertSeeText('Comic Vine')
-            ->assertDontSeeText('Increment 2')
-            ->assertDontSeeText('Manage your reading')
-            ->assertDontSeeText('Increment 3 / Social Cataloging')
-            ->assertDontSeeText('Source tracking')
-            ->assertDontSeeText('Catalog details')
-            ->assertDontSeeText('Edit your review')
-            ->assertDontSeeText('Rate or review')
-            ->assertDontSeeText('Rate in half-star steps, write a review, and protect other readers by marking spoilers.')
-            ->assertDontSeeText('Explore sequels, prequels, adaptations, side stories, and related editions without losing the connection between formats.')
-            ->assertDontSeeText('Start a focused conversation, respond to other readers, and mark spoilers before publishing.');
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('Catalog/Show')
+            ->where('literature.title', 'Watchmen')
+            ->where('literature.author', 'Alan Moore & Dave Gibbons')
+            ->where('literature.source', 'Comic Vine')
+            ->where('literature.author_links.0.url', route('authors.show', $literature->authors()->where('name', 'Alan Moore')->firstOrFail()))
+            ->where('viewer.authenticated', false)
+            ->where('ratingSummary.count', 0)
+            ->has('routes.review_update')
+            ->has('routes.discussion_store'));
     }
 
     public function test_unknown_literature_returns_not_found(): void

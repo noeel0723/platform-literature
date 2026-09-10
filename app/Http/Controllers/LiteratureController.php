@@ -3,12 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\LiteratureSourceUnavailable;
+use App\Models\Comment;
+use App\Models\Discussion;
 use App\Models\Literature;
 use App\Models\LiteratureRelation;
+use App\Models\Report;
+use App\Models\Review;
+use App\Models\User;
 use App\Services\Literature\CanonicalLiteratureSearch;
 use App\Services\Literature\CatalogResultRanker;
 use App\Services\Literature\CatalogSyncService;
-use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -128,7 +132,7 @@ class LiteratureController extends Controller
         ]);
     }
 
-    public function show(Literature $literature): View
+    public function show(Literature $literature): Response
     {
         $userId = request()->user()?->id ?? 0;
 
@@ -211,17 +215,134 @@ class LiteratureController extends Controller
                 ->get()
                 ->map(fn (Literature $candidate): array => $this->present($candidate));
 
-        return view('catalog.show', [
+        return Inertia::render('Catalog/Show', [
             'literature' => $this->present($literature),
-            'readingList' => $readingList,
-            'reviews' => $literature->reviews->sortByDesc('created_at')->values(),
-            'currentReview' => $currentReview,
-            'averageRating' => $literature->reviews->avg('rating'),
-            'discussions' => $discussions,
+            'viewer' => [
+                'authenticated' => request()->user() !== null,
+                'id' => request()->user()?->id,
+                'is_admin' => request()->user()?->isAdmin() ?? false,
+                'reading_status' => $readingList?->status,
+                'current_review' => $currentReview === null ? null : [
+                    'id' => $currentReview->id,
+                    'rating' => $currentReview->rating,
+                    'body' => $currentReview->body ?? '',
+                    'contains_spoiler' => $currentReview->contains_spoiler,
+                ],
+            ],
+            'ratingSummary' => [
+                'average' => $literature->reviews->avg('rating'),
+                'count' => $literature->reviews->count(),
+            ],
+            'reviews' => $literature->reviews
+                ->sortByDesc('created_at')
+                ->map(fn (Review $review): array => $this->presentReview($review, $userId))
+                ->values()
+                ->all(),
+            'discussions' => $discussions
+                ->map(fn (Discussion $discussion): array => $this->presentDiscussion($discussion, $userId))
+                ->values()
+                ->all(),
             'discussionCount' => $literature->discussions()->whereNull('hidden_at')->count(),
-            'relationshipGroups' => $relationshipGroups,
-            'authorDiscoveries' => $authorDiscoveries,
+            'relationshipGroups' => $relationshipGroups->map(fn (array $group): array => [
+                ...$group,
+                'items' => $group['items']->all(),
+            ])->all(),
+            'authorDiscoveries' => $authorDiscoveries->values()->all(),
+            'reportReasons' => Report::REASON_LABELS,
+            'successMessage' => session('success'),
+            'routes' => [
+                'catalog' => route('literatures.index'),
+                'login' => route('login'),
+                'admin_edit_metadata' => request()->user()?->isAdmin()
+                    ? route('admin.literatures.metadata.edit', $literature)
+                    : null,
+                'reading_update' => route('reading-list.update', $literature),
+                'reading_destroy' => route('reading-list.destroy', $literature),
+                'review_update' => route('reviews.update', $literature),
+                'review_destroy' => route('reviews.destroy', $literature),
+                'discussion_store' => route('discussions.store', $literature),
+                'report_store' => route('reports.store'),
+            ],
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function presentReview(Review $review, int $userId): array
+    {
+        return [
+            'id' => $review->id,
+            'rating' => $review->rating,
+            'body' => $review->body,
+            'contains_spoiler' => $review->contains_spoiler,
+            'likes_count' => $review->likes_count,
+            'is_liked' => $review->likes->isNotEmpty(),
+            'created_at' => $review->created_at->utc()->toIso8601String(),
+            'user' => $this->presentUser($review->user),
+            'can_report' => $userId > 0 && $userId !== $review->user_id,
+            'like_url' => route('reviews.likes.store', $review),
+            'unlike_url' => route('reviews.likes.destroy', $review),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function presentDiscussion(Discussion $discussion, int $userId): array
+    {
+        return [
+            'id' => $discussion->id,
+            'title' => $discussion->title,
+            'body' => $discussion->body,
+            'contains_spoiler' => $discussion->contains_spoiler,
+            'comments_count' => $discussion->comments_count,
+            'likes_count' => $discussion->likes_count,
+            'is_liked' => $discussion->likes->isNotEmpty(),
+            'created_at' => $discussion->created_at->utc()->toIso8601String(),
+            'user' => $this->presentUser($discussion->user),
+            'can_report' => $userId > 0 && $userId !== $discussion->user_id,
+            'like_url' => route('discussions.likes.store', $discussion),
+            'unlike_url' => route('discussions.likes.destroy', $discussion),
+            'comment_url' => route('discussions.comments.store', $discussion),
+            'comments' => $discussion->topLevelComments
+                ->map(fn (Comment $comment): array => $this->presentComment($comment, $userId))
+                ->values()
+                ->all(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function presentComment(Comment $comment, int $userId): array
+    {
+        return [
+            'id' => $comment->id,
+            'body' => $comment->body,
+            'contains_spoiler' => $comment->contains_spoiler,
+            'created_at' => $comment->created_at->utc()->toIso8601String(),
+            'user' => $this->presentUser($comment->user),
+            'can_report' => $userId > 0 && $userId !== $comment->user_id,
+            'replies' => $comment->replies
+                ->map(fn (Comment $reply): array => $this->presentComment($reply, $userId))
+                ->values()
+                ->all(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function presentUser(User $user): array
+    {
+        return [
+            'id' => $user->id,
+            'name' => $user->name,
+            'url' => route('profiles.show', $user),
+            'avatar_url' => $user->avatarUrl(),
+            'initial' => Str::upper(Str::substr($user->name, 0, 1)),
+        ];
     }
 
     /**

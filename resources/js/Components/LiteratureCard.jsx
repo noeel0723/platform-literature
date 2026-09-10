@@ -25,7 +25,7 @@ export default function LiteratureCard({ literature, compact = false }) {
             data-literature-card
             {...(compact ? { 'data-literature-card-size': 'compact' } : {})}
         >
-            <a
+            <Link
                 href={literature.url}
                 className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-coral focus-visible:ring-offset-4 focus-visible:ring-offset-brand-cream"
             >
@@ -73,7 +73,8 @@ export default function LiteratureCard({ literature, compact = false }) {
                         {literature.author}
                     </p>
                 </div>
-            </a>
+            </Link>
         </article>
     );
 }
+import { Link } from '@inertiajs/react';

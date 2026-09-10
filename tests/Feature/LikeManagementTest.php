@@ -80,14 +80,15 @@ class LikeManagementTest extends TestCase
         $review->likes()->create(['user_id' => $otherUser->id]);
         $discussion->likes()->create(['user_id' => $user->id]);
 
-        $this->actingAs($user)->get(route('literatures.show', $literature))
-            ->assertOk()
-            ->assertSeeText('2 likes')
-            ->assertSeeText('1 like')
-            ->assertSeeText('Liked')
-            ->assertSee('aria-pressed="true"', false)
-            ->assertSee(route('reviews.likes.destroy', $review), false)
-            ->assertSee(route('discussions.likes.destroy', $discussion), false);
+        $response = $this->actingAs($user)->get(route('literatures.show', $literature));
+
+        $response->assertOk();
+        $this->assertSame(2, $response->inertiaProps('reviews.0.likes_count'));
+        $this->assertTrue($response->inertiaProps('reviews.0.is_liked'));
+        $this->assertSame(route('reviews.likes.destroy', $review), $response->inertiaProps('reviews.0.unlike_url'));
+        $this->assertSame(1, $response->inertiaProps('discussions.0.likes_count'));
+        $this->assertTrue($response->inertiaProps('discussions.0.is_liked'));
+        $this->assertSame(route('discussions.likes.destroy', $discussion), $response->inertiaProps('discussions.0.unlike_url'));
     }
 
     public function test_deleting_social_content_removes_its_likes(): void

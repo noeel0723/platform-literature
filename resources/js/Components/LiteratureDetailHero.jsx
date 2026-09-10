@@ -74,12 +74,12 @@ export default function LiteratureDetailHero({ literature }) {
                     {literature.author_links.length > 0 ? (
                         literature.author_links.map((author, index) => (
                             <span key={`${author.url}-${author.name}`}>
-                                <a
+                                <Link
                                     href={author.url}
                                     className="font-semibold text-ink-950 underline decoration-brand-coral/40 underline-offset-4 transition hover:text-brand-coral"
                                 >
                                     {author.name}
-                                </a>
+                                </Link>
                                 {index < literature.author_links.length - 1 && (
                                     <span className="text-ink-950/35"> &amp; </span>
                                 )}
@@ -100,3 +100,4 @@ export default function LiteratureDetailHero({ literature }) {
         </>
     );
 }
+import { Link } from '@inertiajs/react';

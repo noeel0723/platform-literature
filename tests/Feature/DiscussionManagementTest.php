@@ -127,24 +127,18 @@ class DiscussionManagementTest extends TestCase
             'body' => 'The narrator confirms it in the epilogue.',
         ]);
 
-        $this->get(route('literatures.show', $literature))
-            ->assertOk()
-            ->assertSeeText('Discussions')
-            ->assertDontSeeText('Increment 3 / Community')
-            ->assertSeeText('Discussing the final scene')
-            ->assertSeeText('Thread Starter')
-            ->assertSeeText('First Reader')
-            ->assertSeeText('Second Reader')
-            ->assertSeeText('2 comments')
-            ->assertSeeText('Reveal spoiler discussion')
-            ->assertSeeText('Reveal spoiler reply')
-            ->assertSee('id="discussion-body-'.$discussion->id.'" hidden', false)
-            ->assertSee('id="comment-body-'.$reply->id.'" hidden', false)
-            ->assertSee('data-discussion-thread', false)
-            ->assertSee('data-discussion-comment', false)
-            ->assertSee('data-local-datetime', false)
-            ->assertSeeText('The closing image mirrors the opening chapter.')
-            ->assertSeeText('The narrator confirms it in the epilogue.');
+        $response = $this->get(route('literatures.show', $literature));
+
+        $response->assertOk();
+        $this->assertSame(1, $response->inertiaProps('discussionCount'));
+        $this->assertSame($discussion->id, $response->inertiaProps('discussions.0.id'));
+        $this->assertSame('Discussing the final scene', $response->inertiaProps('discussions.0.title'));
+        $this->assertTrue($response->inertiaProps('discussions.0.contains_spoiler'));
+        $this->assertSame('Thread Starter', $response->inertiaProps('discussions.0.user.name'));
+        $this->assertSame('First Reader', $response->inertiaProps('discussions.0.comments.0.user.name'));
+        $this->assertSame('Second Reader', $response->inertiaProps('discussions.0.comments.0.replies.0.user.name'));
+        $this->assertTrue($response->inertiaProps('discussions.0.comments.0.replies.0.contains_spoiler'));
+        $this->assertSame('The narrator confirms it in the epilogue.', $response->inertiaProps('discussions.0.comments.0.replies.0.body'));
 
     }
 }

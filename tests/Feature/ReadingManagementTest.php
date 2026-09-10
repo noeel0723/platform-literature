@@ -115,10 +115,10 @@ class ReadingManagementTest extends TestCase
         $literature = Literature::factory()->create();
         ReadingList::factory()->for($user)->for($literature)->create(['status' => 'completed']);
 
-        $this->actingAs($user)->get(route('literatures.show', $literature))
-            ->assertOk()
-            ->assertSee('data-reading-toggle="completed" data-active="true"', false)
-            ->assertSee('title="Remove completed status"', false);
+        $response = $this->actingAs($user)->get(route('literatures.show', $literature));
+
+        $response->assertOk();
+        $this->assertSame('completed', $response->inertiaProps('viewer.reading_status'));
 
         $this->actingAs($user)
             ->delete(route('reading-list.destroy', $literature))
@@ -157,10 +157,10 @@ class ReadingManagementTest extends TestCase
             'status' => 'want_to_read',
         ]);
 
-        $this->actingAs($user)->get(route('literatures.show', $literature))
-            ->assertOk()
-            ->assertSee('data-reading-toggle="readlist" data-active="true"', false)
-            ->assertSee('title="Remove from Readlist"', false);
+        $response = $this->actingAs($user)->get(route('literatures.show', $literature));
+
+        $response->assertOk();
+        $this->assertSame('want_to_read', $response->inertiaProps('viewer.reading_status'));
 
         $this->actingAs($user)->delete(route('reading-list.destroy', $literature));
 
