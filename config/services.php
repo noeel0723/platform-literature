@@ -43,16 +43,6 @@ return [
         'timeout' => (int) env('GOOGLE_BOOKS_TIMEOUT', 8),
     ],
 
-    'open_library' => [
-        'base_url' => env('OPEN_LIBRARY_BASE_URL', 'https://openlibrary.org'),
-        'covers_url' => env('OPEN_LIBRARY_COVERS_URL', 'https://covers.openlibrary.org'),
-        'user_agent' => env('OPEN_LIBRARY_USER_AGENT', 'Literahaven/1.0 academic-project'),
-        'max_results' => (int) env('OPEN_LIBRARY_MAX_RESULTS', 6),
-        'cache_minutes' => (int) env('OPEN_LIBRARY_CACHE_MINUTES', 60),
-        'connect_timeout' => (int) env('OPEN_LIBRARY_CONNECT_TIMEOUT', 3),
-        'timeout' => (int) env('OPEN_LIBRARY_TIMEOUT', 10),
-    ],
-
     'hardcover' => [
         'base_url' => env('HARDCOVER_BASE_URL', 'https://api.hardcover.app/v1/graphql'),
         'token' => env('HARDCOVER_API_TOKEN'),

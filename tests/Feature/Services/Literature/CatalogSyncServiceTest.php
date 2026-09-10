@@ -23,12 +23,6 @@ class CatalogSyncServiceTest extends TestCase
 
         Cache::flush();
         config()->set([
-            'services.open_library.base_url' => 'https://openlibrary.org',
-            'services.open_library.covers_url' => 'https://covers.openlibrary.org',
-            'services.open_library.user_agent' => 'Literahaven/1.0 test-suite',
-            'services.open_library.cache_minutes' => 1,
-            'services.open_library.connect_timeout' => 1,
-            'services.open_library.timeout' => 2,
             'services.hardcover.token' => null,
         ]);
     }
@@ -41,7 +35,6 @@ class CatalogSyncServiceTest extends TestCase
             'https://www.googleapis.com/books/v1/volumes*' => Http::response([
                 'items' => [$this->volume()],
             ]),
-            'https://openlibrary.org/search.json*' => Http::response(['docs' => []]),
         ]);
 
         $firstSyncCount = app(CatalogSyncService::class)->syncGoogleBooks('Dune');
@@ -64,7 +57,7 @@ class CatalogSyncServiceTest extends TestCase
             'publication_year' => 1965,
             'identifier' => '9780441172719',
         ]);
-        Http::assertSentCount(3);
+        Http::assertSentCount(2);
     }
 
     public function test_sync_matches_an_existing_google_book_by_isbn(): void
@@ -75,7 +68,6 @@ class CatalogSyncServiceTest extends TestCase
             'https://www.googleapis.com/books/v1/volumes*' => Http::response([
                 'items' => [$this->volume()],
             ]),
-            'https://openlibrary.org/search.json*' => Http::response(['docs' => []]),
         ]);
         $source = ApiSource::factory()->create([
             'key' => 'google-books',
@@ -94,7 +86,7 @@ class CatalogSyncServiceTest extends TestCase
         $this->assertSame('google-volume-1', $existing->refresh()->external_id);
         $this->assertSame('dune', $existing->slug);
         $this->assertSame('A science fiction classic.', $existing->synopsis);
-        Http::assertSentCount(2);
+        Http::assertSentCount(1);
     }
 
     public function test_repeated_anilist_sync_updates_one_manga_without_duplicates(): void
@@ -148,7 +140,6 @@ class CatalogSyncServiceTest extends TestCase
             'https://www.googleapis.com/books/v1/volumes*' => Http::response([
                 'items' => [$volume],
             ]),
-            'https://openlibrary.org/search.json*' => Http::response(['docs' => []]),
             'https://graphql.anilist.co*' => Http::response([
                 'data' => [
                     'Page' => [
@@ -183,7 +174,6 @@ class CatalogSyncServiceTest extends TestCase
         Http::preventStrayRequests();
         Http::fake([
             'https://www.googleapis.com/books/v1/volumes*' => Http::response(['items' => [$volume]]),
-            'https://openlibrary.org/search.json*' => Http::response(['docs' => []]),
         ]);
 
         app(CatalogSyncService::class)->syncGoogleBooks('Narnia');

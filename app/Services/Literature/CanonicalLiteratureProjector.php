@@ -15,7 +15,6 @@ final class CanonicalLiteratureProjector
         'novel' => [
             'manual-curated' => 120,
             'hardcover' => 90,
-            'open-library' => 60,
             'google-books' => 40,
         ],
         'manga' => [
@@ -138,7 +137,6 @@ final class CanonicalLiteratureProjector
 
         return match (true) {
             str_contains($url, 'assets.hardcover.app') => 60,
-            str_contains($url, 'covers.openlibrary.org') && str_contains($url, '-l.') => 60,
             str_contains($url, 'books.google') && preg_match('/(?:zoom=6|w=(?:9\d\d|[1-9]\d{3,}))/', $url) === 1 => 60,
             str_contains($url, 'books.google') && preg_match('/(?:zoom=[34]|w=[5-8]\d\d)/', $url) === 1 => 52,
             str_contains($url, 'books.google') && str_contains($url, 'zoom=1') => 15,

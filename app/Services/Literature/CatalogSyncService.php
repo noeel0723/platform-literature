@@ -16,7 +16,6 @@ final class CatalogSyncService
 {
     public function __construct(
         private GoogleBooksAdapter $googleBooks,
-        private OpenLibraryAdapter $openLibrary,
         private HardcoverAdapter $hardcover,
         private AniListAdapter $aniList,
         private KitsuAdapter $kitsu,
@@ -45,11 +44,6 @@ final class CatalogSyncService
                 'sync' => fn (): int => $this->syncHardcover($query, $normalizedLimit),
             ];
         }
-
-        $sourceAttempts[] = [
-            'name' => 'Open Library',
-            'sync' => fn (): int => $this->syncOpenLibrary($query, $normalizedLimit),
-        ];
 
         if (filled(config('services.google_books.key'))) {
             $sourceAttempts[] = [
@@ -95,22 +89,6 @@ final class CatalogSyncService
     public function syncGoogleBooks(string $query, string $literatureType = 'all', ?int $limit = null): int
     {
         return $this->syncNovels($query, $literatureType, $limit);
-    }
-
-    public function syncOpenLibrary(string $query, ?int $limit = null): int
-    {
-        $items = $this->openLibrary->search(
-            $query,
-            $limit ?? (int) config('services.open_library.max_results', 6),
-        );
-
-        return $this->sync(
-            sourceKey: 'open-library',
-            sourceName: 'Open Library',
-            baseUrl: (string) config('services.open_library.base_url'),
-            supportedTypes: ['novel'],
-            items: $items,
-        );
     }
 
     public function syncHardcover(string $query, ?int $limit = null): int

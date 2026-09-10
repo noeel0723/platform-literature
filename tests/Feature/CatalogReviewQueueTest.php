@@ -32,7 +32,7 @@ class CatalogReviewQueueTest extends TestCase
             ->assertSeeText('Catalog review')
             ->assertSeeText($mapping->literature->title)
             ->assertSeeText($candidate->canonical_title)
-            ->assertSeeText('Confirm as a separate work');
+            ->assertSeeText('Keep as a separate work');
     }
 
     public function test_admin_can_confirm_that_an_ambiguous_result_is_separate(): void

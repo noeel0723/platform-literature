@@ -140,21 +140,30 @@ final class AuthorEntityResolver
         NormalizedAuthor $candidate,
         string $normalizedName,
     ): void {
-        $identity = filled($candidate->externalId)
-            ? AuthorAlias::query()->firstOrNew([
+        $displayName = Str::squish($candidate->name);
+        $identityByExternalId = filled($candidate->externalId)
+            ? AuthorAlias::query()->where([
                 'source' => $sourceKey,
                 'external_id' => $candidate->externalId,
-            ])
-            : AuthorAlias::query()->firstOrNew([
-                'author_id' => $author->id,
-                'source' => $sourceKey,
-                'name' => Str::squish($candidate->name),
-            ]);
+            ])->first()
+            : null;
+        $identityByName = AuthorAlias::query()->where([
+            'author_id' => $author->id,
+            'source' => $sourceKey,
+            'name' => $displayName,
+        ])->first();
+
+        $identity = $identityByExternalId ?? $identityByName ?? new AuthorAlias;
 
         $identity->fill([
             'author_id' => $author->id,
-            'name' => Str::squish($candidate->name),
+            'name' => $identityByExternalId !== null && $identityByName !== null
+                && ! $identityByExternalId->is($identityByName)
+                    ? $identityByExternalId->name
+                    : $displayName,
             'normalized_name' => $normalizedName,
+            'source' => $sourceKey,
+            'external_id' => $identity->external_id ?? $candidate->externalId,
             'source_url' => $candidate->sourceUrl ?? $identity->source_url,
         ]);
         $identity->save();

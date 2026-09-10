@@ -89,6 +89,30 @@ class AuthorEntityResolverTest extends TestCase
         $this->assertDatabaseCount('authors', 1);
     }
 
+    public function test_repeated_provider_alias_with_a_different_external_id_does_not_violate_uniqueness(): void
+    {
+        $resolver = app(AuthorEntityResolver::class);
+        $canonical = $resolver->resolve(
+            'provider',
+            new NormalizedAuthor(name: 'J. K. Rowling', externalId: 'author-1'),
+        );
+
+        $resolved = $resolver->resolve(
+            'provider',
+            new NormalizedAuthor(name: 'J. K. Rowling', externalId: 'author-2'),
+        );
+
+        $this->assertTrue($canonical->is($resolved));
+        $this->assertDatabaseCount('authors', 1);
+        $this->assertDatabaseCount('author_aliases', 1);
+        $this->assertDatabaseHas('author_aliases', [
+            'author_id' => $canonical->id,
+            'source' => 'provider',
+            'name' => 'J. K. Rowling',
+            'external_id' => 'author-1',
+        ]);
+    }
+
     public function test_similar_names_are_not_fuzzy_merged(): void
     {
         $resolver = app(AuthorEntityResolver::class);

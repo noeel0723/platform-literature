@@ -21,9 +21,9 @@ class SemanticLiteratureResolverTest extends TestCase
             'normalized_name' => 'cs lewis',
         ]);
         $googleBooks = $this->source('google-books');
-        $openLibrary = $this->source('open-library');
+        $hardcover = $this->source('hardcover');
         $first = $this->literature($googleBooks, 'google-narnia', 'The Lion, the Witch and the Wardrobe', 'ISBN-13: 9780064471046');
-        $second = $this->literature($openLibrary, 'open-narnia', 'The Lion, the Witch and the Wardrobe', '978-0-06-447104-6');
+        $second = $this->literature($hardcover, 'hardcover-narnia', 'The Lion, the Witch and the Wardrobe', '978-0-06-447104-6');
         $this->attachAuthor($first, $author);
         $this->attachAuthor($second, $author);
 
@@ -68,10 +68,10 @@ class SemanticLiteratureResolverTest extends TestCase
             'normalized_name' => 'cs lewis',
         ]);
         $workRecord = $this->literature(
-            $this->source('open-library'),
-            'OL71078W',
+            $this->source('hardcover'),
+            'hardcover-silver-chair',
             'The Silver Chair',
-            'OPENLIBRARY:OL71078W',
+            'HARDCOVER:12345',
             'novel',
             1953,
         );
