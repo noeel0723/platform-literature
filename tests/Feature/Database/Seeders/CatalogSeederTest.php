@@ -19,7 +19,7 @@ class CatalogSeederTest extends TestCase
         $this->seed(CatalogSeeder::class);
         $this->seed(CatalogSeeder::class);
 
-        $this->assertDatabaseCount('api_sources', 5);
+        $this->assertDatabaseCount('api_sources', 4);
         $this->assertDatabaseCount('literatures', 6);
         $this->assertDatabaseCount('author_literature', 8);
         $this->assertDatabaseCount('category_literature', 18);

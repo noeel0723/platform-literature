@@ -33,11 +33,9 @@ class ComicVineAdapterTest extends TestCase
                     'person_credits' => [
                         [
                             'role' => 'writer',
-                            'person' => [
-                                'id' => 40382,
-                                'name' => 'Alan Moore',
-                                'site_detail_url' => 'https://comicvine.gamespot.com/alan-moore/4040-40382/',
-                            ],
+                            'id' => 40382,
+                            'name' => 'Alan Moore',
+                            'site_detail_url' => 'https://comicvine.gamespot.com/alan-moore/4040-40382/',
                         ],
                         [
                             'role' => 'artist',

@@ -48,6 +48,7 @@
         <div class="border-t border-brand-blueberry/10 pt-1">
             <a href="{{ route('profiles.edit') }}" class="account-menu-link">Edit profile</a>
             @if ($user->isAdmin())
+                <a href="{{ route('admin.catalog-review.index') }}" class="account-menu-link">Catalog review</a>
                 <a href="{{ route('admin.moderation.index') }}" class="account-menu-link">Moderation</a>
             @endif
             <form action="{{ route('logout') }}" method="POST">

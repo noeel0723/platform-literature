@@ -69,6 +69,7 @@
                     <a href="{{ route('profiles.readlist', auth()->user()) }}" class="px-3 py-3 transition hover:bg-brand-plate/10">Readlist</a>
                     <a href="{{ route('profiles.edit') }}" class="px-3 py-3 transition hover:bg-brand-plate/10">Edit profile</a>
                     @if (auth()->user()->isAdmin())
+                        <a href="{{ route('admin.catalog-review.index') }}" class="px-3 py-3 transition hover:bg-brand-plate/10">Catalog review</a>
                         <a href="{{ route('admin.moderation.index') }}" class="px-3 py-3 transition hover:bg-brand-plate/10">Moderation</a>
                     @endif
                     <form action="{{ route('logout') }}" method="POST">

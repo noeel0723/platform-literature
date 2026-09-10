@@ -36,6 +36,7 @@ class SemanticLiteratureResolver
                 'source_external_id' => $literature->external_id,
                 'field_provenance' => $this->fieldProvenance($literature),
             ]);
+            $this->enrichCanonicalWork($existingMapping->canonicalWork, $literature);
             $this->storeIdentifiers($existingMapping->canonicalWork, $identifiers);
             $this->projector->refresh($existingMapping->canonicalWork);
 

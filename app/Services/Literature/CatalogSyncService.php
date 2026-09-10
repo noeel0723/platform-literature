@@ -19,10 +19,8 @@ final class CatalogSyncService
         private OpenLibraryAdapter $openLibrary,
         private HardcoverAdapter $hardcover,
         private AniListAdapter $aniList,
-        private MangaDexAdapter $mangaDex,
         private KitsuAdapter $kitsu,
         private ComicVineAdapter $comicVine,
-        private MetronAdapter $metron,
         private KnowledgeGraphEnricher $knowledgeGraph,
         private AuthorNameNormalizer $authorNames,
         private AuthorEntityResolver $authors,
@@ -153,40 +151,15 @@ final class CatalogSyncService
             );
         } catch (LiteratureSourceUnavailable $aniListException) {
             try {
-                return $this->syncMangaDex($query, $literatureType, $limit);
-            } catch (LiteratureSourceUnavailable $mangaDexException) {
-                try {
-                    return $this->syncKitsu($query, $literatureType, $limit);
-                } catch (LiteratureSourceUnavailable $kitsuException) {
-                    throw new LiteratureSourceUnavailable(
-                        'AniList, MangaDex, and Kitsu',
-                        'AniList and its MangaDex and Kitsu fallbacks are unavailable.',
-                        $kitsuException,
-                    );
-                }
+                return $this->syncKitsu($query, $literatureType, $limit);
+            } catch (LiteratureSourceUnavailable $kitsuException) {
+                throw new LiteratureSourceUnavailable(
+                    'AniList and Kitsu',
+                    'AniList and its Kitsu fallback are unavailable.',
+                    $kitsuException,
+                );
             }
         }
-    }
-
-    public function syncMangaDex(string $query, string $literatureType, ?int $limit = null): int
-    {
-        if (! in_array($literatureType, ['all', 'manga', 'manhwa'], true)) {
-            throw new InvalidArgumentException('MangaDex sync only supports all, manga, and manhwa types.');
-        }
-
-        $items = $this->mangaDex->search(
-            $query,
-            $literatureType,
-            $limit ?? (int) config('services.mangadex.max_results', 6),
-        );
-
-        return $this->sync(
-            sourceKey: 'mangadex',
-            sourceName: 'MangaDex',
-            baseUrl: (string) config('services.mangadex.base_url'),
-            supportedTypes: ['manga', 'manhwa'],
-            items: $items,
-        );
     }
 
     public function syncKitsu(string $query, string $literatureType, ?int $limit = null): int
@@ -226,72 +199,44 @@ final class CatalogSyncService
         );
     }
 
-    public function syncMetron(string $query, ?int $limit = null): int
+    /** @return array{scanned: int, enriched: int} */
+    public function backfillComicCreators(int $limit = 30): array
     {
-        $items = $this->metron->search(
-            $query,
-            $limit ?? (int) config('services.metron.max_results', 6),
-        );
+        $source = ApiSource::query()->where('key', 'comic-vine')->first();
 
-        return $this->sync(
-            sourceKey: 'metron',
-            sourceName: 'Metron',
-            baseUrl: (string) config('services.metron.base_url'),
-            supportedTypes: ['western-comic'],
-            items: $items,
-        );
-    }
-
-    public function syncComics(string $query, ?int $limit = null): int
-    {
-        $normalizedLimit = $limit ?? (int) config('services.comic_vine.max_results', 6);
-        $sourceAttempts = [];
-
-        if (filled(config('services.comic_vine.key'))) {
-            $sourceAttempts[] = [
-                'name' => 'Comic Vine',
-                'sync' => fn (): int => $this->syncComicVine($query, $normalizedLimit),
-            ];
+        if ($source === null) {
+            return ['scanned' => 0, 'enriched' => 0];
         }
 
-        if ($this->metron->isConfigured()) {
-            $sourceAttempts[] = [
-                'name' => 'Metron',
-                'sync' => fn (): int => $this->syncMetron($query, $normalizedLimit),
-            ];
-        }
+        $literatures = Literature::query()
+            ->whereBelongsTo($source)
+            ->where('type', 'western-comic')
+            ->whereDoesntHave('authors')
+            ->oldest('id')
+            ->limit(max(1, min($limit, 100)))
+            ->get();
+        $enriched = 0;
 
-        if ($sourceAttempts === []) {
-            throw new LiteratureSourceUnavailable(
-                'Comic Vine and Metron',
-                'Comic Vine and Metron credentials are not configured.',
-            );
-        }
+        foreach ($literatures as $literature) {
+            $creators = $this->comicVine->creatorsForVolume($literature->external_id);
 
-        $synced = 0;
-        $availableSources = 0;
-        $lastException = null;
-
-        foreach ($sourceAttempts as $sourceAttempt) {
-            try {
-                $synced += $sourceAttempt['sync']();
-                $availableSources++;
-            } catch (LiteratureSourceUnavailable $exception) {
-                $lastException = $exception;
+            if ($creators === []) {
+                continue;
             }
+
+            DB::transaction(function () use ($source, $literature, $creators): void {
+                $this->syncAuthors(
+                    $source,
+                    $literature,
+                    array_map(fn (NormalizedAuthor $author): string => $author->name, $creators),
+                    $creators,
+                );
+                $this->semanticResolver->resolve($literature);
+            });
+            $enriched++;
         }
 
-        if ($availableSources === 0) {
-            $sourceNames = collect($sourceAttempts)->pluck('name')->join(', ', ' and ');
-
-            throw new LiteratureSourceUnavailable(
-                $sourceNames,
-                "{$sourceNames} are unavailable.",
-                $lastException,
-            );
-        }
-
-        return $synced;
+        return ['scanned' => $literatures->count(), 'enriched' => $enriched];
     }
 
     /**

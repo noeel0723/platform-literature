@@ -136,4 +136,25 @@ class SearchPageTest extends TestCase
             ->assertSeeText('English synopsis unavailable.')
             ->assertDontSeeText('Sinopsis ini ditulis dalam bahasa Indonesia.');
     }
+
+    public function test_search_category_only_displays_the_selected_result_type(): void
+    {
+        $literature = Literature::factory()->create(['title' => 'Naruto']);
+        $author = Author::factory()->create(['name' => 'Naruto Researcher']);
+        $literature->authors()->attach($author, ['role' => 'author', 'position' => 0]);
+        User::factory()->create(['name' => 'Naruto Reader', 'username' => 'naruto-reader']);
+
+        $this->get(route('search.index', ['q' => 'Naruto', 'scope' => 'authors']))
+            ->assertOk()
+            ->assertSee('aria-current="page"', false)
+            ->assertSee('data-search-author', false)
+            ->assertDontSee('data-search-literature', false)
+            ->assertDontSee('data-search-member', false);
+
+        $this->get(route('search.index', ['q' => 'Naruto', 'scope' => 'literature']))
+            ->assertOk()
+            ->assertSee('data-search-literature', false)
+            ->assertDontSee('data-search-author', false)
+            ->assertDontSee('data-search-member', false);
+    }
 }

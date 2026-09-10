@@ -1,4 +1,19 @@
 <x-app-shell :title="$query === '' ? 'Search' : 'Search results for '.$query">
+    @php
+        $visibleResultsAreEmpty = match ($scope) {
+            'literature' => $literatures->isEmpty(),
+            'authors' => $authors->isEmpty(),
+            'readers' => $members->isEmpty(),
+            default => $literatures->isEmpty() && $authors->isEmpty() && $members->isEmpty(),
+        };
+        $scopeLabels = ['all' => 'All', 'literature' => 'Literature', 'authors' => 'Authors', 'readers' => 'Readers'];
+        $resultCounts = [
+            'all' => $literatures->count() + $authors->count() + $members->count(),
+            'literature' => $literatures->count(),
+            'authors' => $authors->count(),
+            'readers' => $members->count(),
+        ];
+    @endphp
     <section class="mx-auto grid max-w-7xl gap-10 px-5 py-10 sm:px-8 lg:grid-cols-[minmax(0,1fr)_280px] lg:px-10 lg:py-14">
         <main class="min-w-0" aria-labelledby="search-results-heading">
             <div class="border-b border-ink-950/20 pb-3">
@@ -11,13 +26,13 @@
                     <p class="font-serif text-2xl font-bold text-ink-950">What are you looking for?</p>
                     <p class="mt-2 text-ink-950/55">Search for a title, author name, display name, or username.</p>
                 </div>
-            @elseif ($literatures->isEmpty() && $authors->isEmpty() && $members->isEmpty())
+            @elseif ($visibleResultsAreEmpty)
                 <div class="border-b border-ink-950/10 py-14 text-center">
                     <p class="font-serif text-2xl font-bold text-ink-950">No results found.</p>
                     <p class="mt-2 text-ink-950/55">Check the spelling or try a shorter keyword.</p>
                 </div>
             @else
-                @if ($literatures->isNotEmpty())
+                @if (in_array($scope, ['all', 'literature'], true) && $literatures->isNotEmpty())
                     <section id="literature-results" class="scroll-mt-24" aria-labelledby="literature-results-heading">
                         <h2 id="literature-results-heading" class="border-b border-ink-950/10 py-4 text-xs font-bold uppercase tracking-[0.18em] text-ink-950/50">Literature</h2>
                         @foreach ($literatures as $literature)
@@ -42,7 +57,7 @@
                     </section>
                 @endif
 
-                @if ($authors->isNotEmpty())
+                @if (in_array($scope, ['all', 'authors'], true) && $authors->isNotEmpty())
                     <section id="author-results" class="scroll-mt-24 pt-8" aria-labelledby="author-results-heading">
                         <h2 id="author-results-heading" class="border-b border-ink-950/10 pb-4 text-xs font-bold uppercase tracking-[0.18em] text-ink-950/50">Authors</h2>
                         <div class="grid gap-px bg-ink-950/10 sm:grid-cols-2">
@@ -66,7 +81,7 @@
                     </section>
                 @endif
 
-                @if ($members->isNotEmpty())
+                @if (in_array($scope, ['all', 'readers'], true) && $members->isNotEmpty())
                     <section id="member-results" class="scroll-mt-24 pt-8" aria-labelledby="member-results-heading">
                         <h2 id="member-results-heading" class="border-b border-ink-950/10 pb-4 text-xs font-bold uppercase tracking-[0.18em] text-ink-950/50">Readers</h2>
                         <div class="grid gap-px bg-ink-950/10 sm:grid-cols-2">
@@ -97,10 +112,15 @@
                 <h2 class="border-b border-ink-950/20 pb-3 text-sm font-bold uppercase tracking-[0.16em] text-ink-950">Search results for</h2>
                 <p class="mt-4 break-words font-serif text-2xl font-bold text-ink-950">{{ $query === '' ? 'Everything' : '“'.$query.'”' }}</p>
                 <nav class="mt-5 grid border border-ink-950/10 bg-brand-cream/80 text-sm" aria-label="Search result categories">
-                    <a href="#search-results-heading" class="flex justify-between bg-ink-950 px-4 py-3 font-bold text-brand-cream"><span>All</span><span>{{ $literatures->count() + $authors->count() + $members->count() }}</span></a>
-                    <a href="#literature-results" class="flex justify-between border-b border-ink-950/10 px-4 py-3 text-ink-950/65 hover:bg-brand-yogurt/45"><span>Literature</span><span>{{ $literatures->count() }}</span></a>
-                    <a href="#author-results" class="flex justify-between border-b border-ink-950/10 px-4 py-3 text-ink-950/65 hover:bg-brand-yogurt/45"><span>Authors</span><span>{{ $authors->count() }}</span></a>
-                    <a href="#member-results" class="flex justify-between px-4 py-3 text-ink-950/65 hover:bg-brand-yogurt/45"><span>Readers</span><span>{{ $members->count() }}</span></a>
+                    @foreach ($scopeLabels as $scopeValue => $scopeLabel)
+                        <a
+                            href="{{ route('search.index', ['q' => $query, 'scope' => $scopeValue]) }}"
+                            aria-current="{{ $scope === $scopeValue ? 'page' : 'false' }}"
+                            class="flex justify-between border-b border-ink-950/10 px-4 py-3 transition last:border-b-0 {{ $scope === $scopeValue ? 'bg-ink-950 font-bold text-brand-cream' : 'text-ink-950/65 hover:bg-brand-yogurt/45' }}"
+                        >
+                            <span>{{ $scopeLabel }}</span><span>{{ $resultCounts[$scopeValue] }}</span>
+                        </a>
+                    @endforeach
                 </nav>
             </div>
         </aside>

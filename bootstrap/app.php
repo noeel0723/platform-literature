@@ -1,5 +1,6 @@
 <?php
 
+use App\Console\Commands\BackfillComicCreators;
 use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use Illuminate\Foundation\Application;
@@ -13,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    ->withCommands([BackfillComicCreators::class])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->appendToGroup('web', EnsureAccountIsActive::class);
         $middleware->alias([

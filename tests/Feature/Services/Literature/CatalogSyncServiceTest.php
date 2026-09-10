@@ -30,9 +30,6 @@ class CatalogSyncServiceTest extends TestCase
             'services.open_library.connect_timeout' => 1,
             'services.open_library.timeout' => 2,
             'services.hardcover.token' => null,
-            'services.metron.token' => null,
-            'services.metron.username' => null,
-            'services.metron.password' => null,
         ]);
     }
 
@@ -321,80 +318,6 @@ class CatalogSyncServiceTest extends TestCase
         Http::assertSentCount(1);
     }
 
-    public function test_comic_sync_combines_comic_vine_and_metron_creators_into_one_canonical_work(): void
-    {
-        $this->configureComicVine();
-        $this->configureMetron();
-        config()->set('services.knowledge_graph.key', null);
-        $comicVolume = $this->comicVolume();
-        $comicVolume['first_issue'] = ['id' => 367155];
-        Http::preventStrayRequests();
-        Http::fake([
-            'https://comicvine.gamespot.com/api/search/*' => Http::response([
-                'status_code' => 1,
-                'error' => 'OK',
-                'results' => [$comicVolume],
-            ]),
-            'https://comicvine.gamespot.com/api/issue/4000-367155/*' => Http::response([
-                'status_code' => 1,
-                'error' => 'OK',
-                'results' => [
-                    'person_credits' => [
-                        ['role' => 'writer', 'person' => ['id' => 40382, 'name' => 'Alan Moore']],
-                        ['role' => 'artist', 'person' => ['id' => 4941, 'name' => 'Dave Gibbons']],
-                    ],
-                ],
-            ]),
-            'https://metron.cloud/api/series/?*' => Http::response([
-                'results' => [[
-                    'id' => 101,
-                    'series' => 'Watchmen (1986)',
-                    'year_began' => 1986,
-                    'publisher' => ['name' => 'DC Comics'],
-                    'cv_id' => 1815,
-                ]],
-            ]),
-            'https://metron.cloud/api/series/101/' => Http::response([
-                'id' => 101,
-                'series' => 'Watchmen (1986)',
-                'desc' => 'A landmark superhero story.',
-            ]),
-            'https://metron.cloud/api/series/101/issue_list/' => Http::response([
-                'results' => [['id' => 501]],
-            ]),
-            'https://metron.cloud/api/issue/501/' => Http::response([
-                'image' => ['large_url' => 'https://static.metron.cloud/watchmen.jpg'],
-                'credits' => [
-                    [
-                        'creator' => ['id' => 11, 'name' => 'Alan Moore'],
-                        'role' => [['name' => 'Writer']],
-                    ],
-                    [
-                        'creator' => ['id' => 12, 'name' => 'Dave Gibbons'],
-                        'role' => [['name' => 'Artist']],
-                    ],
-                ],
-            ]),
-        ]);
-
-        $count = app(CatalogSyncService::class)->syncComics('Watchmen');
-
-        $this->assertSame(2, $count);
-        $this->assertDatabaseCount('literatures', 2);
-        $this->assertDatabaseCount('canonical_works', 1);
-        $this->assertDatabaseCount('literature_source_mappings', 2);
-        $this->assertDatabaseCount('authors', 2);
-        $this->assertDatabaseHas('api_sources', ['key' => 'comic-vine']);
-        $this->assertDatabaseHas('api_sources', ['key' => 'metron']);
-        $this->assertDatabaseHas('literatures', [
-            'api_source_id' => ApiSource::query()->where('key', 'metron')->value('id'),
-            'identifier' => 'COMICVINE:4050-1815',
-            'cover_url' => 'https://static.metron.cloud/watchmen.jpg',
-        ]);
-        $this->assertSame(2, Author::query()->where('name', 'Alan Moore')->sole()->literatures()->count());
-        Http::assertSentCount(6);
-    }
-
     private function configureGoogleBooks(): void
     {
         config()->set([
@@ -427,22 +350,6 @@ class CatalogSyncServiceTest extends TestCase
             'services.comic_vine.cache_minutes' => 30,
             'services.comic_vine.connect_timeout' => 1,
             'services.comic_vine.timeout' => 2,
-        ]);
-    }
-
-    private function configureMetron(): void
-    {
-        config()->set([
-            'services.metron.base_url' => 'https://metron.cloud/api',
-            'services.metron.token' => 'test-metron-token',
-            'services.metron.username' => null,
-            'services.metron.password' => null,
-            'services.metron.user_agent' => 'LiteratureSocialDiscovery/1.0 test-suite',
-            'services.metron.max_results' => 6,
-            'services.metron.detail_enrichment_limit' => 4,
-            'services.metron.cache_minutes' => 30,
-            'services.metron.connect_timeout' => 1,
-            'services.metron.timeout' => 2,
         ]);
     }
 

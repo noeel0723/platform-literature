@@ -12,6 +12,32 @@ use Illuminate\Support\Str;
 
 final class ComicVineAdapter
 {
+    /** @return list<NormalizedAuthor> */
+    public function creatorsForVolume(string $volumeId): array
+    {
+        $volumeId = trim($volumeId);
+        $apiKey = trim((string) config('services.comic_vine.key'));
+
+        if ($apiKey === '') {
+            throw new LiteratureSourceUnavailable(
+                'Comic Vine',
+                'Comic Vine API key is not configured.',
+            );
+        }
+
+        if ($volumeId === '') {
+            return [];
+        }
+
+        $volume = Cache::remember(
+            'literature-source:comic-vine:volume:'.$volumeId,
+            now()->addMinutes(max(1, (int) config('services.comic_vine.cache_minutes', 30))),
+            fn (): array => $this->requestVolume($volumeId, $apiKey),
+        );
+
+        return $this->creators($volume, $apiKey);
+    }
+
     /** @return Collection<int, NormalizedLiterature> */
     public function search(string $query, int $limit = 6): Collection
     {
@@ -197,7 +223,7 @@ final class ComicVineAdapter
             return [];
         }
 
-        $cacheKey = 'literature-source:comic-vine:issue-creators:'.$issueId;
+        $cacheKey = 'literature-source:comic-vine:issue-creators:v2:'.$issueId;
 
         return Cache::remember(
             $cacheKey,
@@ -238,8 +264,14 @@ final class ComicVineAdapter
             ->filter(fn (mixed $credit): bool => is_array($credit)
                 && $this->isPrimaryCreatorRole(Arr::get($credit, 'role')))
             ->map(function (array $credit): ?NormalizedAuthor {
-                $name = $this->cleanText(Arr::get($credit, 'person.name'));
-                $externalId = trim((string) Arr::get($credit, 'person.id', ''));
+                $person = Arr::get($credit, 'person', $credit);
+
+                if (! is_array($person)) {
+                    return null;
+                }
+
+                $name = $this->cleanText(Arr::get($person, 'name'));
+                $externalId = trim((string) Arr::get($person, 'id', ''));
 
                 if ($name === null) {
                     return null;
@@ -248,8 +280,8 @@ final class ComicVineAdapter
                 return new NormalizedAuthor(
                     name: $name,
                     sourceUrl: $this->cleanText(
-                        Arr::get($credit, 'person.site_detail_url')
-                            ?? Arr::get($credit, 'person.api_detail_url'),
+                        Arr::get($person, 'site_detail_url')
+                            ?? Arr::get($person, 'api_detail_url'),
                     ),
                     externalId: $externalId === '' ? null : $externalId,
                 );
@@ -258,6 +290,44 @@ final class ComicVineAdapter
             ->unique(fn (NormalizedAuthor $author): string => $author->externalId ?? Str::lower($author->name))
             ->values()
             ->all();
+    }
+
+    /** @return array<string, mixed> */
+    private function requestVolume(string $volumeId, string $apiKey): array
+    {
+        try {
+            $response = Http::baseUrl(rtrim((string) config('services.comic_vine.base_url'), '/'))
+                ->acceptJson()
+                ->withUserAgent((string) config('services.comic_vine.user_agent'))
+                ->connectTimeout((int) config('services.comic_vine.connect_timeout', 3))
+                ->timeout((int) config('services.comic_vine.timeout', 12))
+                ->get("/volume/4050-{$volumeId}/", [
+                    'api_key' => $apiKey,
+                    'format' => 'json',
+                    'field_list' => 'id,first_issue',
+                ]);
+        } catch (ConnectionException $exception) {
+            throw new LiteratureSourceUnavailable(
+                'Comic Vine',
+                'Comic Vine could not be reached.',
+                $exception,
+            );
+        }
+
+        if ($response->status() === 429) {
+            throw new LiteratureSourceUnavailable('Comic Vine', 'Comic Vine rate limit was reached.');
+        }
+
+        if ($response->failed() || (int) $response->json('status_code', 0) !== 1) {
+            throw new LiteratureSourceUnavailable(
+                'Comic Vine',
+                "Comic Vine could not load volume {$volumeId}.",
+            );
+        }
+
+        $volume = $response->json('results');
+
+        return is_array($volume) ? $volume : [];
     }
 
     private function isPrimaryCreatorRole(mixed $role): bool

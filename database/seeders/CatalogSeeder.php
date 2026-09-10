@@ -97,12 +97,6 @@ class CatalogSeeder extends Seeder
                 'supported_types' => ['western-comic'],
                 'is_active' => true,
             ],
-            'metron' => [
-                'name' => 'Metron',
-                'base_url' => 'https://metron.cloud/api',
-                'supported_types' => ['western-comic'],
-                'is_active' => true,
-            ],
             'anilist' => [
                 'name' => 'AniList',
                 'base_url' => 'https://graphql.anilist.co',

@@ -31,9 +31,6 @@
         <env name="GOOGLE_KNOWLEDGE_GRAPH_API_KEY" value="" force="true"/>
         <env name="HARDCOVER_API_TOKEN" value="" force="true"/>
         <env name="COMIC_VINE_API_KEY" value="" force="true"/>
-        <env name="METRON_API_TOKEN" value="" force="true"/>
-        <env name="METRON_USERNAME" value="" force="true"/>
-        <env name="METRON_PASSWORD" value="" force="true"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>

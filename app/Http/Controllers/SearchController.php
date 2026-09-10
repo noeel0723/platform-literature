@@ -16,6 +16,8 @@ class SearchController extends Controller
     public function __invoke(Request $request, CanonicalLiteratureSearch $canonicalSearch): View
     {
         $query = Str::limit(Str::squish((string) $request->query('q', '')), 100, '');
+        $scope = (string) $request->query('scope', 'all');
+        $scope = in_array($scope, ['all', 'literature', 'authors', 'readers'], true) ? $scope : 'all';
         $literatures = collect();
         $authors = collect();
         $members = collect();
@@ -69,6 +71,6 @@ class SearchController extends Controller
                 ->get();
         }
 
-        return view('search.index', compact('query', 'literatures', 'authors', 'members'));
+        return view('search.index', compact('query', 'scope', 'literatures', 'authors', 'members'));
     }
 }

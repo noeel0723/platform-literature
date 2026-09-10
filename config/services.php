@@ -95,16 +95,6 @@ return [
         'timeout' => (int) env('ANILIST_TIMEOUT', 12),
     ],
 
-    'mangadex' => [
-        'base_url' => env('MANGADEX_BASE_URL', 'https://api.mangadex.org'),
-        'covers_url' => env('MANGADEX_COVERS_URL', 'https://uploads.mangadex.org/covers'),
-        'user_agent' => env('MANGADEX_USER_AGENT', 'Literahaven/1.0 academic-project'),
-        'max_results' => (int) env('MANGADEX_MAX_RESULTS', 6),
-        'cache_minutes' => (int) env('MANGADEX_CACHE_MINUTES', 30),
-        'connect_timeout' => (int) env('MANGADEX_CONNECT_TIMEOUT', 3),
-        'timeout' => (int) env('MANGADEX_TIMEOUT', 12),
-    ],
-
     'kitsu' => [
         'base_url' => env('KITSU_BASE_URL', 'https://kitsu.io/api/edge'),
         'user_agent' => env('KITSU_USER_AGENT', 'Literahaven/1.0 academic-project'),
@@ -123,19 +113,6 @@ return [
         'cache_minutes' => (int) env('COMIC_VINE_CACHE_MINUTES', 30),
         'connect_timeout' => (int) env('COMIC_VINE_CONNECT_TIMEOUT', 3),
         'timeout' => (int) env('COMIC_VINE_TIMEOUT', 12),
-    ],
-
-    'metron' => [
-        'base_url' => env('METRON_BASE_URL', 'https://metron.cloud/api'),
-        'token' => env('METRON_API_TOKEN'),
-        'username' => env('METRON_USERNAME'),
-        'password' => env('METRON_PASSWORD'),
-        'user_agent' => env('METRON_USER_AGENT', 'Literahaven/1.0 academic-project'),
-        'max_results' => (int) env('METRON_MAX_RESULTS', 6),
-        'detail_enrichment_limit' => (int) env('METRON_DETAIL_ENRICHMENT_LIMIT', 4),
-        'cache_minutes' => (int) env('METRON_CACHE_MINUTES', 30),
-        'connect_timeout' => (int) env('METRON_CONNECT_TIMEOUT', 3),
-        'timeout' => (int) env('METRON_TIMEOUT', 12),
     ],
 
 ];
