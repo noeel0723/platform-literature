@@ -8,6 +8,7 @@ use App\Models\Author;
 use App\Models\Literature;
 use App\Models\Report;
 use App\Models\User;
+use App\Support\ProfilePagePresenter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -17,7 +18,7 @@ use Inertia\Response;
 
 class ProfileController extends Controller
 {
-    public function show(User $user): Response
+    public function show(User $user, ProfilePagePresenter $presenter): Response
     {
         $user->load([
             'favoriteLiteratures.authors',
@@ -105,7 +106,7 @@ class ProfileController extends Controller
                     'readlist' => $user->readlist_count,
                 ],
             ],
-            'navigation' => $this->profileNavigation($user, 'profile', $isOwner),
+            'navigation' => $presenter->navigation($user, 'profile', $viewer),
             'favoriteLiteratures' => $user->favoriteLiteratures
                 ->map(fn (Literature $literature): array => $this->presentLiterature($literature))
                 ->values()
@@ -263,39 +264,6 @@ class ProfileController extends Controller
             'author' => $literature->authors->pluck('name')->implode(' & ') ?: 'Author unavailable',
             'year' => $literature->displayPublicationYear(),
             'initials' => mb_strtoupper(mb_substr($title, 0, 2)),
-        ];
-    }
-
-    /** @return array<string, mixed> */
-    private function profileNavigation(User $user, string $current, bool $isOwner): array
-    {
-        $links = [
-            ['key' => 'profile', 'label' => 'Profile', 'url' => route('profiles.show', $user)],
-        ];
-
-        if ($isOwner) {
-            $links[] = ['key' => 'activity', 'label' => 'Activity', 'url' => route('activity.index')];
-        }
-
-        $links[] = ['key' => 'literature', 'label' => 'Literature', 'url' => route('profiles.literature', $user)];
-
-        if ($isOwner) {
-            $links[] = ['key' => 'diary', 'label' => 'Diary', 'url' => route('diary.index')];
-        }
-
-        $links[] = ['key' => 'reviews', 'label' => 'Reviews', 'url' => route('profiles.reviews', $user)];
-        $links[] = ['key' => 'readlist', 'label' => 'Readlist', 'url' => route('profiles.readlist', $user)];
-
-        return [
-            'current' => $current,
-            'user' => [
-                'name' => $user->name,
-                'username' => $user->username,
-                'avatar_url' => $user->avatarUrl(),
-                'initials' => $this->initials($user->name),
-                'url' => route('profiles.show', $user),
-            ],
-            'links' => $links,
         ];
     }
 

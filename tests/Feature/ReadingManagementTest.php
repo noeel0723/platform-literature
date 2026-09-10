@@ -195,11 +195,9 @@ class ReadingManagementTest extends TestCase
         Review::factory()->for($user)->for($ownLiterature)->create(['rating' => 4.5]);
         Review::factory()->for($otherUser)->for($otherLiterature)->create(['rating' => 3.5]);
 
-        $this->actingAs($user)->get(route('diary.index'))
-            ->assertOk()
-            ->assertSee('My Private Reading')
-            ->assertDontSee('Another Private Reading')
-            ->assertDontSee('Completed Without Rating');
+        $response = $this->actingAs($user)->get(route('diary.index'))->assertOk();
+
+        $this->assertSame(['My Private Reading'], collect($response->inertiaProps('activities'))->pluck('literature.title')->all());
     }
 
     public function test_diary_exposes_utc_activity_for_browser_localization(): void
@@ -210,12 +208,9 @@ class ReadingManagementTest extends TestCase
             'updated_at' => Carbon::parse('2026-09-06 04:30:00', 'UTC'),
         ]);
 
-        $this->actingAs($user)->get(route('diary.index'))
-            ->assertOk()
-            ->assertSee('datetime="2026-09-06T04:30:00+00:00"', false)
-            ->assertSee('data-local-date-part="month"', false)
-            ->assertSee('data-local-date-part="day"', false)
-            ->assertSee('data-local-date-part="year"', false);
+        $response = $this->actingAs($user)->get(route('diary.index'))->assertOk();
+
+        $this->assertSame('2026-09-06T04:30:00+00:00', $response->inertiaProps('activities.0.occurred_at'));
     }
 
     public function test_diary_includes_the_authenticated_users_ratings_and_reviews(): void
@@ -233,13 +228,12 @@ class ReadingManagementTest extends TestCase
             'rating' => 3.5,
         ]);
 
-        $this->actingAs($user)->get(route('diary.index'))
-            ->assertOk()
-            ->assertSeeText('My Rated Literature')
-            ->assertSeeText('4.5')
-            ->assertSeeText('Written')
-            ->assertSee('?review=edit', false)
-            ->assertDontSeeText('Someone Else Rating');
+        $response = $this->actingAs($user)->get(route('diary.index'))->assertOk();
+
+        $this->assertSame('My Rated Literature', $response->inertiaProps('activities.0.literature.title'));
+        $this->assertSame(4.5, $response->inertiaProps('activities.0.rating'));
+        $this->assertSame('A memorable reading experience.', $response->inertiaProps('activities.0.review'));
+        $this->assertStringEndsWith('?review=edit', $response->inertiaProps('activities.0.edit_url'));
     }
 
     public function test_diary_contains_only_activity_history_and_not_the_readlist_collection(): void
@@ -248,12 +242,9 @@ class ReadingManagementTest extends TestCase
         $savedLiterature = Literature::factory()->create(['title' => 'Private Saved Title']);
         ReadingList::factory()->for($user)->for($savedLiterature)->create(['status' => 'want_to_read']);
 
-        $this->actingAs($user)->get(route('diary.index'))
-            ->assertOk()
-            ->assertSeeText('Activity history')
-            ->assertSee('data-diary-activity-history', false)
-            ->assertDontSeeText('Private Saved Title')
-            ->assertDontSeeText('Want to read')
-            ->assertDontSee('<h2 class="font-serif text-3xl font-bold text-ink-950">Readlist</h2>', false);
+        $response = $this->actingAs($user)->get(route('diary.index'))->assertOk();
+
+        $this->assertSame([], $response->inertiaProps('activities'));
+        $this->assertSame('diary', $response->inertiaProps('navigation.current'));
     }
 }

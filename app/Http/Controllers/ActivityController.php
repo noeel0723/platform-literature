@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Activity;
+use App\Support\ProfilePagePresenter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -10,7 +11,7 @@ use Inertia\Response;
 
 class ActivityController extends Controller
 {
-    public function __invoke(Request $request): Response
+    public function __invoke(Request $request, ProfilePagePresenter $presenter): Response
     {
         $viewer = $request->user();
         $scope = $request->string('scope')->lower()->toString();
@@ -44,24 +45,7 @@ class ActivityController extends Controller
                 'initials' => $this->initials($viewer->name),
                 'url' => route('profiles.show', $viewer),
             ],
-            'navigation' => [
-                'current' => 'activity',
-                'user' => [
-                    'name' => $viewer->name,
-                    'username' => $viewer->username,
-                    'avatar_url' => $viewer->avatarUrl(),
-                    'initials' => $this->initials($viewer->name),
-                    'url' => route('profiles.show', $viewer),
-                ],
-                'links' => [
-                    ['key' => 'profile', 'label' => 'Profile', 'url' => route('profiles.show', $viewer)],
-                    ['key' => 'activity', 'label' => 'Activity', 'url' => route('activity.index')],
-                    ['key' => 'literature', 'label' => 'Literature', 'url' => route('profiles.literature', $viewer)],
-                    ['key' => 'diary', 'label' => 'Diary', 'url' => route('diary.index')],
-                    ['key' => 'reviews', 'label' => 'Reviews', 'url' => route('profiles.reviews', $viewer)],
-                    ['key' => 'readlist', 'label' => 'Readlist', 'url' => route('profiles.readlist', $viewer)],
-                ],
-            ],
+            'navigation' => $presenter->navigation($viewer, 'activity', $viewer),
             'activities' => $activities,
             'scope' => $scope,
             'scopes' => [

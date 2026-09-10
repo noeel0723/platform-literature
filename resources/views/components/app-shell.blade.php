@@ -40,6 +40,7 @@
                     ['label' => 'Profile', 'url' => route('profiles.show', $headerUser)],
                     ['label' => 'Activity', 'url' => route('activity.index')],
                     ['label' => 'Literature', 'url' => route('profiles.literature', $headerUser)],
+                    ['label' => 'Diary', 'url' => route('diary.index')],
                     ['label' => 'Reviews', 'url' => route('profiles.reviews', $headerUser)],
                     ['label' => 'Readlist', 'url' => route('profiles.readlist', $headerUser)],
                 ],

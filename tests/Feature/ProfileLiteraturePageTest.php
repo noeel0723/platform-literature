@@ -7,6 +7,7 @@ use App\Models\ReadingList;
 use App\Models\Review;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class ProfileLiteraturePageTest extends TestCase
@@ -36,30 +37,30 @@ class ProfileLiteraturePageTest extends TestCase
 
         $response = $this->get(route('profiles.literature', $user));
 
-        $response
-            ->assertOk()
-            ->assertSeeText("Shelf Reader's Literature")
-            ->assertSeeText('Completed Story')
-            ->assertDontSeeText('Saved For Later')
-            ->assertDontSeeText('Currently Reading')
-            ->assertSee('data-profile-literature-grid', false)
-            ->assertSee('data-density="compact"', false)
-            ->assertSee('data-profile-literature-item', false)
-            ->assertSee('"current":"literature"', false)
-            ->assertSee('4.5 out of 5 stars', false);
-
-        $this->assertSame(1, substr_count($response->getContent(), 'data-profile-literature-item'));
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('Profile/Literature')
+            ->where('profile.name', 'Shelf Reader')
+            ->where('navigation.current', 'literature')
+            ->where('completedLiterature.total', 1)
+            ->where('completedLiterature.data.0.literature.title', 'Completed Story')
+            ->where('completedLiterature.data.0.literature.year', 2024)
+            ->where('completedLiterature.data.0.rating', 4.5)
+        );
+        $this->assertNotContains('Saved For Later', collect($response->inertiaProps('completedLiterature.data'))->pluck('literature.title'));
+        $this->assertNotContains('Currently Reading', collect($response->inertiaProps('completedLiterature.data'))->pluck('literature.title'));
     }
 
     public function test_profile_navigation_places_literature_after_activity_for_the_owner(): void
     {
         $user = User::factory()->create(['username' => 'navigation_reader']);
 
-        $this->actingAs($user)
+        $response = $this->actingAs($user)
             ->get(route('profiles.literature', $user))
-            ->assertOk()
-            ->assertSeeInOrder(['Activity', 'Literature', 'Diary'])
-            ->assertDontSee('>Favorites</a>', false)
-            ->assertDontSee('>Completed</a>', false);
+            ->assertOk();
+
+        $this->assertSame(
+            ['Profile', 'Activity', 'Literature', 'Diary', 'Reviews', 'Readlist'],
+            collect($response->inertiaProps('navigation.links'))->pluck('label')->all(),
+        );
     }
 }

@@ -6,6 +6,7 @@ use App\Models\Literature;
 use App\Models\ReadingList;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class ReadlistPageTest extends TestCase
@@ -22,13 +23,17 @@ class ReadlistPageTest extends TestCase
         ReadingList::factory()->for($user)->for($reading)->create(['status' => 'reading']);
         ReadingList::factory()->for($user)->for($completed)->create(['status' => 'completed']);
 
-        $this->get(route('profiles.readlist', $user))
-            ->assertOk()
-            ->assertSeeText("Readlist Owner's Readlist")
-            ->assertSeeText('Saved for Later')
-            ->assertDontSeeText('Currently Reading')
-            ->assertDontSeeText('Already Completed')
-            ->assertSee('data-readlist-item', false);
+        $response = $this->get(route('profiles.readlist', $user))->assertOk();
+
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('Profile/Readlist')
+            ->where('profile.name', 'Readlist Owner')
+            ->where('readlist.total', 1)
+            ->where('readlist.data.0.literature.title', 'Saved for Later')
+            ->where('isOwner', false)
+        );
+        $this->assertNotContains('Currently Reading', collect($response->inertiaProps('readlist.data'))->pluck('literature.title'));
+        $this->assertNotContains('Already Completed', collect($response->inertiaProps('readlist.data'))->pluck('literature.title'));
     }
 
     public function test_profile_shows_a_four_item_readlist_preview_and_full_page_link(): void
@@ -67,7 +72,7 @@ class ReadlistPageTest extends TestCase
         $response = $this->get(route('profiles.readlist', $user));
 
         $response->assertOk();
-        $this->assertSame(24, substr_count($response->getContent(), 'data-readlist-item'));
+        $this->assertCount(24, $response->inertiaProps('readlist.data'));
     }
 
     public function test_owner_sees_quick_add_suggestions_without_already_tracked_literature(): void
@@ -77,13 +82,13 @@ class ReadlistPageTest extends TestCase
         $alreadyTracked = Literature::factory()->create(['title' => 'Already Reading']);
         ReadingList::factory()->for($user)->for($alreadyTracked)->create(['status' => 'reading']);
 
-        $this->actingAs($user)
+        $response = $this->actingAs($user)
             ->get(route('profiles.readlist', $user))
-            ->assertOk()
-            ->assertSee('data-readlist-add-panel', false)
-            ->assertSee('data-readlist-suggestion-search', false)
-            ->assertSee('data-suggestion-literature-id="'.$available->id.'"', false)
-            ->assertDontSee('data-suggestion-literature-id="'.$alreadyTracked->id.'"', false);
+            ->assertOk();
+
+        $this->assertTrue($response->inertiaProps('isOwner'));
+        $this->assertContains($available->id, collect($response->inertiaProps('suggestions'))->pluck('id'));
+        $this->assertNotContains($alreadyTracked->id, collect($response->inertiaProps('suggestions'))->pluck('id'));
     }
 
     public function test_quick_add_saves_literature_and_returns_to_the_readlist(): void
@@ -109,9 +114,9 @@ class ReadlistPageTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $this->get(route('profiles.readlist', $user))
-            ->assertOk()
-            ->assertDontSee('data-readlist-add-panel', false)
-            ->assertDontSee('data-readlist-suggestion-search', false);
+        $response = $this->get(route('profiles.readlist', $user))->assertOk();
+
+        $this->assertFalse($response->inertiaProps('isOwner'));
+        $this->assertSame([], $response->inertiaProps('suggestions'));
     }
 }

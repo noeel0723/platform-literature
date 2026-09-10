@@ -107,20 +107,11 @@ class ProfileManagementTest extends TestCase
             route('profiles.readlist', $user),
         ];
 
-        foreach ($routes as $index => $route) {
+        foreach ($routes as $route) {
             $response = $this->actingAs($user)->get($route)->assertOk();
 
-            if ($index < 2) {
-                $this->assertSame(['Profile', 'Activity', 'Literature', 'Diary', 'Reviews', 'Readlist'], collect($response->inertiaProps('navigation.links'))->pluck('label')->all());
-                $this->assertContains($response->inertiaProps('navigation.current'), ['profile', 'activity']);
-            } else {
-                $response
-                    ->assertSeeInOrder(['Profile', 'Activity', 'Literature', 'Diary', 'Reviews', 'Readlist'])
-                    ->assertSee('data-react-profile-subnav-props', false)
-                    ->assertSee('data-react-profile-subnav', false);
-
-                $this->assertSame(1, substr_count($response->getContent(), 'data-react-profile-subnav></div>'));
-            }
+            $this->assertSame(['Profile', 'Activity', 'Literature', 'Diary', 'Reviews', 'Readlist'], collect($response->inertiaProps('navigation.links'))->pluck('label')->all());
+            $this->assertContains($response->inertiaProps('navigation.current'), ['profile', 'activity', 'literature', 'diary', 'reviews', 'readlist']);
         }
     }
 
