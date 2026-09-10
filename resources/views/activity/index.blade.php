@@ -53,8 +53,8 @@
                                 @if ($isExpanded)
                                     <div class="mt-2.5 grid grid-cols-[52px_minmax(0,1fr)] gap-3 sm:grid-cols-[60px_minmax(0,1fr)]">
                                         <a href="{{ route('literatures.show', $activity->literature) }}" class="aspect-[2/3] overflow-hidden rounded-sm border border-ink-950/15 bg-brand-sky/25">
-                                            @if ($activity->literature->cover_url)
-                                                <img src="{{ $activity->literature->cover_url }}" alt="Cover of {{ $title }}" class="size-full object-cover" loading="lazy">
+                                            @if ($activity->literature->displayCoverUrl())
+                                                <img src="{{ $activity->literature->displayCoverUrl() }}" alt="Cover of {{ $title }}" class="size-full object-cover" loading="lazy">
                                             @else
                                                 <span class="grid size-full place-items-center font-serif text-xl font-bold text-ink-950">{{ Str::upper(Str::substr($title, 0, 2)) }}</span>
                                             @endif

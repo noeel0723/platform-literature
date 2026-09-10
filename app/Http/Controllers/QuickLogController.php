@@ -21,7 +21,7 @@ class QuickLogController extends Controller
 
         $literatures = $canonicalSearch->query($query)
             ->select(['id', 'api_source_id', 'slug', 'title', 'original_title', 'type', 'publication_year', 'cover_url', 'updated_at'])
-            ->with(['authors:id,name', 'sourceMapping:id,canonical_work_id,literature_id'])
+            ->with(['authors:id,name', 'sourceMapping:id,canonical_work_id,literature_id', 'metadataOverride'])
             ->when($query !== '', function (Builder $literatures) use ($normalizedQuery): void {
                 $literatures->orderByRaw(
                     'CASE WHEN LOWER(title) = ? OR LOWER(original_title) = ? THEN 0 ELSE 1 END',
@@ -59,9 +59,9 @@ class QuickLogController extends Controller
                 return [
                     'id' => $literature->id,
                     'title' => $literature->displayTitle(),
-                    'year' => $literature->publication_year,
+                    'year' => $literature->displayPublicationYear(),
                     'type' => $literature->typeLabel(),
-                    'cover_url' => $literature->cover_url,
+                    'cover_url' => $literature->displayCoverUrl(),
                     'authors' => $literature->authors->pluck('name')->values()->all(),
                     'review_url' => route('reviews.update', $reviewLiterature),
                     'review' => $review === null ? null : [

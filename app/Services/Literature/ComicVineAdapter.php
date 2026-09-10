@@ -223,17 +223,42 @@ final class ComicVineAdapter
             return [];
         }
 
-        $cacheKey = 'literature-source:comic-vine:issue-creators:v2:'.$issueId;
-
-        return Cache::remember(
+        $cacheKey = 'literature-source:comic-vine:issue-creators:v3:'.$issueId;
+        $creatorPayloads = Cache::remember(
             $cacheKey,
             now()->addMinutes(max(1, (int) config('services.comic_vine.cache_minutes', 30))),
-            fn (): array => $this->requestCreators($issueId, $apiKey),
+            fn (): array => $this->requestCreatorPayloads($issueId, $apiKey),
         );
+
+        if (! is_array($creatorPayloads)) {
+            return [];
+        }
+
+        return collect($creatorPayloads)
+            ->filter(fn (mixed $creator): bool => is_array($creator))
+            ->map(function (array $creator): ?NormalizedAuthor {
+                $name = $this->cleanText(Arr::get($creator, 'name'));
+
+                if ($name === null) {
+                    return null;
+                }
+
+                return new NormalizedAuthor(
+                    name: $name,
+                    imageUrl: $this->cleanText(Arr::get($creator, 'image_url')),
+                    biography: $this->cleanText(Arr::get($creator, 'biography')),
+                    sourceUrl: $this->cleanText(Arr::get($creator, 'source_url')),
+                    externalId: $this->cleanText(Arr::get($creator, 'external_id')),
+                );
+            })
+            ->filter()
+            ->unique(fn (NormalizedAuthor $author): string => $author->externalId ?? Str::lower($author->name))
+            ->values()
+            ->all();
     }
 
-    /** @return list<NormalizedAuthor> */
-    private function requestCreators(string $issueId, string $apiKey): array
+    /** @return list<array{name: string, image_url: null, biography: null, source_url: string|null, external_id: string|null}> */
+    private function requestCreatorPayloads(string $issueId, string $apiKey): array
     {
         try {
             $response = Http::baseUrl(rtrim((string) config('services.comic_vine.base_url'), '/'))
@@ -263,7 +288,7 @@ final class ComicVineAdapter
         return collect($credits)
             ->filter(fn (mixed $credit): bool => is_array($credit)
                 && $this->isPrimaryCreatorRole(Arr::get($credit, 'role')))
-            ->map(function (array $credit): ?NormalizedAuthor {
+            ->map(function (array $credit): ?array {
                 $person = Arr::get($credit, 'person', $credit);
 
                 if (! is_array($person)) {
@@ -277,17 +302,19 @@ final class ComicVineAdapter
                     return null;
                 }
 
-                return new NormalizedAuthor(
-                    name: $name,
-                    sourceUrl: $this->cleanText(
+                return [
+                    'name' => $name,
+                    'image_url' => null,
+                    'biography' => null,
+                    'source_url' => $this->cleanText(
                         Arr::get($person, 'site_detail_url')
                             ?? Arr::get($person, 'api_detail_url'),
                     ),
-                    externalId: $externalId === '' ? null : $externalId,
-                );
+                    'external_id' => $externalId === '' ? null : $externalId,
+                ];
             })
             ->filter()
-            ->unique(fn (NormalizedAuthor $author): string => $author->externalId ?? Str::lower($author->name))
+            ->unique(fn (array $author): string => $author['external_id'] ?? Str::lower($author['name']))
             ->values()
             ->all();
     }

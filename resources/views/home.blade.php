@@ -56,8 +56,8 @@
 
                             <article class="min-w-0" data-friend-activity>
                                 <a href="{{ route('literatures.show', $activity->literature) }}" class="group relative block overflow-hidden border border-ink-950/15 bg-brand-sky/25 shadow-[0_8px_24px_rgba(47,58,85,0.08)]">
-                                    @if ($activity->literature->cover_url)
-                                        <img src="{{ $activity->literature->cover_url }}" alt="Cover of {{ $displayTitle }}" class="aspect-[2/3] w-full object-cover transition duration-300 group-hover:scale-[1.025]" loading="lazy">
+                                    @if ($activity->literature->displayCoverUrl())
+                                        <img src="{{ $activity->literature->displayCoverUrl() }}" alt="Cover of {{ $displayTitle }}" class="aspect-[2/3] w-full object-cover transition duration-300 group-hover:scale-[1.025]" loading="lazy">
                                     @else
                                         <span class="grid aspect-[2/3] place-items-center px-3 text-center font-serif text-3xl font-bold text-ink-950">{{ Str::upper(Str::substr($displayTitle, 0, 2)) }}</span>
                                     @endif
@@ -112,8 +112,8 @@
 
                             <article class="min-w-0" data-popular-with-friends>
                                 <a href="{{ route('literatures.show', $literature) }}" class="group relative block overflow-hidden border border-ink-950/15 bg-brand-sky/25 shadow-[0_8px_24px_rgba(47,58,85,0.08)]">
-                                    @if ($literature->cover_url)
-                                        <img src="{{ $literature->cover_url }}" alt="Cover of {{ $displayTitle }}" class="aspect-[2/3] w-full object-cover transition duration-300 group-hover:scale-[1.025]" loading="lazy">
+                                @if ($literature->displayCoverUrl())
+                                    <img src="{{ $literature->displayCoverUrl() }}" alt="Cover of {{ $displayTitle }}" class="aspect-[2/3] w-full object-cover transition duration-300 group-hover:scale-[1.025]" loading="lazy">
                                     @else
                                         <span class="grid aspect-[2/3] place-items-center px-3 text-center font-serif text-3xl font-bold text-ink-950">{{ Str::upper(Str::substr($displayTitle, 0, 2)) }}</span>
                                     @endif

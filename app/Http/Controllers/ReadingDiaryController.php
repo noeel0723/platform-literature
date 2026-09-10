@@ -13,7 +13,7 @@ class ReadingDiaryController extends Controller
         $activities = $request->user()
             ->reviews()
             ->whereNull('hidden_at')
-            ->with('literature.authors')
+            ->with(['literature.authors', 'literature.metadataOverride', 'literature.sourceMapping.canonicalWork.metadataOverride'])
             ->latest('updated_at')
             ->limit(100)
             ->get()

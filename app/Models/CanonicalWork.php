@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable(['primary_author_id', 'preferred_literature_id', 'canonical_title', 'normalized_title', 'type', 'publication_year'])]
 class CanonicalWork extends Model
@@ -38,6 +39,12 @@ class CanonicalWork extends Model
     public function sourceMappings(): HasMany
     {
         return $this->hasMany(LiteratureSourceMapping::class);
+    }
+
+    /** @return HasOne<LiteratureMetadataOverride, $this> */
+    public function metadataOverride(): HasOne
+    {
+        return $this->hasOne(LiteratureMetadataOverride::class);
     }
 
     /** @return BelongsToMany<Literature, $this> */

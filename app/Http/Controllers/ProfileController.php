@@ -16,7 +16,12 @@ class ProfileController extends Controller
 {
     public function show(User $user): View
     {
-        $user->load(['favoriteLiteratures.authors', 'favoriteAuthors'])
+        $user->load([
+            'favoriteLiteratures.authors',
+            'favoriteLiteratures.metadataOverride',
+            'favoriteLiteratures.sourceMapping.canonicalWork.metadataOverride',
+            'favoriteAuthors',
+        ])
             ->loadCount([
                 'reviews' => fn ($query) => $query->whereNull('hidden_at'),
                 'followers',
@@ -27,14 +32,14 @@ class ProfileController extends Controller
 
         $readlistPreview = $user->readingLists()
             ->where('status', 'want_to_read')
-            ->with('literature.authors')
+            ->with(['literature.authors', 'literature.metadataOverride', 'literature.sourceMapping.canonicalWork.metadataOverride'])
             ->latest('updated_at')
             ->limit(4)
             ->get();
 
         $recentReviews = $user->reviews()
             ->whereNull('hidden_at')
-            ->with('literature.authors')
+            ->with(['literature.authors', 'literature.metadataOverride', 'literature.sourceMapping.canonicalWork.metadataOverride'])
             ->withCount('likes')
             ->latest('updated_at')
             ->limit(4)
@@ -44,6 +49,8 @@ class ProfileController extends Controller
             ->where('status', 'completed')
             ->with([
                 'literature.authors',
+                'literature.metadataOverride',
+                'literature.sourceMapping.canonicalWork.metadataOverride',
                 'literature.reviews' => fn ($reviews) => $reviews
                     ->whereBelongsTo($user)
                     ->whereNull('hidden_at'),
@@ -55,7 +62,7 @@ class ProfileController extends Controller
         $recentActivities = Activity::query()
             ->visibleToReaders()
             ->whereBelongsTo($user)
-            ->with(['literature', 'review', 'discussion', 'comment'])
+            ->with(['literature.metadataOverride', 'literature.sourceMapping.canonicalWork.metadataOverride', 'review', 'discussion', 'comment'])
             ->latest('occurred_at')
             ->limit(5)
             ->get();
@@ -87,7 +94,10 @@ class ProfileController extends Controller
 
         return view('profiles.edit', [
             'user' => $user,
-            'literatures' => Literature::query()->orderByRaw('COALESCE(original_title, title)')->get(['id', 'title', 'original_title']),
+            'literatures' => Literature::query()
+                ->with(['metadataOverride', 'sourceMapping.canonicalWork.metadataOverride'])
+                ->orderByRaw('COALESCE(original_title, title)')
+                ->get(['id', 'title', 'original_title']),
             'authors' => Author::query()->orderBy('name')->get(['id', 'name']),
             'favoriteLiteratureIds' => $user->favoriteLiteratures->pluck('id')->all(),
             'favoriteAuthorIds' => $user->favoriteAuthors->pluck('id')->all(),

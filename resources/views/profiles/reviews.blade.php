@@ -20,8 +20,8 @@
                     @endphp
                     <article class="grid grid-cols-[52px_minmax(0,1fr)] gap-3 border-b border-ink-950/12 py-4 sm:grid-cols-[60px_minmax(0,1fr)] sm:gap-4" data-profile-review>
                         <a href="{{ route('literatures.show', $literature) }}" class="block aspect-[2/3] self-start overflow-hidden rounded-sm border border-ink-950/15 bg-brand-sky/25 shadow-[0_3px_10px_rgba(47,58,85,0.06)]">
-                            @if ($literature->cover_url)
-                                <img src="{{ $literature->cover_url }}" alt="Cover of {{ $reviewTitle }}" class="size-full object-cover" loading="lazy">
+                            @if ($literature->displayCoverUrl())
+                                <img src="{{ $literature->displayCoverUrl() }}" alt="Cover of {{ $reviewTitle }}" class="size-full object-cover" loading="lazy">
                             @else
                                 <span class="grid size-full place-items-center font-serif text-sm font-bold text-ink-950">{{ Str::upper(Str::substr($reviewTitle, 0, 2)) }}</span>
                             @endif
@@ -31,8 +31,8 @@
                             <div class="flex min-w-0 items-start justify-between gap-3">
                                 <h2 class="min-w-0 truncate font-serif text-lg font-bold leading-6 text-ink-950 sm:text-xl">
                                     <a href="{{ route('literatures.show', $literature) }}" class="hover:text-brand-coral" title="{{ $reviewTitle }}">{{ $reviewTitle }}</a>
-                                    @if ($literature->publication_year)
-                                        <span class="font-sans text-xs font-normal text-ink-950/45">{{ $literature->publication_year }}</span>
+                                    @if ($literature->displayPublicationYear())
+                                        <span class="font-sans text-xs font-normal text-ink-950/45">{{ $literature->displayPublicationYear() }}</span>
                                     @endif
                                 </h2>
                                 @if (auth()->id() === $user->id)

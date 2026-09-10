@@ -13,14 +13,14 @@ class ReadlistController extends Controller
         $isOwner = auth()->id() === $user->id;
         $readlist = $user->readingLists()
             ->where('status', 'want_to_read')
-            ->with(['literature.authors'])
+            ->with(['literature.authors', 'literature.metadataOverride', 'literature.sourceMapping.canonicalWork.metadataOverride'])
             ->latest('updated_at')
             ->paginate(24);
 
         $readlistSuggestions = $isOwner
             ? Literature::query()
                 ->whereDoesntHave('readingLists', fn ($query) => $query->whereBelongsTo($user))
-                ->with('authors')
+                ->with(['authors', 'metadataOverride', 'sourceMapping.canonicalWork.metadataOverride'])
                 ->latest()
                 ->limit(12)
                 ->get()

@@ -26,8 +26,8 @@
                     <article class="group min-w-0" data-profile-literature-item>
                         <a href="{{ route('literatures.show', $literature) }}" class="block">
                             <div class="relative aspect-[2/3] overflow-hidden rounded-sm border border-ink-950/15 bg-brand-sky/20 shadow-[0_3px_10px_rgba(47,58,85,0.06)] transition duration-200 group-hover:-translate-y-0.5 group-hover:border-brand-coral">
-                                @if ($literature->cover_url)
-                                    <img src="{{ $literature->cover_url }}" alt="Cover of {{ $title }}" class="size-full object-cover" loading="lazy">
+                                @if ($literature->displayCoverUrl())
+                                    <img src="{{ $literature->displayCoverUrl() }}" alt="Cover of {{ $title }}" class="size-full object-cover" loading="lazy">
                                 @else
                                     <span class="grid size-full place-items-center p-2 text-center font-serif text-base font-bold text-ink-950">{{ Str::upper(Str::substr($title, 0, 2)) }}</span>
                                 @endif
@@ -40,8 +40,8 @@
                             @else
                                 <span class="truncate">Completed</span>
                             @endif
-                            @if ($rating && $literature->publication_year)
-                                <span>{{ $literature->publication_year }}</span>
+                            @if ($rating && $literature->displayPublicationYear())
+                                <span>{{ $literature->displayPublicationYear() }}</span>
                             @endif
                         </div>
                     </article>

@@ -62,18 +62,27 @@ class Literature extends Model
 
     public function displayTitle(): string
     {
+        $override = $this->effectiveMetadataOverride();
+
+        if (filled($override?->title)) {
+            return $override->title;
+        }
+
         if (in_array($this->type, ['manga', 'manhwa'], true)) {
             return $this->title;
         }
 
-        return $this->original_title ?? $this->title;
+        return $override?->original_title ?? $this->original_title ?? $this->title;
     }
 
     public function alternateTitle(): ?string
     {
+        $override = $this->effectiveMetadataOverride();
+        $title = $override?->title ?? $this->title;
+        $originalTitle = $override?->original_title ?? $this->original_title;
         $alternateTitle = in_array($this->type, ['manga', 'manhwa'], true)
-            ? $this->original_title
-            : ($this->original_title === null ? null : $this->title);
+            ? $originalTitle
+            : ($originalTitle === null ? null : $title);
 
         return filled($alternateTitle) && $alternateTitle !== $this->displayTitle()
             ? $alternateTitle
@@ -143,6 +152,52 @@ class Literature extends Model
         return $this->hasOne(LiteratureSourceMapping::class);
     }
 
+    /** @return HasOne<LiteratureMetadataOverride, $this> */
+    public function metadataOverride(): HasOne
+    {
+        return $this->hasOne(LiteratureMetadataOverride::class);
+    }
+
+    public function displayPublicationYear(): ?int
+    {
+        return $this->effectiveMetadataOverride()?->publication_year ?? $this->publication_year;
+    }
+
+    public function displayTagline(): ?string
+    {
+        return $this->effectiveMetadataOverride()?->tagline ?? $this->tagline;
+    }
+
+    public function displaySynopsis(): ?string
+    {
+        return $this->effectiveMetadataOverride()?->synopsis ?? $this->synopsis;
+    }
+
+    public function displayCoverUrl(): ?string
+    {
+        return $this->effectiveMetadataOverride()?->cover_url ?? $this->cover_url;
+    }
+
+    public function displayPublisher(): ?string
+    {
+        return $this->effectiveMetadataOverride()?->publisher ?? $this->publisher;
+    }
+
+    public function displayLanguage(): ?string
+    {
+        return $this->effectiveMetadataOverride()?->language ?? $this->language;
+    }
+
+    public function displayFormat(): ?string
+    {
+        return $this->effectiveMetadataOverride()?->format ?? $this->format;
+    }
+
+    public function hasCuratedMetadata(): bool
+    {
+        return $this->effectiveMetadataOverride() !== null;
+    }
+
     /** @param Builder<Literature> $query */
     public function scopeCanonicalRepresentatives(Builder $query): void
     {
@@ -168,5 +223,23 @@ class Literature extends Model
             'knowledge_graph_score' => 'float',
             'publication_year' => 'integer',
         ];
+    }
+
+    public function effectiveMetadataOverride(): ?LiteratureMetadataOverride
+    {
+        if (! $this->exists && ! $this->relationLoaded('metadataOverride')) {
+            return null;
+        }
+
+        $sourceMapping = $this->getRelationValue('sourceMapping');
+        $canonicalOverride = $sourceMapping?->canonicalWork?->metadataOverride;
+
+        if ($canonicalOverride instanceof LiteratureMetadataOverride) {
+            return $canonicalOverride;
+        }
+
+        $override = $this->getRelationValue('metadataOverride');
+
+        return $override instanceof LiteratureMetadataOverride ? $override : null;
     }
 }

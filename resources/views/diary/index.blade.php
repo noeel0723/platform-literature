@@ -35,8 +35,8 @@
 
                         <a href="{{ route('literatures.show', $literature) }}" class="group col-start-2 mt-2 flex min-w-0 items-center gap-3 md:col-start-auto md:mt-0">
                             <span class="h-16 w-11 shrink-0 overflow-hidden border border-ink-950/15 bg-brand-sky/20">
-                                @if ($literature->cover_url)
-                                    <img src="{{ $literature->cover_url }}" alt="" class="size-full object-cover" loading="lazy">
+                                @if ($literature->displayCoverUrl())
+                                    <img src="{{ $literature->displayCoverUrl() }}" alt="" class="size-full object-cover" loading="lazy">
                                 @else
                                     <span class="grid size-full place-items-center font-serif text-sm font-bold text-ink-950">{{ Str::upper(Str::substr($literature->title, 0, 2)) }}</span>
                                 @endif
@@ -47,7 +47,7 @@
                             </span>
                         </a>
 
-                        <span class="hidden text-sm text-ink-950/60 md:block">{{ $literature->publication_year ?: '—' }}</span>
+                        <span class="hidden text-sm text-ink-950/60 md:block">{{ $literature->displayPublicationYear() ?: '—' }}</span>
                         <div class="col-start-2 mt-3 flex items-center gap-2 md:col-start-auto md:mt-0">
                             <x-star-rating :rating="$activity['rating']" size="sm" />
                             <span class="text-xs font-bold text-ink-950/50">{{ number_format($activity['rating'], 1) }}</span>

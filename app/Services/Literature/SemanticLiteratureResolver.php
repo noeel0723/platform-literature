@@ -45,7 +45,6 @@ class SemanticLiteratureResolver
 
         $identifierCandidates = $this->identifierCandidates($identifiers);
         $canonicalWork = null;
-        $candidateIds = $identifierCandidates->modelKeys();
         $matchMethod = 'created';
         $mappingStatus = LiteratureSourceMapping::STATUS_NEW;
         $confidence = 1.0;
@@ -61,15 +60,14 @@ class SemanticLiteratureResolver
         }
 
         if ($identifierCandidates->count() > 1 || ($identifierCandidates->isNotEmpty() && $canonicalWork === null)) {
-            $mappingStatus = LiteratureSourceMapping::STATUS_NEEDS_REVIEW;
-            $matchMethod = 'identifier_conflict';
+            $mappingStatus = LiteratureSourceMapping::STATUS_MATCHED;
+            $matchMethod = 'identifier_conflict_separate';
             $confidence = 0.25;
         }
 
         if ($identifierCandidates->isEmpty()) {
             $composite = $this->compositeCandidate($literature);
             $canonicalWork = $composite['work'];
-            $candidateIds = $composite['candidate_ids'];
             $matchMethod = $composite['method'];
             $mappingStatus = $composite['status'];
             $confidence = $composite['confidence'];
@@ -86,9 +84,7 @@ class SemanticLiteratureResolver
             'match_method' => $matchMethod,
             'mapping_status' => $mappingStatus,
             'confidence' => $confidence,
-            'candidate_work_ids' => $mappingStatus === LiteratureSourceMapping::STATUS_NEEDS_REVIEW && $candidateIds !== []
-                ? $candidateIds
-                : null,
+            'candidate_work_ids' => null,
             'field_provenance' => $this->fieldProvenance($literature),
         ]);
 
@@ -126,7 +122,7 @@ class SemanticLiteratureResolver
     }
 
     /**
-     * @return array{work: CanonicalWork|null, candidate_ids: list<int>, method: string, status: string, confidence: float}
+     * @return array{work: CanonicalWork|null, method: string, status: string, confidence: float}
      */
     private function compositeCandidate(Literature $literature): array
     {
@@ -148,7 +144,6 @@ class SemanticLiteratureResolver
             if ($exactYearCandidates->count() === 1) {
                 return [
                     'work' => $exactYearCandidates->first(),
-                    'candidate_ids' => $exactYearCandidates->modelKeys(),
                     'method' => 'title_author_year',
                     'status' => LiteratureSourceMapping::STATUS_MATCHED,
                     'confidence' => $literature->publication_year === null ? 0.86 : 0.92,
@@ -165,7 +160,6 @@ class SemanticLiteratureResolver
                 ) {
                     return [
                         'work' => $candidate,
-                        'candidate_ids' => [$candidate->id],
                         'method' => $literature->type === 'novel'
                             ? 'title_author_edition'
                             : 'title_author',
@@ -179,16 +173,14 @@ class SemanticLiteratureResolver
         if ($titleCandidates->isNotEmpty()) {
             return [
                 'work' => null,
-                'candidate_ids' => $titleCandidates->modelKeys(),
-                'method' => 'ambiguous_title',
-                'status' => LiteratureSourceMapping::STATUS_NEEDS_REVIEW,
+                'method' => 'ambiguous_title_separate',
+                'status' => LiteratureSourceMapping::STATUS_MATCHED,
                 'confidence' => 0.45,
             ];
         }
 
         return [
             'work' => null,
-            'candidate_ids' => [],
             'method' => 'created',
             'status' => LiteratureSourceMapping::STATUS_NEW,
             'confidence' => 1.0,

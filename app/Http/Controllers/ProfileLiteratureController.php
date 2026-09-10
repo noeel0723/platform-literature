@@ -13,6 +13,8 @@ class ProfileLiteratureController extends Controller
             ->where('status', 'completed')
             ->with([
                 'literature.authors',
+                'literature.metadataOverride',
+                'literature.sourceMapping.canonicalWork.metadataOverride',
                 'literature.reviews' => fn ($reviews) => $reviews
                     ->whereBelongsTo($user)
                     ->whereNull('hidden_at'),

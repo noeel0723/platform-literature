@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\ActivityController;
-use App\Http\Controllers\Admin\CatalogReviewController;
+use App\Http\Controllers\Admin\LiteratureMetadataOverrideController;
 use App\Http\Controllers\Admin\ModerationController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AuthorController;
@@ -77,8 +77,10 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/reports', [ReportController::class, 'store'])->name('reports.store');
 
     Route::prefix('admin')->name('admin.')->middleware('admin')->group(function (): void {
-        Route::get('/catalog-review', [CatalogReviewController::class, 'index'])->name('catalog-review.index');
-        Route::patch('/catalog-review/{mapping}', [CatalogReviewController::class, 'update'])->name('catalog-review.update');
+        Route::get('/literatures/{literature}/metadata', [LiteratureMetadataOverrideController::class, 'edit'])
+            ->name('literatures.metadata.edit');
+        Route::put('/literatures/{literature}/metadata', [LiteratureMetadataOverrideController::class, 'update'])
+            ->name('literatures.metadata.update');
         Route::get('/moderation', [ModerationController::class, 'index'])->name('moderation.index');
         Route::patch('/moderation/{report}', [ModerationController::class, 'update'])->name('moderation.update');
     });

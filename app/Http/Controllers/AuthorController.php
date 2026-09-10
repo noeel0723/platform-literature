@@ -42,7 +42,7 @@ class AuthorController extends Controller
         $literatures = $author->literatures()
             ->whereIn('type', Literature::supportedTypes())
             ->canonicalRepresentatives()
-            ->with(['apiSource', 'authors'])
+            ->with(['apiSource', 'authors', 'metadataOverride', 'sourceMapping.canonicalWork.metadataOverride'])
             ->withAvg([
                 'reviews' => fn (Builder $reviews) => $reviews->whereNull('hidden_at'),
             ], 'rating')
@@ -74,11 +74,11 @@ class AuthorController extends Controller
         return [
             'slug' => $literature->slug,
             'title' => $displayTitle,
-            'year' => $literature->publication_year === null ? '—' : (string) $literature->publication_year,
+            'year' => $literature->displayPublicationYear() === null ? '—' : (string) $literature->displayPublicationYear(),
             'type_label' => $literature->typeLabel(),
             'author' => $literature->authors->pluck('name')->implode(' & ') ?: 'Author unavailable',
             'source' => $literature->apiSource->name,
-            'cover_url' => $literature->cover_url,
+            'cover_url' => $literature->displayCoverUrl(),
             'theme' => $literature->theme,
             'initials' => $this->initials($displayTitle),
             'rating' => $literature->reviews_avg_rating === null

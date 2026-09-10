@@ -25,7 +25,7 @@ class ActivityController extends Controller
 
         $activities = Activity::query()
             ->visibleToReaders()
-            ->with(['user', 'literature.authors', 'review', 'discussion', 'comment'])
+            ->with(['user', 'literature.authors', 'literature.metadataOverride', 'literature.sourceMapping.canonicalWork.metadataOverride', 'review', 'discussion', 'comment'])
             ->whereIn('user_id', $userIds)
             ->orderByDesc('occurred_at')
             ->orderByDesc('id')

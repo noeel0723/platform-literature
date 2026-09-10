@@ -4,8 +4,10 @@ namespace Tests\Feature\Services\Literature;
 
 use App\Exceptions\LiteratureSourceUnavailable;
 use App\Services\Literature\ComicVineAdapter;
+use App\Services\Literature\NormalizedAuthor;
 use App\Services\Literature\NormalizedLiterature;
 use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -66,6 +68,12 @@ class ComicVineAdapterTest extends TestCase
         $this->assertSame('A landmark superhero story.', $comic->synopsis);
         $this->assertCount(2, $comic->authorDetails);
         $this->assertSame('40382', $comic->authorDetails[0]->externalId);
+        $this->assertInstanceOf(NormalizedAuthor::class, $comic->authorDetails[0]);
+
+        $cachedCreators = Cache::get('literature-source:comic-vine:issue-creators:v3:367155');
+        $this->assertIsArray($cachedCreators);
+        $this->assertIsArray($cachedCreators[0]);
+        $this->assertSame('Alan Moore', $cachedCreators[0]['name']);
 
         Http::assertSent(function (Request $request): bool {
             $data = $request->data();

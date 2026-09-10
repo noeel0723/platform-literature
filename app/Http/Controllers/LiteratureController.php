@@ -121,6 +121,8 @@ class LiteratureController extends Controller
             'apiSource',
             'authors',
             'categories',
+            'metadataOverride',
+            'sourceMapping.canonicalWork.metadataOverride',
             'outgoingRelations.relatedLiterature.apiSource',
             'outgoingRelations.relatedLiterature.authors',
             'outgoingRelations.relatedLiterature.categories',
@@ -214,9 +216,13 @@ class LiteratureController extends Controller
     {
         $authorNames = $literature->authors->pluck('name');
         $displayTitle = $literature->displayTitle();
-        $metadataIsEnglish = $literature->apiSource->key !== 'google-books'
-            || $literature->language === null
-            || $literature->language === 'en'
+        $displayLanguage = $literature->displayLanguage();
+        $metadataOverride = $literature->effectiveMetadataOverride();
+        $hasCuratedSynopsis = filled($metadataOverride?->synopsis);
+        $metadataIsEnglish = $hasCuratedSynopsis
+            || $literature->apiSource->key !== 'google-books'
+            || $displayLanguage === null
+            || $displayLanguage === 'en'
             || $literature->synopsis_source_name === 'Wikipedia EN';
         $formatLabels = [
             'Book' => 'Novel',
@@ -241,7 +247,7 @@ class LiteratureController extends Controller
             'alternate_title_label' => in_array($literature->type, ['manga', 'manhwa'], true)
                 ? 'Original title'
                 : 'Edition title',
-            'year' => $literature->publication_year === null ? 'Year unavailable' : (string) $literature->publication_year,
+            'year' => $literature->displayPublicationYear() === null ? 'Year unavailable' : (string) $literature->displayPublicationYear(),
             'type' => $literature->type,
             'type_label' => $literature->typeLabel(),
             'author' => $authorNames->isEmpty() ? 'Author unavailable' : $authorNames->implode(' & '),
@@ -254,17 +260,18 @@ class LiteratureController extends Controller
                 ->values()
                 ->all(),
             'source' => $literature->apiSource->name,
-            'tagline' => $metadataIsEnglish ? $literature->tagline ?? 'Short description unavailable.' : 'Short description unavailable in English.',
-            'synopsis' => $metadataIsEnglish ? $literature->synopsis ?? 'Synopsis unavailable from the metadata source.' : 'Synopsis unavailable in English.',
-            'synopsis_source_name' => $metadataIsEnglish ? $literature->synopsis_source_name : null,
-            'synopsis_source_url' => $metadataIsEnglish ? $literature->synopsis_source_url : null,
-            'publisher' => $literature->publisher ?? 'Unavailable',
-            'language' => $languageLabels[$literature->language] ?? $literature->language ?? 'Unavailable',
-            'format' => $formatLabels[$literature->format] ?? $literature->format ?? $literature->typeLabel(),
+            'tagline' => $metadataIsEnglish ? $literature->displayTagline() ?? 'Short description unavailable.' : 'Short description unavailable in English.',
+            'synopsis' => $metadataIsEnglish ? $literature->displaySynopsis() ?? 'Synopsis unavailable from the metadata source.' : 'Synopsis unavailable in English.',
+            'synopsis_source_name' => $hasCuratedSynopsis ? 'Literahaven curated metadata' : ($metadataIsEnglish ? $literature->synopsis_source_name : null),
+            'synopsis_source_url' => $hasCuratedSynopsis ? $metadataOverride?->source_url : ($metadataIsEnglish ? $literature->synopsis_source_url : null),
+            'publisher' => $literature->displayPublisher() ?? 'Unavailable',
+            'language' => $languageLabels[$displayLanguage] ?? $displayLanguage ?? 'Unavailable',
+            'format' => $formatLabels[$literature->displayFormat()] ?? $literature->displayFormat() ?? $literature->typeLabel(),
             'genres' => $literature->categories->pluck('name')->all(),
             'identifier' => $literature->identifier ?? $literature->external_id,
-            'cover_url' => $literature->cover_url,
+            'cover_url' => $literature->displayCoverUrl(),
             'theme' => $literature->theme,
+            'is_curated' => $literature->hasCuratedMetadata(),
             'initials' => $this->initials($displayTitle),
         ];
     }

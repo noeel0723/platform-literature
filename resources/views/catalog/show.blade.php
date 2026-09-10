@@ -22,9 +22,16 @@
         @endif
 
         <div class="relative mx-auto max-w-7xl px-5 pb-14 pt-8 sm:px-8 lg:px-10 lg:pb-20 lg:pt-10">
-            <a href="{{ route('literatures.index') }}" class="inline-flex items-center gap-2 text-sm font-semibold text-ink-950/75 transition hover:text-brand-coral">
-                <span aria-hidden="true">&larr;</span> Back to catalog
-            </a>
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <a href="{{ route('literatures.index') }}" class="inline-flex items-center gap-2 text-sm font-semibold text-ink-950/75 transition hover:text-brand-coral">
+                    <span aria-hidden="true">&larr;</span> Back to catalog
+                </a>
+                @if (auth()->user()?->isAdmin())
+                    <a href="{{ route('admin.literatures.metadata.edit', $literature['slug']) }}" class="rounded-full border border-ink-950/20 bg-brand-cream/80 px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] text-ink-950 backdrop-blur transition hover:border-brand-coral hover:text-brand-coral">
+                        Edit metadata
+                    </a>
+                @endif
+            </div>
 
             <div class="mt-24 grid gap-8 md:grid-cols-[220px_1fr] lg:mt-40 lg:grid-cols-[250px_minmax(0,1fr)_300px] lg:items-end">
                 <div class="relative aspect-[2/3] overflow-hidden border border-ink-950/20 bg-linear-to-br {{ $coverTheme }} shadow-[0_14px_36px_rgba(47,58,85,0.12)]">
@@ -50,6 +57,9 @@
                     <div class="flex flex-wrap items-center gap-3 text-sm font-semibold uppercase tracking-wider text-ink-950/60">
                         <span class="bg-brand-coral px-2.5 py-1 text-brand-cream">{{ $literature['type_label'] }}</span>
                         <span>{{ $literature['year'] }}</span>
+                        @if ($literature['is_curated'])
+                            <span class="border border-brand-coral/40 px-2.5 py-1 text-brand-coral">Curated</span>
+                        @endif
                     </div>
                     <h1 class="mt-4 font-serif text-5xl font-bold leading-none tracking-tight text-ink-950 sm:text-6xl">{{ $literature['title'] }}</h1>
                     @if ($literature['edition_title'])

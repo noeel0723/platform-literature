@@ -23,8 +23,8 @@
                     <article class="group min-w-0" data-readlist-item>
                         <a href="{{ route('literatures.show', $literature) }}" class="block">
                             <div class="relative aspect-[2/3] overflow-hidden rounded-sm border border-ink-950/15 bg-brand-sky/20 shadow-[0_7px_18px_rgba(47,58,85,0.08)] transition duration-200 group-hover:-translate-y-1 group-hover:border-brand-coral">
-                                @if ($literature->cover_url)
-                                    <img src="{{ $literature->cover_url }}" alt="Cover of {{ $literature->displayTitle() }}" class="size-full object-cover" loading="lazy">
+                                @if ($literature->displayCoverUrl())
+                                    <img src="{{ $literature->displayCoverUrl() }}" alt="Cover of {{ $literature->displayTitle() }}" class="size-full object-cover" loading="lazy">
                                 @else
                                     <div class="grid size-full place-items-center p-4 text-center font-serif text-2xl font-bold text-ink-950">{{ Str::upper(Str::substr($literature->displayTitle(), 0, 2)) }}</div>
                                 @endif
@@ -64,8 +64,8 @@
                                 @php($suggestionTitle = $literature->displayTitle())
                                 <article class="flex items-center gap-3 border-b border-ink-950/10 py-2.5 last:border-b-0" data-readlist-suggestion data-suggestion-literature-id="{{ $literature->id }}" data-search-text="{{ Str::lower($suggestionTitle.' '.$literature->authors->pluck('name')->implode(' ')) }}">
                                     <a href="{{ route('literatures.show', $literature) }}" class="h-16 w-11 shrink-0 overflow-hidden rounded-sm border border-ink-950/10 bg-brand-sky/25">
-                                        @if ($literature->cover_url)
-                                            <img src="{{ $literature->cover_url }}" alt="" class="size-full object-cover" loading="lazy">
+                                        @if ($literature->displayCoverUrl())
+                                            <img src="{{ $literature->displayCoverUrl() }}" alt="" class="size-full object-cover" loading="lazy">
                                         @else
                                             <span class="grid size-full place-items-center font-serif text-xs font-bold text-ink-950">{{ Str::upper(Str::substr($suggestionTitle, 0, 2)) }}</span>
                                         @endif

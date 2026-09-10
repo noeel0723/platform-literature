@@ -3,7 +3,6 @@
 namespace App\Console\Commands;
 
 use App\Models\Literature;
-use App\Models\LiteratureSourceMapping;
 use App\Services\Literature\SemanticLiteratureResolver;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -47,12 +46,6 @@ class MapExistingLiterature extends Command
         $this->newLine(2);
         $action = $this->option('refresh') ? 'Refreshed' : 'Mapped';
         $this->components->info("{$action} {$total} literature records.");
-
-        $reviewCount = LiteratureSourceMapping::query()->needsReview()->count();
-
-        if ($reviewCount > 0) {
-            $this->components->warn("{$reviewCount} mappings need manual review; no automatic merge was performed for them.");
-        }
 
         return self::SUCCESS;
     }

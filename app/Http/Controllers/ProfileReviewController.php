@@ -12,7 +12,7 @@ class ProfileReviewController extends Controller
         $visibleReviews = $user->reviews()->whereNull('hidden_at');
 
         $reviews = (clone $visibleReviews)
-            ->with(['literature.authors'])
+            ->with(['literature.authors', 'literature.metadataOverride', 'literature.sourceMapping.canonicalWork.metadataOverride'])
             ->withCount('likes')
             ->latest('updated_at')
             ->paginate(12);

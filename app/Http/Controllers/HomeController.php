@@ -23,7 +23,7 @@ class HomeController extends Controller
         if ($friendIds->isNotEmpty()) {
             $activities = Activity::query()
                 ->visibleToReaders()
-                ->with(['user', 'literature.authors', 'review'])
+                ->with(['user', 'literature.authors', 'literature.metadataOverride', 'literature.sourceMapping.canonicalWork.metadataOverride', 'review'])
                 ->whereIn('user_id', $friendIds)
                 ->whereIn('type', [
                     Activity::TYPE_COMPLETED,
@@ -39,7 +39,7 @@ class HomeController extends Controller
                 ->values();
 
             $popularLiteratures = Literature::query()
-                ->with(['authors', 'readingLists' => function ($readingLists) use ($friendIds): void {
+                ->with(['authors', 'metadataOverride', 'sourceMapping.canonicalWork.metadataOverride', 'readingLists' => function ($readingLists) use ($friendIds): void {
                     $readingLists
                         ->whereIn('user_id', $friendIds)
                         ->whereIn('status', ['reading', 'completed'])

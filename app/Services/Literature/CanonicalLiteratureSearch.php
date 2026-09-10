@@ -24,7 +24,7 @@ final class CanonicalLiteratureSearch
             ->whereNotNull('preferred_literature_id');
 
         return Literature::query()
-            ->with(['apiSource', 'authors', 'categories', 'sourceMapping'])
+            ->with(['apiSource', 'authors', 'categories', 'sourceMapping.canonicalWork.metadataOverride', 'metadataOverride'])
             ->whereIn('type', Literature::supportedTypes())
             ->when($selectedType !== '', fn (Builder $literatures) => $literatures->where('type', $selectedType))
             ->where(function (Builder $literatures) use ($preferredLiteratureIds, $query): void {
@@ -55,6 +55,9 @@ final class CanonicalLiteratureSearch
             $search
                 ->where('title', 'like', "%{$query}%")
                 ->orWhere('original_title', 'like', "%{$query}%")
+                ->orWhereHas('metadataOverride', fn (Builder $overrides) => $overrides
+                    ->where('title', 'like', "%{$query}%")
+                    ->orWhere('original_title', 'like', "%{$query}%"))
                 ->orWhereHas('authors', function (Builder $authors) use ($query): void {
                     $authors
                         ->where('name', 'like', "%{$query}%")

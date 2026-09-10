@@ -108,12 +108,13 @@ class SemanticLiteratureResolverTest extends TestCase
         $secondMapping = app(SemanticLiteratureResolver::class)->resolve($second);
 
         $this->assertNotSame($firstMapping->canonical_work_id, $secondMapping->canonical_work_id);
-        $this->assertSame(LiteratureSourceMapping::STATUS_NEEDS_REVIEW, $secondMapping->mapping_status);
-        $this->assertSame([$firstMapping->canonical_work_id], $secondMapping->candidate_work_ids);
+        $this->assertSame(LiteratureSourceMapping::STATUS_MATCHED, $secondMapping->mapping_status);
+        $this->assertSame('ambiguous_title_separate', $secondMapping->match_method);
+        $this->assertNull($secondMapping->candidate_work_ids);
         $this->assertDatabaseCount('canonical_works', 2);
     }
 
-    public function test_missing_author_is_queued_for_review_instead_of_being_merged_by_title_only(): void
+    public function test_missing_author_is_kept_separate_instead_of_being_merged_by_title_only(): void
     {
         $author = Author::factory()->create();
         $first = $this->literature($this->source('source-one'), 'one', 'The Alchemist', null, 'novel', 1988);
@@ -124,8 +125,8 @@ class SemanticLiteratureResolverTest extends TestCase
         $secondMapping = app(SemanticLiteratureResolver::class)->resolve($second);
 
         $this->assertNotSame($firstMapping->canonical_work_id, $secondMapping->canonical_work_id);
-        $this->assertSame('ambiguous_title', $secondMapping->match_method);
-        $this->assertSame(LiteratureSourceMapping::STATUS_NEEDS_REVIEW, $secondMapping->mapping_status);
+        $this->assertSame('ambiguous_title_separate', $secondMapping->match_method);
+        $this->assertSame(LiteratureSourceMapping::STATUS_MATCHED, $secondMapping->mapping_status);
         $this->assertDatabaseCount('canonical_works', 2);
     }
 
