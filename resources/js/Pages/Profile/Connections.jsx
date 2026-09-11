@@ -1,18 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 
+import { Pagination, ProfilePageHeading } from '../../Components/ProfilePageUi';
 import ProfileSubNavigation from '../../Components/ProfileSubNavigation';
-
-function PaginationLink({ href, relation, children }) {
-    const classes = 'inline-flex min-h-10 items-center border px-5 text-sm font-semibold';
-
-    return href ? (
-        <Link href={href} rel={relation} preserveScroll className={`${classes} border-ink-950/20 bg-white/45 text-ink-950 transition hover:border-brand-coral hover:bg-brand-coral hover:text-brand-cream`}>
-            {children}
-        </Link>
-    ) : (
-        <span aria-disabled="true" className={`${classes} border-ink-950/10 text-ink-950/30`}>{children}</span>
-    );
-}
 
 export default function Connections({ profile, navigation, connections, relationship, canManage, counts, routes }) {
     const tabs = [
@@ -34,14 +23,14 @@ export default function Connections({ profile, navigation, connections, relation
         <>
             <Head title={`${title} - ${profile.name}`} />
             <ProfileSubNavigation navigation={navigation} />
-            <section className="catalog-grid border-b border-ink-950/10">
-                <div className="mx-auto max-w-6xl px-5 py-9 sm:px-8 lg:px-10 lg:py-12">
-                    <Link href={routes.profile} className="text-sm font-bold text-ink-950/65 transition hover:text-brand-coral">← Back to {profile.name}&apos;s profile</Link>
-                    <p className="mt-7 text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">Reader network</p>
-                </div>
-            </section>
-            <section className="mx-auto max-w-6xl px-5 py-10 sm:px-8 lg:px-10 lg:py-14">
-                <nav className="flex items-end gap-6 overflow-x-auto border-b border-ink-950/15" aria-label="Connection categories">
+            <section className="mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-10 lg:py-10" aria-labelledby="connections-heading">
+                <ProfilePageHeading
+                    eyebrow="Reader network"
+                    title="Connections"
+                    count={`${connections.total} ${title.toLowerCase()}`}
+                    id="connections-heading"
+                />
+                <nav className="mt-5 flex items-end gap-6 overflow-x-auto border-b border-ink-950/15" aria-label="Connection categories">
                     {tabs.map((tab) => (
                         <Link key={tab.key} href={tab.url} preserveScroll className={`flex shrink-0 items-center gap-2 border-b-2 px-0.5 pb-3 text-sm font-bold uppercase tracking-[0.12em] transition ${relationship === tab.key ? 'border-brand-coral text-ink-950' : 'border-transparent text-ink-950/50 hover:text-ink-950'}`} aria-current={relationship === tab.key ? 'page' : undefined}>
                             <span>{tab.label}</span>
@@ -69,13 +58,7 @@ export default function Connections({ profile, navigation, connections, relation
                         ))}
                     </div>
                 ) : <div className="mt-5 border border-dashed border-ink-950/20 p-8 text-ink-950/55">No readers are listed in {title.toLowerCase()} yet.</div>}
-                {connections.last_page > 1 && (
-                    <nav className="mt-10 flex items-center justify-between border-t border-ink-950/10 pt-6" aria-label={`${title} pagination`}>
-                        <PaginationLink href={connections.prev_page_url} relation="prev">Previous</PaginationLink>
-                        <span className="text-xs font-bold uppercase tracking-[0.14em] text-ink-950/45">Page {connections.current_page} of {connections.last_page}</span>
-                        <PaginationLink href={connections.next_page_url} relation="next">Next</PaginationLink>
-                    </nav>
-                )}
+                <Pagination paginator={connections} label={`${title} pagination`} />
             </section>
         </>
     );
