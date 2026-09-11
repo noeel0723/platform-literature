@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class SocialConnectionTest extends TestCase
@@ -88,12 +89,19 @@ class SocialConnectionTest extends TestCase
         $this->assertTrue($profileResponse->inertiaProps('profile.viewer_authenticated'));
 
         $this->get(route('profiles.followers', $profileOwner))
-            ->assertOk()
-            ->assertSeeText('Faithful Reader')
-            ->assertSeeText('@faithful_reader');
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Profile/Connections')
+                ->where('relationship', 'followers')
+                ->where('profile.username', 'profile_owner')
+                ->has('connections.data', 1)
+                ->where('connections.data.0.name', 'Faithful Reader')
+                ->where('connections.data.0.username', 'faithful_reader'));
 
         $this->get(route('profiles.following', $follower))
-            ->assertOk()
-            ->assertSeeText('Profile Owner');
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Profile/Connections')
+                ->where('relationship', 'following')
+                ->has('connections.data', 1)
+                ->where('connections.data.0.name', 'Profile Owner'));
     }
 }

@@ -9,13 +9,19 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
-use Illuminate\View\View;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class AuthController extends Controller
 {
-    public function showRegister(): View
+    public function showRegister(): Response
     {
-        return view('auth.register');
+        return Inertia::render('Auth/Register', [
+            'routes' => [
+                'register' => route('register'),
+                'login' => route('login'),
+            ],
+        ]);
     }
 
     public function register(RegisterRequest $request): RedirectResponse
@@ -29,9 +35,14 @@ class AuthController extends Controller
             ->with('success', 'Your account is ready. You can now save literature to your Readlist.');
     }
 
-    public function showLogin(): View
+    public function showLogin(): Response
     {
-        return view('auth.login');
+        return Inertia::render('Auth/Login', [
+            'routes' => [
+                'login' => route('login'),
+                'register' => route('register'),
+            ],
+        ]);
     }
 
     public function login(LoginRequest $request): RedirectResponse

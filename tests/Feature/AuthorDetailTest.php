@@ -8,7 +8,7 @@ use App\Models\Literature;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
-use Inertia\Testing\AssertableInertia;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class AuthorDetailTest extends TestCase
@@ -38,13 +38,14 @@ class AuthorDetailTest extends TestCase
         $author->literatures()->attach($haikyu, ['role' => 'author', 'position' => 0]);
 
         $this->get(route('authors.show', $author))
-            ->assertOk()
-            ->assertSeeText('Works by')
-            ->assertSeeText('Haruichi Furudate')
-            ->assertSeeText('Japanese manga artist known for Haikyu!!')
-            ->assertSee('https://images.example.test/furudate.jpg', false)
-            ->assertSee(route('literatures.show', $haikyu), false)
-            ->assertDontSeeText($unrelated->title);
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Author/Show')
+                ->where('author.name', 'Haruichi Furudate')
+                ->where('author.biography', 'Japanese manga artist known for Haikyu!!')
+                ->where('author.image_url', 'https://images.example.test/furudate.jpg')
+                ->has('literatures.data', 1)
+                ->where('literatures.data.0.title', 'Haikyu!!')
+                ->where('literatures.data.0.url', route('literatures.show', $haikyu)));
     }
 
     public function test_missing_author_metadata_is_enriched_from_knowledge_graph(): void
@@ -81,11 +82,12 @@ class AuthorDetailTest extends TestCase
         ]);
 
         $this->get(route('authors.show', $author))
-            ->assertOk()
-            ->assertSeeText('Haruichi Furudate is a Japanese manga artist.')
-            ->assertSee('https://images.example.test/furudate.jpg', false)
-            ->assertSee('https://en.wikipedia.org/wiki/Haruichi_Furudate', false)
-            ->assertSee('https://creativecommons.org/licenses/by-sa/4.0/', false);
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Author/Show')
+                ->where('author.biography', 'Haruichi Furudate is a Japanese manga artist.')
+                ->where('author.image_url', 'https://images.example.test/furudate.jpg')
+                ->where('profileSourceUrl', 'https://en.wikipedia.org/wiki/Haruichi_Furudate')
+                ->where('imageLicenseUrl', 'https://creativecommons.org/licenses/by-sa/4.0/'));
 
         $this->assertDatabaseHas('authors', [
             'id' => $author->id,
@@ -136,8 +138,9 @@ class AuthorDetailTest extends TestCase
         ]);
 
         $this->get(route('authors.show', $author))
-            ->assertOk()
-            ->assertSee('https://upload.wikimedia.org/wikipedia/commons/furudate.jpg', false);
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Author/Show')
+                ->where('author.image_url', 'https://upload.wikimedia.org/wikipedia/commons/furudate.jpg'));
 
         $this->assertDatabaseHas('authors', [
             'id' => $author->id,
@@ -192,10 +195,11 @@ class AuthorDetailTest extends TestCase
         $author->literatures()->attach($literature, ['role' => 'author', 'position' => 0]);
 
         $this->get(route('authors.show', $author))
-            ->assertOk()
-            ->assertSee('https://s4.anilist.co/hiromu-arakawa.jpg', false)
-            ->assertSeeText('Japanese manga artist.')
-            ->assertSee('https://anilist.co/staff/96879/Hiromu-Arakawa', false);
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Author/Show')
+                ->where('author.image_url', 'https://s4.anilist.co/hiromu-arakawa.jpg')
+                ->where('author.biography', 'Japanese manga artist.')
+                ->where('profileSourceUrl', 'https://anilist.co/staff/96879/Hiromu-Arakawa'));
 
         $this->assertDatabaseHas('authors', [
             'id' => $author->id,
@@ -213,7 +217,7 @@ class AuthorDetailTest extends TestCase
         ]);
 
         $this->get(route('search.index', ['q' => 'Haruichi']))
-            ->assertInertia(fn (AssertableInertia $page) => $page
+            ->assertInertia(fn (Assert $page) => $page
                 ->component('Search/Index')
                 ->where('authors.0.url', route('authors.show', $author)));
     }

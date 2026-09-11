@@ -13,7 +13,6 @@ use App\Support\ProfilePagePresenter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\View\View;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -260,14 +259,14 @@ class ProfileController extends Controller
             ->with('success', 'Your profile has been updated.');
     }
 
-    public function followers(User $user): View
+    public function followers(User $user, ProfilePagePresenter $presenter): Response
     {
-        return $this->connections($user, 'followers');
+        return $this->connections($user, 'followers', $presenter);
     }
 
-    public function following(User $user): View
+    public function following(User $user, ProfilePagePresenter $presenter): Response
     {
-        return $this->connections($user, 'following');
+        return $this->connections($user, 'following', $presenter);
     }
 
     /**
@@ -295,17 +294,28 @@ class ProfileController extends Controller
             ->all();
     }
 
-    private function connections(User $user, string $relationship): View
+    private function connections(User $user, string $relationship, ProfilePagePresenter $presenter): Response
     {
         $connections = $user->{$relationship}()
             ->withCount(['followers', 'following'])
             ->orderBy('name')
-            ->paginate(24);
+            ->orderBy('users.id')
+            ->paginate(24)
+            ->withQueryString()
+            ->through(fn (User $connection): array => [
+                ...$presenter->user($connection),
+                'followers_count' => $connection->followers_count,
+                'following_count' => $connection->following_count,
+            ]);
 
-        return view('profiles.connections', [
-            'user' => $user,
+        return Inertia::render('Profile/Connections', [
+            'profile' => $presenter->user($user),
+            'navigation' => $presenter->navigation($user, 'profile', request()->user()),
             'connections' => $connections,
             'relationship' => $relationship,
+            'routes' => [
+                'profile' => route('profiles.show', $user),
+            ],
         ]);
     }
 

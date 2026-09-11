@@ -5,11 +5,27 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
 {
     use LazilyRefreshDatabase;
+
+    public function test_login_and_registration_forms_are_rendered_by_react(): void
+    {
+        $this->get(route('login'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Auth/Login')
+                ->where('routes.login', route('login'))
+                ->where('routes.register', route('register')));
+
+        $this->get(route('register'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Auth/Register')
+                ->where('routes.register', route('register'))
+                ->where('routes.login', route('login')));
+    }
 
     public function test_user_can_register_and_is_automatically_authenticated(): void
     {

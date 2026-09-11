@@ -1,3 +1,5 @@
+import { Link } from '@inertiajs/react';
+
 const coverThemes = {
     coral: 'from-brand-coral via-brand-cream to-brand-sky text-ink-950',
     sky: 'from-brand-sky via-brand-cream to-ink-950 text-ink-950',
@@ -43,7 +45,7 @@ export default function LiteratureDetailHero({ literature }) {
                 </div>
             </div>
 
-            <div className="self-end pb-2">
+            <div className="self-start pt-1 md:pt-28">
                 <div className="flex flex-wrap items-center gap-3 text-sm font-semibold uppercase tracking-wider text-ink-950/60">
                     <span className="bg-brand-coral px-2.5 py-1 text-brand-cream">
                         {literature.type_label}
@@ -56,7 +58,7 @@ export default function LiteratureDetailHero({ literature }) {
                     )}
                 </div>
 
-                <h1 className="mt-4 font-serif text-5xl font-bold leading-none tracking-tight text-ink-950 sm:text-6xl">
+                <h1 className="mt-4 text-4xl font-bold leading-[0.98] tracking-tight text-ink-950 sm:text-5xl lg:text-6xl">
                     {literature.title}
                 </h1>
 
@@ -100,4 +102,3 @@ export default function LiteratureDetailHero({ literature }) {
         </>
     );
 }
-import { Link } from '@inertiajs/react';

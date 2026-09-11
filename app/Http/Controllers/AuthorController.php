@@ -6,9 +6,10 @@ use App\Models\Author;
 use App\Models\Literature;
 use App\Services\Literature\AniListAuthorEnricher;
 use App\Services\Literature\KnowledgeGraphEnricher;
-use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class AuthorController extends Controller
 {
@@ -16,7 +17,7 @@ class AuthorController extends Controller
         Author $author,
         KnowledgeGraphEnricher $knowledgeGraph,
         AniListAuthorEnricher $aniListAuthors,
-    ): View {
+    ): Response {
         $entity = $knowledgeGraph->findAuthor($author->name);
         $isMangaCreator = $author->literatures()
             ->whereIn('type', ['manga', 'manhwa'])
@@ -56,8 +57,14 @@ class AuthorController extends Controller
             ->whereIn('type', Literature::supportedTypes())
             ->canonicalRepresentatives()]);
 
-        return view('authors.show', [
-            'author' => $author,
+        return Inertia::render('Author/Show', [
+            'author' => [
+                'name' => $author->name,
+                'image_url' => $author->image_url,
+                'initials' => $this->initials($author->name),
+                'biography' => $author->biography,
+                'literatures_count' => $author->literatures_count,
+            ],
             'literatures' => $literatures,
             'profileSourceUrl' => $entity?->sourceUrl
                 ?? $entity?->officialUrl
@@ -73,6 +80,7 @@ class AuthorController extends Controller
 
         return [
             'slug' => $literature->slug,
+            'url' => route('literatures.show', $literature),
             'title' => $displayTitle,
             'year' => $literature->displayPublicationYear() === null ? '—' : (string) $literature->displayPublicationYear(),
             'type_label' => $literature->typeLabel(),
