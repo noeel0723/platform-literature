@@ -4,13 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Activity;
 use App\Models\Literature;
-use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class HomeController extends Controller
 {
-    public function __invoke(Request $request): View
+    public function __invoke(Request $request): Response
     {
         $viewer = $request->user();
         $friendIds = $viewer?->following()
@@ -62,10 +63,78 @@ class HomeController extends Controller
                 ->get();
         }
 
-        return view('home', [
-            'activities' => $activities,
-            'popularLiteratures' => $popularLiteratures,
-            'viewer' => $viewer,
+        return Inertia::render('Home/Index', [
+            'activities' => $activities->map(fn (Activity $activity): array => $this->presentActivity($activity))->all(),
+            'popularLiteratures' => $popularLiteratures
+                ->map(fn (Literature $literature): array => $this->presentPopularLiterature($literature))
+                ->all(),
+            'viewer' => $viewer === null ? null : [
+                'name' => $viewer->name,
+            ],
+            'routes' => [
+                'catalog' => route('literatures.index'),
+                'login' => route('login'),
+            ],
         ]);
+    }
+
+    /** @return array<string, mixed> */
+    private function presentActivity(Activity $activity): array
+    {
+        $literature = $activity->literature;
+
+        return [
+            'id' => $activity->id,
+            'action' => match ($activity->type) {
+                Activity::TYPE_COMPLETED => 'Completed',
+                Activity::TYPE_RATED => 'Rated',
+                Activity::TYPE_REVIEWED => 'Reviewed',
+                default => 'Updated',
+            },
+            'rating' => data_get($activity->metadata, 'rating'),
+            'occurred_at' => $activity->occurred_at->utc()->toIso8601String(),
+            'reader' => [
+                'name' => $activity->user->name,
+                'avatar_url' => $activity->user->avatarUrl(),
+                'initials' => $this->initials($activity->user->name),
+            ],
+            'literature' => [
+                'title' => $literature->displayTitle(),
+                'url' => route('literatures.show', $literature),
+                'cover_url' => $literature->displayCoverUrl(),
+                'initials' => $this->initials($literature->displayTitle()),
+            ],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function presentPopularLiterature(Literature $literature): array
+    {
+        return [
+            'id' => $literature->id,
+            'title' => $literature->displayTitle(),
+            'url' => route('literatures.show', $literature),
+            'cover_url' => $literature->displayCoverUrl(),
+            'initials' => $this->initials($literature->displayTitle()),
+            'friends_count' => $literature->friends_count,
+            'friends' => $literature->readingLists
+                ->take(3)
+                ->map(fn ($readingList): array => [
+                    'name' => $readingList->user->name,
+                    'avatar_url' => $readingList->user->avatarUrl(),
+                    'initials' => $this->initials($readingList->user->name),
+                ])
+                ->values()
+                ->all(),
+        ];
+    }
+
+    private function initials(string $value): string
+    {
+        return collect(preg_split('/\s+/', trim($value)) ?: [])
+            ->filter()
+            ->take(2)
+            ->map(fn (string $part): string => mb_strtoupper(mb_substr($part, 0, 1)))
+            ->implode('') ?: 'LH';
     }
 }

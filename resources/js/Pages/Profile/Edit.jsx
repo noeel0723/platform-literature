@@ -47,6 +47,7 @@ function AuthorSlot({ index, items, value, selectedValues, onChange }) {
 
 export default function ProfileEdit({ profile, navigation, literatures, authors, favoriteLiteratureIds, favoriteAuthorIds, routes }) {
     const form = useForm({
+        _method: 'put',
         name: profile.name,
         username: profile.username,
         location: profile.location ?? '',
@@ -76,7 +77,12 @@ export default function ProfileEdit({ profile, navigation, literatures, authors,
     };
     const submit = (event) => {
         event.preventDefault();
-        form.transform((data) => ({ ...data, _method: 'put' })).post(routes.update, { forceFormData: true, preserveScroll: true });
+        form.clearErrors();
+        form.post(routes.update, {
+            forceFormData: true,
+            preserveScroll: true,
+            onSuccess: () => form.setDefaults(),
+        });
     };
     const chosenLiteratures = form.data.favorite_literature_ids.filter(Boolean).map(String);
     const chosenAuthors = form.data.favorite_author_ids.filter(Boolean).map(String);
@@ -120,7 +126,7 @@ export default function ProfileEdit({ profile, navigation, literatures, authors,
                             <div className="mt-4 grid grid-cols-4 gap-2.5 sm:gap-3">{form.data.favorite_author_ids.map((value, index) => <AuthorSlot key={index} index={index} items={authors} value={value} selectedValues={chosenAuthors} onChange={(nextValue) => updateSlot('favorite_author_ids', index, nextValue)} />)}</div>
                             <FieldError message={form.errors.favorite_author_ids ?? form.errors['favorite_author_ids.0']} />
                         </fieldset>
-                        <div className="flex justify-end gap-3 border-t border-ink-950/10 pt-5"><Link href={routes.profile} className="inline-flex min-h-10 items-center border border-ink-950/15 px-5 text-sm font-bold text-ink-950 hover:border-brand-coral">Cancel</Link><button type="submit" disabled={form.processing} className="min-h-10 bg-ink-950 px-6 text-sm font-bold text-brand-cream transition hover:bg-brand-coral disabled:cursor-wait disabled:opacity-60">{form.processing ? 'Saving…' : 'Save profile'}</button></div>
+                        <div className="flex flex-wrap items-center justify-end gap-3 border-t border-ink-950/10 pt-5">{form.recentlySuccessful && <span role="status" className="mr-auto text-sm font-semibold text-green-800">Profile saved.</span>}<Link href={routes.profile} className="inline-flex min-h-10 items-center border border-ink-950/15 px-5 text-sm font-bold text-ink-950 hover:border-brand-coral">Cancel</Link><button type="submit" disabled={form.processing} className="min-h-10 bg-ink-950 px-6 text-sm font-bold text-brand-cream transition hover:bg-brand-coral disabled:cursor-wait disabled:opacity-60">{form.processing ? 'Saving…' : 'Save profile'}</button></div>
                     </div>
                 </form>
             </main>

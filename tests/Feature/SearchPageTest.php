@@ -9,6 +9,7 @@ use App\Models\ReadingList;
 use App\Models\Review;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class SearchPageTest extends TestCase
@@ -42,19 +43,19 @@ class SearchPageTest extends TestCase
 
         $response = $this->get(route('search.index', ['q' => 'Haikyu']));
 
-        $response
-            ->assertOk()
-            ->assertSeeText('Search results for')
-            ->assertSeeText('Haikyuu!!')
-            ->assertSeeText('Haruichi Furudate')
-            ->assertSeeText($namedAuthor->name)
-            ->assertSeeText('@haikyuu_reader')
-            ->assertSeeText('1 completed')
-            ->assertSeeText('1 reviews')
-            ->assertDontSeeText($deactivated->name)
-            ->assertSee('data-search-literature', false)
-            ->assertSee('data-search-author', false)
-            ->assertSee('data-search-member', false);
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('Search/Index')
+            ->where('query', 'Haikyu')
+            ->where('scope', 'all')
+            ->where('literatures.0.title', 'Haikyuu!!')
+            ->where('readers.0.username', 'haikyuu_reader')
+            ->where('readers.0.completed_count', 1)
+            ->where('readers.0.reviews_count', 1));
+        $this->assertEqualsCanonicalizing(
+            ['Haikyu Researcher', 'Haruichi Furudate'],
+            collect($response->inertiaProps('authors'))->pluck('name')->all(),
+        );
+        $this->assertNotContains($deactivated->name, collect($response->inertiaProps('readers'))->pluck('name')->all());
     }
 
     public function test_global_header_search_submits_to_the_combined_search_page(): void
@@ -79,10 +80,9 @@ class SearchPageTest extends TestCase
 
         $response = $this->get(route('search.index', ['q' => 'ハイキュー']));
 
-        $response
-            ->assertOk()
-            ->assertSeeText('Haikyu!!')
-            ->assertSee('data-search-literature', false);
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('Search/Index')
+            ->where('literatures.0.title', 'Haikyu!!'));
     }
 
     public function test_global_search_finds_an_author_by_a_known_alias(): void
@@ -98,11 +98,10 @@ class SearchPageTest extends TestCase
         ]);
 
         $this->get(route('search.index', ['q' => 'Robert Galbraith']))
-            ->assertOk()
-            ->assertSeeText('J. K. Rowling')
-            ->assertSeeText('The Cuckoo’s Calling')
-            ->assertSee('data-search-literature', false)
-            ->assertSee('data-search-author', false);
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Search/Index')
+                ->where('literatures.0.title', 'The Cuckoo’s Calling')
+                ->where('authors.0.name', 'J. K. Rowling'));
     }
 
     public function test_authenticated_header_shows_the_account_menu_and_feature_links(): void
@@ -130,9 +129,9 @@ class SearchPageTest extends TestCase
         ]);
 
         $this->get(route('search.index', ['q' => 'Bahasa Story']))
-            ->assertOk()
-            ->assertSeeText('English synopsis unavailable.')
-            ->assertDontSeeText('Sinopsis ini ditulis dalam bahasa Indonesia.');
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Search/Index')
+                ->where('literatures.0.synopsis', 'English synopsis unavailable.'));
     }
 
     public function test_search_category_only_displays_the_selected_result_type(): void
@@ -143,17 +142,16 @@ class SearchPageTest extends TestCase
         User::factory()->create(['name' => 'Naruto Reader', 'username' => 'naruto-reader']);
 
         $this->get(route('search.index', ['q' => 'Naruto', 'scope' => 'authors']))
-            ->assertOk()
-            ->assertSee('aria-current="page"', false)
-            ->assertSee('data-search-author', false)
-            ->assertDontSee('data-search-literature', false)
-            ->assertDontSee('data-search-member', false);
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Search/Index')
+                ->where('scope', 'authors')
+                ->has('authors', 1));
 
         $this->get(route('search.index', ['q' => 'Naruto', 'scope' => 'literature']))
-            ->assertOk()
-            ->assertSee('data-search-literature', false)
-            ->assertDontSee('data-search-author', false)
-            ->assertDontSee('data-search-member', false);
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Search/Index')
+                ->where('scope', 'literature')
+                ->has('literatures', 1));
     }
 
     /** @return array<string, mixed> */

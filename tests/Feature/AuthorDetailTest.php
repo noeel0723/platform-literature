@@ -8,6 +8,7 @@ use App\Models\Literature;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class AuthorDetailTest extends TestCase
@@ -212,8 +213,9 @@ class AuthorDetailTest extends TestCase
         ]);
 
         $this->get(route('search.index', ['q' => 'Haruichi']))
-            ->assertOk()
-            ->assertSee(route('authors.show', $author), false);
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Search/Index')
+                ->where('authors.0.url', route('authors.show', $author)));
     }
 
     private function configureKnowledgeGraph(): void

@@ -64,8 +64,9 @@ class CanonicalLiteratureProjectionTest extends TestCase
 
         $response = $this->get(route('search.index', ['q' => 'Haikyuu']));
 
-        $response->assertOk()->assertSeeText('Haikyu!!');
-        $this->assertSame(1, substr_count($response->getContent(), 'data-search-literature'));
+        $response->assertOk();
+        $this->assertCount(1, $response->inertiaProps('literatures'));
+        $this->assertSame('Haikyu!!', $response->inertiaProps('literatures.0.title'));
         $this->assertTrue($work->fresh()->preferredLiterature->is($preferred));
         $this->assertFalse($work->fresh()->preferredLiterature->is($alternate));
     }

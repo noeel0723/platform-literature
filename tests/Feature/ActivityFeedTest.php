@@ -11,6 +11,7 @@ use App\Models\Review;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Carbon;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class ActivityFeedTest extends TestCase
@@ -22,13 +23,11 @@ class ActivityFeedTest extends TestCase
         Literature::factory()->create(['title' => 'Catalog Only Literature']);
 
         $this->get(route('home'))
-            ->assertOk()
-            ->assertSeeText('Activity feed')
-            ->assertSeeText('Shared discoveries')
-            ->assertDontSeeText('Catalog Only Literature')
-            ->assertDontSeeText('Metadata sources')
-            ->assertDontSeeText('Current scope')
-            ->assertDontSee('href="'.route('home').'#sources"', false);
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Home/Index')
+                ->where('viewer', null)
+                ->has('activities', 0)
+                ->has('popularLiteratures', 0));
     }
 
     public function test_guest_is_invited_to_login_instead_of_receiving_a_global_activity_feed(): void
@@ -40,11 +39,12 @@ class ActivityFeedTest extends TestCase
         ]);
 
         $this->get(route('home'))
-            ->assertOk()
-            ->assertSeeText('Sign in and follow other readers')
-            ->assertSeeText('Log in')
-            ->assertDontSeeText('Community Reader')
-            ->assertDontSeeText('Shared Reading');
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Home/Index')
+                ->where('viewer', null)
+                ->has('activities', 0)
+                ->has('popularLiteratures', 0)
+                ->where('routes.login', route('login')));
     }
 
     public function test_authenticated_feed_contains_followed_activity_only(): void
@@ -58,11 +58,9 @@ class ActivityFeedTest extends TestCase
         Activity::factory()->for($followed)->for(Literature::factory()->create(['title' => 'Followed Book']))->create(['type' => Activity::TYPE_COMPLETED]);
         Activity::factory()->for($stranger)->for(Literature::factory()->create(['title' => 'Hidden Stranger Book']))->create(['type' => Activity::TYPE_COMPLETED]);
 
-        $this->actingAs($viewer)->get(route('home'))
-            ->assertOk()
-            ->assertSeeText('Followed Book')
-            ->assertDontSeeText('My Own Book')
-            ->assertDontSeeText('Hidden Stranger Book');
+        $response = $this->actingAs($viewer)->get(route('home'))->assertOk();
+
+        $this->assertSame(['Followed Book'], collect($response->inertiaProps('activities'))->pluck('literature.title')->all());
     }
 
     public function test_friends_activity_is_limited_to_the_six_latest_distinct_works(): void
@@ -83,10 +81,9 @@ class ActivityFeedTest extends TestCase
 
         $response = $this->actingAs($viewer)->get(route('home'))->assertOk();
 
-        $this->assertSame(6, substr_count($response->getContent(), 'data-friend-activity'));
-        $response
-            ->assertSeeText('Friend Activity 7')
-            ->assertDontSeeText('Friend Activity 1');
+        $this->assertCount(6, $response->inertiaProps('activities'));
+        $this->assertSame('Friend Activity 7', $response->inertiaProps('activities.0.literature.title'));
+        $this->assertNotContains('Friend Activity 1', collect($response->inertiaProps('activities'))->pluck('literature.title')->all());
     }
 
     public function test_popular_with_friends_is_ranked_by_the_number_of_friends_reading_each_work(): void
@@ -102,11 +99,13 @@ class ActivityFeedTest extends TestCase
         ReadingList::factory()->for($secondFriend)->for($popular)->create(['status' => 'reading']);
         ReadingList::factory()->for($firstFriend)->for($single)->create(['status' => 'completed']);
 
-        $this->actingAs($viewer)->get(route('home'))
-            ->assertOk()
-            ->assertSeeTextInOrder(['Two Friends Favorite', 'One Friend Favorite'])
-            ->assertSeeText('Read by 2 friends')
-            ->assertSeeText('Read by 1 friend');
+        $response = $this->actingAs($viewer)->get(route('home'))->assertOk();
+
+        $this->assertSame(
+            ['Two Friends Favorite', 'One Friend Favorite'],
+            collect($response->inertiaProps('popularLiteratures'))->pluck('title')->all(),
+        );
+        $this->assertSame([2, 1], collect($response->inertiaProps('popularLiteratures'))->pluck('friends_count')->all());
     }
 
     public function test_reading_updates_create_feed_activities_for_started_completed_and_reread_events(): void
@@ -153,12 +152,12 @@ class ActivityFeedTest extends TestCase
         $this->assertSame('A precise and memorable ending.', $activity->metadata['review_excerpt']);
         $this->assertTrue($activity->metadata['contains_spoiler']);
 
-        $this->actingAs($viewer)->get(route('home'))
-            ->assertOk()
-            ->assertSeeText('Reviewed')
-            ->assertSeeText('Reviewed Story')
-            ->assertSeeText('4.5')
-            ->assertSeeText('Reviewing Reader');
+        $response = $this->actingAs($viewer)->get(route('home'))->assertOk();
+
+        $this->assertSame('Reviewed', $response->inertiaProps('activities.0.action'));
+        $this->assertSame('Reviewed Story', $response->inertiaProps('activities.0.literature.title'));
+        $this->assertSame(4.5, $response->inertiaProps('activities.0.rating'));
+        $this->assertSame('Reviewing Reader', $response->inertiaProps('activities.0.reader.name'));
     }
 
     public function test_feed_exposes_utc_activity_for_browser_localization(): void
@@ -172,11 +171,9 @@ class ActivityFeedTest extends TestCase
         ]);
 
         $this->actingAs($viewer)->get(route('home'))
-            ->assertOk()
-            ->assertSee('datetime="2026-09-07T02:30:00+00:00"', false)
-            ->assertSee('data-local-datetime', false)
-            ->assertDontSee('(UTC)', false)
-            ->assertDontSee('(Asia/Makassar)', false);
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Home/Index')
+                ->where('activities.0.occurred_at', '2026-09-07T02:30:00+00:00'));
     }
 
     public function test_hidden_reviews_are_not_exposed_in_the_activity_feed(): void
@@ -198,8 +195,9 @@ class ActivityFeedTest extends TestCase
         ]);
 
         $this->actingAs($viewer)->get(route('home'))
-            ->assertOk()
-            ->assertDontSee('data-friend-activity', false);
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Home/Index')
+                ->has('activities', 0));
     }
 
     public function test_activity_page_requires_login_and_combines_the_reader_with_followed_friends(): void
