@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\LiteratureMetadataOverrideController;
 use App\Http\Controllers\Admin\ModerationController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AuthorController;
+use App\Http\Controllers\BlockController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\DiscussionController;
 use App\Http\Controllers\FollowController;
@@ -31,6 +32,7 @@ Route::get('/authors/{author}', AuthorController::class)->name('authors.show');
 Route::get('/literatures/{literature}', [LiteratureController::class, 'show'])->name('literatures.show');
 Route::get('/members/{user}/followers', [ProfileController::class, 'followers'])->name('profiles.followers');
 Route::get('/members/{user}/following', [ProfileController::class, 'following'])->name('profiles.following');
+Route::get('/members/{user}/connections', [ProfileController::class, 'connections'])->name('profiles.connections');
 Route::get('/members/{user}/readlist', ReadlistController::class)->name('profiles.readlist');
 Route::get('/members/{user}/reviews', ProfileReviewController::class)->name('profiles.reviews');
 Route::get('/members/{user}/literature', ProfileLiteratureController::class)->name('profiles.literature');
@@ -76,6 +78,8 @@ Route::middleware('auth')->group(function (): void {
     Route::put('/profile', [ProfileController::class, 'update'])->name('profiles.update');
     Route::post('/members/{user}/follow', [FollowController::class, 'store'])->name('profiles.follow.store');
     Route::delete('/members/{user}/follow', [FollowController::class, 'destroy'])->name('profiles.follow.destroy');
+    Route::post('/members/{user}/block', [BlockController::class, 'store'])->name('profiles.block.store');
+    Route::delete('/members/{user}/block', [BlockController::class, 'destroy'])->name('profiles.block.destroy');
     Route::post('/reports', [ReportController::class, 'store'])->name('reports.store');
 
     Route::prefix('admin')->name('admin.')->middleware('admin')->group(function (): void {

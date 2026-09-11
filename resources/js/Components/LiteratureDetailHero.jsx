@@ -45,8 +45,12 @@ export default function LiteratureDetailHero({ literature }) {
                 </div>
             </div>
 
-            <div className="self-start pt-1">
-                <div className="flex flex-wrap items-center gap-3 text-sm font-semibold uppercase tracking-wider text-ink-950/60">
+            <div className="self-start">
+                <h1 className="text-4xl font-bold leading-[0.98] tracking-tight text-ink-950 sm:text-5xl lg:text-6xl">
+                    {literature.title}
+                </h1>
+
+                <div className="mt-4 flex flex-wrap items-center gap-3 text-sm font-semibold uppercase tracking-wider text-ink-950/60">
                     <span className="bg-brand-coral px-2.5 py-1 text-brand-cream">
                         {literature.type_label}
                     </span>
@@ -57,10 +61,6 @@ export default function LiteratureDetailHero({ literature }) {
                         </span>
                     )}
                 </div>
-
-                <h1 className="mt-4 text-4xl font-bold leading-[0.98] tracking-tight text-ink-950 sm:text-5xl lg:text-6xl">
-                    {literature.title}
-                </h1>
 
                 {literature.edition_title && (
                     <p className="mt-3 text-sm text-ink-950/55">

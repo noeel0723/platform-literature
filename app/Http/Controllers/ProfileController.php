@@ -76,8 +76,10 @@ class ProfileController extends Controller
             ->select('rating')
             ->selectRaw('COUNT(*) as total')
             ->groupBy('rating')
-            ->pluck('total', 'rating')
-            ->map(fn ($total): int => (int) $total);
+            ->get()
+            ->mapWithKeys(fn ($rating): array => [
+                number_format((float) $rating->rating, 1, '.', '') => (int) $rating->total,
+            ]);
 
         $isFollowing = request()->user()?->isFollowing($user) ?? false;
 
@@ -163,8 +165,9 @@ class ProfileController extends Controller
                 'login' => route('login'),
                 'follow' => route('profiles.follow.store', $user),
                 'unfollow' => route('profiles.follow.destroy', $user),
-                'followers' => route('profiles.followers', $user),
-                'following' => route('profiles.following', $user),
+                'followers' => route('profiles.connections', [$user, 'relationship' => 'followers']),
+                'following' => route('profiles.connections', [$user, 'relationship' => 'following']),
+                'connections' => route('profiles.connections', $user),
                 'reviews' => route('profiles.reviews', $user),
                 'readlist' => route('profiles.readlist', $user),
                 'diary' => $isOwner
@@ -261,12 +264,23 @@ class ProfileController extends Controller
 
     public function followers(User $user, ProfilePagePresenter $presenter): Response
     {
-        return $this->connections($user, 'followers', $presenter);
+        return $this->renderConnections($user, 'followers', $presenter);
     }
 
     public function following(User $user, ProfilePagePresenter $presenter): Response
     {
-        return $this->connections($user, 'following', $presenter);
+        return $this->renderConnections($user, 'following', $presenter);
+    }
+
+    public function connections(Request $request, User $user, ProfilePagePresenter $presenter): Response
+    {
+        $relationship = $request->string('relationship', 'following')->toString();
+
+        if (! in_array($relationship, ['following', 'followers', 'blocked'], true)) {
+            $relationship = 'following';
+        }
+
+        return $this->renderConnections($user, $relationship, $presenter);
     }
 
     /**
@@ -294,9 +308,18 @@ class ProfileController extends Controller
             ->all();
     }
 
-    private function connections(User $user, string $relationship, ProfilePagePresenter $presenter): Response
+    private function renderConnections(User $user, string $relationship, ProfilePagePresenter $presenter): Response
     {
-        $connections = $user->{$relationship}()
+        $viewer = request()->user();
+        $isOwner = $viewer?->is($user) ?? false;
+
+        if ($relationship === 'blocked' && ! $isOwner) {
+            abort(404);
+        }
+
+        $user->loadCount(['following', 'followers', 'blockedUsers']);
+        $relation = $relationship === 'blocked' ? 'blockedUsers' : $relationship;
+        $connections = $user->{$relation}()
             ->withCount(['followers', 'following'])
             ->orderBy('name')
             ->orderBy('users.id')
@@ -306,15 +329,26 @@ class ProfileController extends Controller
                 ...$presenter->user($connection),
                 'followers_count' => $connection->followers_count,
                 'following_count' => $connection->following_count,
+                'block_url' => $isOwner ? route('profiles.block.store', $connection) : null,
+                'unblock_url' => $isOwner ? route('profiles.block.destroy', $connection) : null,
             ]);
 
         return Inertia::render('Profile/Connections', [
             'profile' => $presenter->user($user),
-            'navigation' => $presenter->navigation($user, 'profile', request()->user()),
+            'navigation' => $presenter->navigation($user, 'connections', $viewer),
             'connections' => $connections,
             'relationship' => $relationship,
+            'canManage' => $isOwner,
+            'counts' => [
+                'following' => $user->following_count,
+                'followers' => $user->followers_count,
+                'blocked' => $isOwner ? $user->blocked_users_count : null,
+            ],
             'routes' => [
                 'profile' => route('profiles.show', $user),
+                'following' => route('profiles.connections', [$user, 'relationship' => 'following']),
+                'followers' => route('profiles.connections', [$user, 'relationship' => 'followers']),
+                'blocked' => $isOwner ? route('profiles.connections', [$user, 'relationship' => 'blocked']) : null,
             ],
         ]);
     }

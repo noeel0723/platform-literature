@@ -56,7 +56,7 @@ class ProfileReviewPageTest extends TestCase
             ->assertOk();
 
         $this->assertSame('reviews', $response->inertiaProps('navigation.current'));
-        $this->assertSame(['Profile', 'Activity', 'Literature', 'Diary', 'Reviews', 'Readlist'], collect($response->inertiaProps('navigation.links'))->pluck('label')->all());
+        $this->assertSame(['Profile', 'Activity', 'Literature', 'Diary', 'Reviews', 'Readlist', 'Connections'], collect($response->inertiaProps('navigation.links'))->pluck('label')->all());
         $this->assertSame(route('literatures.show', $literature).'?review=edit', $response->inertiaProps('reviews.data.0.edit_url'));
     }
 

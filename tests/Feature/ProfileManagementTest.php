@@ -37,7 +37,7 @@ class ProfileManagementTest extends TestCase
             $firstAuthor->id => ['position' => 1],
         ]);
         ReadingList::factory()->for($user)->for(Literature::factory())->create(['status' => 'completed']);
-        Review::factory()->for($user)->for(Literature::factory())->create();
+        Review::factory()->for($user)->for(Literature::factory())->create(['rating' => 4.5]);
 
         $response = $this->get(route('profiles.show', $user))->assertOk();
 
@@ -55,10 +55,12 @@ class ProfileManagementTest extends TestCase
             ->has('favoriteLiteratures', 2)
             ->has('favoriteAuthors', 2)
             ->has('ratingDistribution', 10)
+            ->where('ratingDistribution.8.rating', '4.5')
+            ->where('ratingDistribution.8.count', 1)
         );
         $this->assertSame(['First Favorite', 'Second Favorite'], collect($response->inertiaProps('favoriteLiteratures'))->pluck('title')->all());
         $this->assertSame(['First Author', 'Second Author'], collect($response->inertiaProps('favoriteAuthors'))->pluck('name')->all());
-        $this->assertSame(['Profile', 'Literature', 'Reviews', 'Readlist'], collect($response->inertiaProps('navigation.links'))->pluck('label')->all());
+        $this->assertSame(['Profile', 'Literature', 'Reviews', 'Readlist', 'Connections'], collect($response->inertiaProps('navigation.links'))->pluck('label')->all());
     }
 
     public function test_owner_profile_is_the_only_navigation_entry_point_to_the_diary(): void
@@ -91,7 +93,7 @@ class ProfileManagementTest extends TestCase
             ->where('routes.diary', route('diary.index'))
             ->where('routes.activity', route('activity.index'))
         );
-        $this->assertSame(['Profile', 'Activity', 'Literature', 'Diary', 'Reviews', 'Readlist'], collect($response->inertiaProps('navigation.links'))->pluck('label')->all());
+        $this->assertSame(['Profile', 'Activity', 'Literature', 'Diary', 'Reviews', 'Readlist', 'Connections'], collect($response->inertiaProps('navigation.links'))->pluck('label')->all());
     }
 
     public function test_owner_profile_pages_use_one_consistent_shared_sub_navigation(): void
@@ -105,13 +107,14 @@ class ProfileManagementTest extends TestCase
             route('diary.index'),
             route('profiles.reviews', $user),
             route('profiles.readlist', $user),
+            route('profiles.connections', $user),
         ];
 
         foreach ($routes as $route) {
             $response = $this->actingAs($user)->get($route)->assertOk();
 
-            $this->assertSame(['Profile', 'Activity', 'Literature', 'Diary', 'Reviews', 'Readlist'], collect($response->inertiaProps('navigation.links'))->pluck('label')->all());
-            $this->assertContains($response->inertiaProps('navigation.current'), ['profile', 'activity', 'literature', 'diary', 'reviews', 'readlist']);
+            $this->assertSame(['Profile', 'Activity', 'Literature', 'Diary', 'Reviews', 'Readlist', 'Connections'], collect($response->inertiaProps('navigation.links'))->pluck('label')->all());
+            $this->assertContains($response->inertiaProps('navigation.current'), ['profile', 'activity', 'literature', 'diary', 'reviews', 'readlist', 'connections']);
         }
     }
 
@@ -128,7 +131,7 @@ class ProfileManagementTest extends TestCase
         $this->assertSame(route('profiles.activity', $friend), $response->inertiaProps('routes.activity'));
         $this->assertSame(route('profiles.diary', $friend), $response->inertiaProps('routes.diary'));
         $this->assertSame(
-            ['Profile', 'Activity', 'Literature', 'Diary', 'Reviews', 'Readlist'],
+            ['Profile', 'Activity', 'Literature', 'Diary', 'Reviews', 'Readlist', 'Connections'],
             collect($response->inertiaProps('navigation.links'))->pluck('label')->all(),
         );
     }

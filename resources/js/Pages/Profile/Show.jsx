@@ -128,6 +128,35 @@ function RecentReviews({ items, moreUrl }) {
     );
 }
 
+function RatingDistribution({ distribution }) {
+    return (
+        <div className="mt-5">
+            <div className="flex h-24 items-end gap-1.5" aria-label="Rating distribution from half a star to five stars">
+                {distribution.map((item) => (
+                    <span key={item.rating} className="group relative flex h-full flex-1 items-end justify-center">
+                        <span
+                            role="img"
+                            tabIndex={0}
+                            aria-label={`${item.count} literature rated ${item.rating} stars`}
+                            className="block w-full cursor-help bg-brand-coral/75 transition duration-150 hover:bg-brand-coral focus:bg-brand-coral focus:outline-none focus-visible:ring-2 focus-visible:ring-ink-950 focus-visible:ring-offset-2 focus-visible:ring-offset-brand-cream"
+                            style={{ height: `${item.height}%` }}
+                        />
+                        <span
+                            role="tooltip"
+                            className="pointer-events-none absolute left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-sm bg-ink-950 px-2.5 py-1.5 text-[0.65rem] font-bold text-brand-cream opacity-0 shadow-lg transition group-hover:opacity-100 group-focus-within:opacity-100"
+                            style={{ bottom: `calc(${item.height}% + 0.5rem)` }}
+                        >
+                            {item.count} {item.count === 1 ? 'literature' : 'literatures'} · {item.rating} ★
+                            <span className="absolute left-1/2 top-full -translate-x-1/2 border-x-4 border-t-4 border-x-transparent border-t-ink-950" aria-hidden="true" />
+                        </span>
+                    </span>
+                ))}
+            </div>
+            <div className="mt-2 flex justify-between text-[0.65rem] font-bold text-ink-950/40"><span>½</span><span>5 ★</span></div>
+        </div>
+    );
+}
+
 function ProfileSidebar({ profile, readlist, reviews, activities, distribution, routes }) {
     return (
         <aside className="min-w-0 lg:sticky lg:top-24 lg:self-start lg:border-l lg:border-ink-950/10 lg:pl-8" aria-labelledby="profile-readlist-heading" data-profile-readlist-preview>
@@ -137,7 +166,7 @@ function ProfileSidebar({ profile, readlist, reviews, activities, distribution, 
             {profile.is_owner && <a href={routes.diary} className="mt-3 flex items-center justify-between border border-ink-950/15 bg-brand-cream/70 px-4 py-3 text-sm font-bold text-ink-950 transition hover:border-brand-coral"><span>Open activity Diary</span><span aria-hidden="true">→</span></a>}
 
             <section className="mt-8" aria-labelledby="profile-diary-heading" data-profile-diary-preview><SectionHeader title="Diary" id="profile-diary-heading" aside={<span className="text-sm text-ink-950/45">{profile.stats.reviews}</span>} /><ol className="mt-3 grid gap-2">{reviews.length ? reviews.map((review) => <li key={review.id} className="flex min-w-0 items-center justify-between gap-3 text-sm"><Link href={review.literature.url} className="truncate text-ink-950/65 hover:text-brand-coral">{review.literature.title}</Link><span className="shrink-0 font-bold text-brand-coral">{Number(review.rating).toFixed(1)}</span></li>) : <li className="text-sm text-ink-950/45">No rated literature yet.</li>}</ol></section>
-            <section className="mt-8" aria-labelledby="profile-ratings-heading" data-profile-ratings><SectionHeader title="Ratings" id="profile-ratings-heading" aside={<span className="text-sm text-ink-950/45">{profile.stats.reviews}</span>} /><div className="mt-5 flex h-20 items-end gap-1.5" aria-label="Rating distribution from half a star to five stars">{distribution.map((item) => <span key={item.rating} className="flex h-full flex-1 items-end" title={`${item.rating} stars: ${item.count}`}><span className="block w-full bg-brand-coral/75" style={{ height: `${item.height}%` }} /></span>)}</div><div className="mt-2 flex justify-between text-[0.65rem] font-bold text-ink-950/40"><span>½</span><span>5 ★</span></div></section>
+            <section className="mt-8" aria-labelledby="profile-ratings-heading" data-profile-ratings><SectionHeader title="Ratings" id="profile-ratings-heading" aside={<span className="text-sm text-ink-950/45">{profile.stats.reviews}</span>} /><RatingDistribution distribution={distribution} /></section>
             <section className="mt-8" aria-labelledby="profile-activity-heading" data-profile-activity-preview><SectionHeader title="Activity" id="profile-activity-heading" aside={profile.is_owner ? <Link href={routes.activity} className="text-xs font-bold uppercase tracking-wider text-brand-coral hover:underline">All</Link> : null} /><ol className="mt-4 border-l border-ink-950/20 pl-4">{activities.length ? activities.map((activity) => <li key={activity.id} className="relative pb-4 text-sm last:pb-0 before:absolute before:-left-[1.19rem] before:top-1.5 before:size-2 before:rounded-full before:bg-brand-coral"><p className="leading-5 text-ink-950/55">{activity.label} <Link href={activity.literature.url} className="font-semibold text-ink-950 hover:text-brand-coral">{activity.literature.title}</Link></p><TimeLabel value={activity.occurred_at} className="mt-1 block text-xs text-ink-950/35" /></li>) : <li className="text-sm text-ink-950/45">No activity yet.</li>}</ol></section>
         </aside>
     );

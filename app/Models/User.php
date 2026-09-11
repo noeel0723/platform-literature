@@ -112,9 +112,28 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
+    /** @return BelongsToMany<User, $this> */
+    public function blockedUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(self::class, 'user_blocks', 'blocker_id', 'blocked_id')
+            ->withTimestamps();
+    }
+
+    /** @return BelongsToMany<User, $this> */
+    public function blockers(): BelongsToMany
+    {
+        return $this->belongsToMany(self::class, 'user_blocks', 'blocked_id', 'blocker_id')
+            ->withTimestamps();
+    }
+
     public function isFollowing(User $user): bool
     {
         return $this->following()->whereKey($user->getKey())->exists();
+    }
+
+    public function hasBlocked(User $user): bool
+    {
+        return $this->blockedUsers()->whereKey($user->getKey())->exists();
     }
 
     public function isAdmin(): bool

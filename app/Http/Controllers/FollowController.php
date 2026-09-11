@@ -17,6 +17,12 @@ class FollowController extends Controller
             ]);
         }
 
+        if ($request->user()->hasBlocked($user) || $user->hasBlocked($request->user())) {
+            throw ValidationException::withMessages([
+                'user' => 'This reader cannot be followed while a block is active.',
+            ]);
+        }
+
         $request->user()->following()->syncWithoutDetaching([$user->id]);
 
         return back()->with('success', "You are now following {$user->name}.");

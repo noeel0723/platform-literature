@@ -17,7 +17,7 @@ export default function ActionPanel({ viewer, ratingSummary, routes, onOpenRevie
     };
 
     return (
-        <aside className="self-end overflow-hidden border border-ink-950/25 bg-brand-cream/95 shadow-[0_12px_32px_rgba(47,58,85,0.08)] backdrop-blur-md md:col-span-2 lg:col-span-1 lg:mb-2" aria-label="Your literature actions">
+        <aside className="self-start overflow-hidden border border-ink-950/25 bg-brand-cream/95 shadow-[0_12px_32px_rgba(47,58,85,0.08)] backdrop-blur-md md:col-span-2 lg:col-span-1" aria-label="Your literature actions">
             <div data-community-rating className="border-b border-ink-950/10 p-5 text-center">
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-ink-950/55">Community rating</p>
                 <div className="mt-3 flex items-center justify-center gap-3">

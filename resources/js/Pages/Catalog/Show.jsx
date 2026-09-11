@@ -128,7 +128,7 @@ export default function Show({ literature, viewer, ratingSummary, reviews, discu
             </section>
 
             <section className="border-b border-ink-950/10 bg-brand-cream">
-                <div data-literature-detail-grid className="relative mx-auto -mt-20 grid max-w-7xl items-start gap-8 px-5 pb-14 sm:px-8 md:grid-cols-[220px_minmax(0,1fr)] lg:grid-cols-[250px_minmax(0,1fr)_300px] lg:px-10 lg:pb-20">
+                <div data-literature-detail-grid className="relative mx-auto grid max-w-7xl items-start gap-8 px-5 pb-14 pt-10 sm:px-8 sm:pt-12 md:grid-cols-[220px_minmax(0,1fr)] lg:grid-cols-[250px_minmax(0,1fr)_300px] lg:px-10 lg:pb-20 lg:pt-14">
                     <LiteratureDetailHero literature={literature} />
                     <ActionPanel viewer={viewer} ratingSummary={ratingSummary} routes={routes} onOpenReview={() => setReviewOpen(true)} onChooseRating={chooseRating} />
                 </div>

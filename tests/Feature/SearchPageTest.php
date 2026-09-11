@@ -116,7 +116,7 @@ class SearchPageTest extends TestCase
             ->assertOk()
             ->assertSee('data-react-header-props', false)
             ->assertSeeText('axellgab')
-            ->assertSeeInOrder(['Profile', 'Activity', 'Literature', 'Reviews', 'Readlist'])
+            ->assertSeeInOrder(['Profile', 'Activity', 'Literature', 'Reviews', 'Readlist', 'Connections'])
             ->assertSee('"logout_url":"', false);
     }
 

@@ -39,6 +39,7 @@ class ProfilePagePresenter
 
         $links[] = ['key' => 'reviews', 'label' => 'Reviews', 'url' => route('profiles.reviews', $user)];
         $links[] = ['key' => 'readlist', 'label' => 'Readlist', 'url' => route('profiles.readlist', $user)];
+        $links[] = ['key' => 'connections', 'label' => 'Connections', 'url' => route('profiles.connections', $user)];
 
         return [
             'current' => $current,

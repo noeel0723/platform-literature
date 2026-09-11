@@ -43,6 +43,7 @@
                     ['label' => 'Diary', 'url' => route('diary.index')],
                     ['label' => 'Reviews', 'url' => route('profiles.reviews', $headerUser)],
                     ['label' => 'Readlist', 'url' => route('profiles.readlist', $headerUser)],
+                    ['label' => 'Connections', 'url' => route('profiles.connections', $headerUser)],
                 ],
                 'edit_url' => route('profiles.edit'),
                 'moderation_url' => $headerUser->isAdmin() ? route('admin.moderation.index') : null,
