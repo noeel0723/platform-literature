@@ -17,18 +17,15 @@ class LiteratureCatalogTest extends TestCase
 {
     use LazilyRefreshDatabase;
 
-    public function test_catalog_page_starts_with_search_instead_of_loading_the_entire_database(): void
+    public function test_catalog_all_filter_shows_the_latest_work_from_each_supported_format(): void
     {
-        $this->createLiterature(
-            [
-                'title' => 'Bumi Manusia',
-                'slug' => 'bumi-manusia',
-                'type' => 'novel',
-            ],
-            'Google Books',
-            ['Pramoedya Ananta Toer'],
-            ['Fiksi sejarah'],
-        );
+        foreach (Literature::TYPE_LABELS as $type => $label) {
+            $this->createLiterature([
+                'title' => "Latest {$label}",
+                'slug' => "latest-{$type}",
+                'type' => $type,
+            ], "Internal {$label}", ["{$label} Author"]);
+        }
 
         $response = $this->get(route('literatures.index'));
 
@@ -38,7 +35,7 @@ class LiteratureCatalogTest extends TestCase
             ->where('selectedType', '')
             ->where('canExpand', false)
             ->where('sourceWarning', null)
-            ->has('literatures', 0)
+            ->has('literatures', 4)
             ->where('types', Literature::TYPE_LABELS)
             ->has('routes.catalog')
             ->has('routes.latest'));
@@ -151,7 +148,7 @@ class LiteratureCatalogTest extends TestCase
         $this->assertSame('C. S. Lewis', $result['author']);
     }
 
-    public function test_more_link_opens_a_compact_fifteen_item_paginated_catalog(): void
+    public function test_more_link_opens_a_compact_eighteen_item_paginated_catalog(): void
     {
         $this->configureGoogleBooks();
         Http::preventStrayRequests();
@@ -164,7 +161,7 @@ class LiteratureCatalogTest extends TestCase
             'name' => 'Google Books',
         ]);
 
-        foreach (range(1, 18) as $position) {
+        foreach (range(1, 20) as $position) {
             Literature::factory()->for($source)->create([
                 'title' => "Narnia Result {$position}",
                 'slug' => "narnia-result-{$position}",
@@ -195,13 +192,13 @@ class LiteratureCatalogTest extends TestCase
             ->component('Catalog/Latest')
             ->where('query', 'Narnia')
             ->where('selectedType', 'novel')
-            ->where('literatures.total', 18)
-            ->where('literatures.per_page', 15)
+            ->where('literatures.total', 20)
+            ->where('literatures.per_page', 18)
             ->where('literatures.current_page', 1)
             ->where('literatures.last_page', 2)
             ->where('literatures.prev_page_url', null)
             ->has('literatures.next_page_url')
-            ->has('literatures.data', 15)
+            ->has('literatures.data', 18)
             ->has('routes.catalog'));
 
         $secondPage = $this->get(route('literatures.latest', [
@@ -216,7 +213,7 @@ class LiteratureCatalogTest extends TestCase
             ->where('literatures.last_page', 2)
             ->has('literatures.prev_page_url')
             ->where('literatures.next_page_url', null)
-            ->has('literatures.data', 3));
+            ->has('literatures.data', 2));
     }
 
     public function test_catalog_can_be_filtered_by_query_and_type(): void

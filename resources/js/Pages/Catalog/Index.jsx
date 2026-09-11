@@ -58,7 +58,7 @@ export default function CatalogIndex({
         ? `Results for “${query}”`
         : selectedType
             ? `Latest ${types[selectedType] ?? 'literature'}`
-            : 'Search the catalog';
+            : 'Latest literature';
 
     return (
         <>
@@ -116,7 +116,7 @@ export default function CatalogIndex({
                             {resultTitle}
                         </h1>
                     </div>
-                    {(query || selectedType) && (
+                    {literatures.length > 0 && (
                         <div className="flex items-center gap-5">
                             <p className="text-sm text-ink-950/50">Showing {literatures.length} of the best matches</p>
                             {canExpand && (
@@ -135,14 +135,7 @@ export default function CatalogIndex({
                     </div>
                 )}
 
-                {!query && !selectedType ? (
-                    <div className="border border-dashed border-ink-950/20 bg-white/25 px-6 py-14 text-center">
-                        <p className="font-serif text-2xl font-bold text-ink-950">What would you like to read next?</p>
-                        <p className="mx-auto mt-2 max-w-xl leading-7 text-ink-950/60">
-                            Enter a title, author, or genre above. The strongest matching works will be shown first.
-                        </p>
-                    </div>
-                ) : literatures.length === 0 ? (
+                {literatures.length === 0 ? (
                     <div className="border border-ink-950/10 bg-white/35 px-6 py-14 text-center">
                         <p className="font-serif text-2xl font-bold text-ink-950">No matching titles found.</p>
                         <p className="mt-2 text-ink-950/60">Try another keyword or choose a different format.</p>
@@ -151,9 +144,9 @@ export default function CatalogIndex({
                         </Link>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-9 sm:gap-x-6 lg:grid-cols-4 lg:gap-x-7" data-catalog-results>
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-7 sm:grid-cols-3 sm:gap-x-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6" data-catalog-results>
                         {literatures.map((literature) => (
-                            <LiteratureCard key={literature.slug} literature={literature} />
+                            <LiteratureCard key={literature.slug} literature={literature} compact />
                         ))}
                     </div>
                 )}

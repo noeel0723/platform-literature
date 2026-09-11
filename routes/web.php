@@ -49,6 +49,8 @@ Route::middleware('auth')->group(function (): void {
         ->middleware('throttle:60,1')
         ->name('quick-log.literatures');
     Route::get('/activity', ActivityController::class)->name('activity.index');
+    Route::get('/members/{user}/activity', [ActivityController::class, 'show'])->name('profiles.activity');
+    Route::get('/members/{user}/diary', [ReadingDiaryController::class, 'show'])->name('profiles.diary');
     Route::put('/literatures/{literature}/reading-list', [ReadingListController::class, 'update'])
         ->name('reading-list.update');
     Route::delete('/literatures/{literature}/reading-list', [ReadingListController::class, 'destroy'])

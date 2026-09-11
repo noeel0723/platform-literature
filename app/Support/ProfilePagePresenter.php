@@ -11,18 +11,30 @@ class ProfilePagePresenter
     public function navigation(User $user, string $current, ?User $viewer): array
     {
         $isOwner = $viewer?->is($user) ?? false;
+        $isFriend = $viewer !== null
+            && ! $isOwner
+            && $viewer->isFollowing($user)
+            && $user->isFollowing($viewer);
         $links = [
             ['key' => 'profile', 'label' => 'Profile', 'url' => route('profiles.show', $user)],
         ];
 
-        if ($isOwner) {
-            $links[] = ['key' => 'activity', 'label' => 'Activity', 'url' => route('activity.index')];
+        if ($isOwner || $isFriend) {
+            $links[] = [
+                'key' => 'activity',
+                'label' => 'Activity',
+                'url' => $isOwner ? route('activity.index') : route('profiles.activity', $user),
+            ];
         }
 
         $links[] = ['key' => 'literature', 'label' => 'Literature', 'url' => route('profiles.literature', $user)];
 
-        if ($isOwner) {
-            $links[] = ['key' => 'diary', 'label' => 'Diary', 'url' => route('diary.index')];
+        if ($isOwner || $isFriend) {
+            $links[] = [
+                'key' => 'diary',
+                'label' => 'Diary',
+                'url' => $isOwner ? route('diary.index') : route('profiles.diary', $user),
+            ];
         }
 
         $links[] = ['key' => 'reviews', 'label' => 'Reviews', 'url' => route('profiles.reviews', $user)];

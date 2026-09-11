@@ -8,6 +8,7 @@ use App\Models\Author;
 use App\Models\Literature;
 use App\Models\Report;
 use App\Models\User;
+use App\Services\Literature\CanonicalLiteratureSearch;
 use App\Support\ProfilePagePresenter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -83,6 +84,10 @@ class ProfileController extends Controller
 
         $viewer = request()->user();
         $isOwner = $viewer?->is($user) ?? false;
+        $isFriend = $viewer !== null
+            && ! $isOwner
+            && $isFollowing
+            && $user->isFollowing($viewer);
         $ratingMaximum = max(1, (int) ($ratingDistribution->max() ?? 0));
 
         return Inertia::render('Profile/Show', [
@@ -97,6 +102,7 @@ class ProfileController extends Controller
                 'member_since' => $user->created_at->format('F Y'),
                 'is_owner' => $isOwner,
                 'is_following' => $isFollowing,
+                'is_friend' => $isFriend,
                 'viewer_authenticated' => $viewer !== null,
                 'stats' => [
                     'literature' => $user->completed_literature_count,
@@ -162,26 +168,64 @@ class ProfileController extends Controller
                 'following' => route('profiles.following', $user),
                 'reviews' => route('profiles.reviews', $user),
                 'readlist' => route('profiles.readlist', $user),
-                'diary' => $isOwner ? route('diary.index') : null,
-                'activity' => $isOwner ? route('activity.index') : null,
+                'diary' => $isOwner
+                    ? route('diary.index')
+                    : ($isFriend ? route('profiles.diary', $user) : null),
+                'activity' => $isOwner
+                    ? route('activity.index')
+                    : ($isFriend ? route('profiles.activity', $user) : null),
                 'report' => route('reports.store'),
             ],
         ]);
     }
 
-    public function edit(Request $request): View
-    {
-        $user = $request->user()->load(['favoriteLiteratures', 'favoriteAuthors']);
+    public function edit(
+        Request $request,
+        ProfilePagePresenter $presenter,
+        CanonicalLiteratureSearch $canonicalSearch,
+    ): Response {
+        $user = $request->user()->load([
+            'favoriteLiteratures.authors',
+            'favoriteLiteratures.metadataOverride',
+            'favoriteLiteratures.sourceMapping.canonicalWork.metadataOverride',
+            'favoriteAuthors',
+        ]);
+        $literatureOptions = $canonicalSearch->query()
+            ->orderByRaw('COALESCE(original_title, title)')
+            ->get()
+            ->concat($user->favoriteLiteratures)
+            ->unique('id')
+            ->sortBy(fn (Literature $literature): string => $literature->displayTitle(), SORT_NATURAL | SORT_FLAG_CASE);
 
-        return view('profiles.edit', [
-            'user' => $user,
-            'literatures' => Literature::query()
-                ->with(['metadataOverride', 'sourceMapping.canonicalWork.metadataOverride'])
-                ->orderByRaw('COALESCE(original_title, title)')
-                ->get(['id', 'title', 'original_title']),
-            'authors' => Author::query()->orderBy('name')->get(['id', 'name']),
-            'favoriteLiteratureIds' => $user->favoriteLiteratures->pluck('id')->all(),
-            'favoriteAuthorIds' => $user->favoriteAuthors->pluck('id')->all(),
+        return Inertia::render('Profile/Edit', [
+            'profile' => [
+                ...$presenter->user($user),
+                'location' => $user->location,
+                'bio' => $user->bio,
+                'has_avatar' => $user->avatar_path !== null,
+            ],
+            'navigation' => $presenter->navigation($user, 'profile', $user),
+            'literatures' => $literatureOptions
+                ->map(fn (Literature $literature): array => $presenter->literature($literature))
+                ->values()
+                ->all(),
+            'authors' => Author::query()
+                ->orderBy('name')
+                ->get(['id', 'name', 'slug', 'image_url'])
+                ->map(fn (Author $author): array => [
+                    'id' => $author->id,
+                    'name' => $author->name,
+                    'image_url' => $author->image_url,
+                    'initials' => $this->initials($author->name),
+                ])
+                ->values()
+                ->all(),
+            'favoriteLiteratureIds' => $this->paddedFavoriteIds($user->favoriteLiteratures->pluck('id')->all()),
+            'favoriteAuthorIds' => $this->paddedFavoriteIds($user->favoriteAuthors->pluck('id')->all()),
+            'routes' => [
+                'profile' => route('profiles.show', $user),
+                'update' => route('profiles.update'),
+            ],
         ]);
     }
 
@@ -234,6 +278,20 @@ class ProfileController extends Controller
     {
         return collect($ids)
             ->mapWithKeys(fn (int $id, int $index): array => [$id => ['position' => $index + 1]])
+            ->all();
+    }
+
+    /**
+     * @param  array<int, int>  $ids
+     * @return array<int, int|string>
+     */
+    private function paddedFavoriteIds(array $ids): array
+    {
+        return collect($ids)
+            ->map(fn (int $id): int|string => $id)
+            ->pad(4, '')
+            ->take(4)
+            ->values()
             ->all();
     }
 

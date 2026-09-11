@@ -191,7 +191,7 @@ class CanonicalLiteratureProjectionTest extends TestCase
         ]));
 
         $this->assertSame(15, $firstPage->inertiaProps('literatures.total'));
-        $this->assertSame(15, $firstPage->inertiaProps('literatures.per_page'));
+        $this->assertSame(18, $firstPage->inertiaProps('literatures.per_page'));
         $this->assertSame(1, $firstPage->inertiaProps('literatures.current_page'));
         $this->assertSame(1, $firstPage->inertiaProps('literatures.last_page'));
         $this->assertCount(15, $firstPage->inertiaProps('literatures.data'));

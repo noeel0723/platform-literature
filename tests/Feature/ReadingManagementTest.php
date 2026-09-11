@@ -247,4 +247,27 @@ class ReadingManagementTest extends TestCase
         $this->assertSame([], $response->inertiaProps('activities'));
         $this->assertSame('diary', $response->inertiaProps('navigation.current'));
     }
+
+    public function test_mutual_friend_can_view_a_readers_diary_without_edit_links(): void
+    {
+        $viewer = User::factory()->create();
+        $reader = User::factory()->create();
+        $viewer->following()->attach($reader);
+        $reader->following()->attach($viewer);
+        Review::factory()->for($reader)->for(Literature::factory()->create(['title' => 'Shared Diary Work']))->create();
+
+        $response = $this->actingAs($viewer)->get(route('profiles.diary', $reader))->assertOk();
+
+        $this->assertSame('Profile/Diary', $response->inertiaPage()['component']);
+        $this->assertSame('Shared Diary Work', $response->inertiaProps('activities.0.literature.title'));
+        $this->assertNull($response->inertiaProps('activities.0.edit_url'));
+        $this->assertSame('diary', $response->inertiaProps('navigation.current'));
+    }
+
+    public function test_non_friend_cannot_view_another_readers_diary(): void
+    {
+        $this->actingAs(User::factory()->create())
+            ->get(route('profiles.diary', User::factory()->create()))
+            ->assertForbidden();
+    }
 }

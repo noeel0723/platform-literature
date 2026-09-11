@@ -41,7 +41,7 @@ function ActivityItem({ activity }) {
     );
 }
 
-export default function Index({ navigation, activities, scope, scopes }) {
+export default function Index({ navigation, activities, scope, scopes, heading = 'Latest Activity' }) {
     return (
         <>
             <Head title="Activity" />
@@ -49,9 +49,9 @@ export default function Index({ navigation, activities, scope, scopes }) {
             <section className="mx-auto grid max-w-7xl gap-7 px-5 py-7 sm:px-8 sm:py-9 lg:grid-cols-[minmax(0,1fr)_240px] lg:px-10 lg:py-10">
                 <div className="min-w-0" aria-labelledby="activity-heading">
                     <div className="flex flex-wrap items-end justify-between gap-3 border-b border-ink-950/20 pb-2.5">
-                        <div><p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-coral">Social reading stream</p><h1 id="activity-heading" className="mt-0.5 font-serif text-2xl font-bold text-ink-950">Latest Activity</h1></div>
+                        <div><p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-coral">Social reading stream</p><h1 id="activity-heading" className="mt-0.5 font-serif text-2xl font-bold text-ink-950">{heading}</h1></div>
                         <nav className="flex gap-3 text-[11px] font-bold uppercase tracking-wider sm:gap-4" aria-label="Activity scopes">
-                            {scopes.map((item) => <Link key={item.key} href={item.url} className={`border-b-2 py-0.5 ${scope === item.key ? 'border-brand-coral text-ink-950' : 'border-transparent text-ink-950/45 hover:text-ink-950'}`} aria-current={scope === item.key ? 'page' : undefined}>{item.short_label === 'All' ? 'You + friends' : item.short_label}</Link>)}
+                            {scopes.map((item) => <Link key={item.key} href={item.url} className={`border-b-2 py-0.5 ${scope === item.key ? 'border-brand-coral text-ink-950' : 'border-transparent text-ink-950/45 hover:text-ink-950'}`} aria-current={scope === item.key ? 'page' : undefined}>{item.short_label}</Link>)}
                         </nav>
                     </div>
                     <div data-activity-stream data-activity-density="compact">

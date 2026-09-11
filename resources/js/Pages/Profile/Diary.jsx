@@ -43,7 +43,7 @@ export default function ProfileDiary({ profile, navigation, activities }) {
                                 <span className="hidden text-sm text-ink-950/60 md:block">{activity.literature.year ?? '—'}</span>
                                 <div className="col-start-2 mt-3 flex items-center gap-2 md:col-start-auto md:mt-0"><StarRating rating={activity.rating} size="text-sm" /><span className="text-xs font-bold text-ink-950/50">{Number(activity.rating).toFixed(1)}</span></div>
                                 <span className="hidden text-sm font-semibold text-ink-950/55 md:block">{activity.review ? (activity.contains_spoiler ? 'Spoiler' : 'Written') : '—'}</span>
-                                <Link href={activity.edit_url} className="hidden text-sm font-bold text-brand-coral hover:underline md:inline" aria-label={`Edit rating or review for ${activity.literature.title}`}>Edit</Link>
+                                {activity.edit_url ? <Link href={activity.edit_url} className="hidden text-sm font-bold text-brand-coral hover:underline md:inline" aria-label={`Edit rating or review for ${activity.literature.title}`}>Edit</Link> : <span className="hidden text-sm text-ink-950/25 md:inline">—</span>}
                             </li>
                         )) : <li className="p-8 text-center text-ink-950/60">No rated literature yet. Give a title a rating to add it to your Diary.</li>}
                     </ol>

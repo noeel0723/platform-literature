@@ -228,6 +228,41 @@ class ActivityFeedTest extends TestCase
         $this->assertSame('friends', $friendsResponse->inertiaProps('scope'));
     }
 
+    public function test_mutual_friend_can_view_a_readers_activity_and_their_following_stream(): void
+    {
+        $viewer = User::factory()->create(['name' => 'Visiting Friend']);
+        $friend = User::factory()->create(['name' => 'Profile Friend']);
+        $followedReader = User::factory()->create(['name' => 'Friend Following']);
+        $stranger = User::factory()->create(['name' => 'Unrelated Reader']);
+        $viewer->following()->attach($friend);
+        $friend->following()->attach([$viewer->id, $followedReader->id]);
+
+        Activity::factory()->for($friend)->for(Literature::factory()->create(['title' => 'Friend Own Activity']))->create(['type' => Activity::TYPE_COMPLETED]);
+        Activity::factory()->for($followedReader)->for(Literature::factory()->create(['title' => 'Following Activity']))->create(['type' => Activity::TYPE_COMPLETED]);
+        Activity::factory()->for($stranger)->for(Literature::factory()->create(['title' => 'Hidden Stranger Activity']))->create(['type' => Activity::TYPE_COMPLETED]);
+
+        $this->get(route('profiles.activity', $friend))->assertRedirect(route('login'));
+
+        $friendResponse = $this->actingAs($viewer)->get(route('profiles.activity', $friend))->assertOk();
+        $this->assertSame(['Teman', 'Following'], collect($friendResponse->inertiaProps('scopes'))->pluck('short_label')->all());
+        $this->assertSame(['Friend Own Activity'], collect($friendResponse->inertiaProps('activities.data'))->pluck('literature.title')->all());
+
+        $followingResponse = $this->actingAs($viewer)->get(route('profiles.activity', [$friend, 'scope' => 'following']))->assertOk();
+        $this->assertEqualsCanonicalizing(
+            ['Following Activity'],
+            collect($followingResponse->inertiaProps('activities.data'))->pluck('literature.title')->all(),
+        );
+        $this->assertSame('following', $followingResponse->inertiaProps('scope'));
+    }
+
+    public function test_non_friend_cannot_view_another_readers_activity(): void
+    {
+        $viewer = User::factory()->create();
+        $reader = User::factory()->create();
+
+        $this->actingAs($viewer)->get(route('profiles.activity', $reader))->assertForbidden();
+    }
+
     public function test_readlist_discussion_and_comment_actions_are_recorded_for_the_activity_page(): void
     {
         $user = User::factory()->create();

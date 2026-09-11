@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Activity;
+use App\Models\User;
 use App\Support\ProfilePagePresenter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -38,20 +39,65 @@ class ActivityController extends Controller
         $activities->through(fn (Activity $activity): array => $this->presentActivity($activity));
 
         return Inertia::render('Activity/Index', [
-            'viewer' => [
-                'name' => $viewer->name,
-                'username' => $viewer->username,
-                'avatar_url' => $viewer->avatarUrl(),
-                'initials' => $this->initials($viewer->name),
-                'url' => route('profiles.show', $viewer),
-            ],
+            'viewer' => $presenter->user($viewer),
             'navigation' => $presenter->navigation($viewer, 'activity', $viewer),
             'activities' => $activities,
             'scope' => $scope,
+            'heading' => 'Latest Activity',
             'scopes' => [
-                ['key' => 'all', 'label' => 'You + friends', 'short_label' => 'All', 'url' => route('activity.index')],
+                ['key' => 'all', 'label' => 'You + friends', 'short_label' => 'You + friends', 'url' => route('activity.index')],
                 ['key' => 'you', 'label' => 'Your activity', 'short_label' => 'You', 'url' => route('activity.index', ['scope' => 'you'])],
-                ['key' => 'friends', 'label' => 'Following', 'short_label' => 'Friends', 'url' => route('activity.index', ['scope' => 'friends'])],
+                ['key' => 'friends', 'label' => 'Following', 'short_label' => 'Following', 'url' => route('activity.index', ['scope' => 'friends'])],
+            ],
+        ]);
+    }
+
+    public function show(Request $request, User $user, ProfilePagePresenter $presenter): Response
+    {
+        $viewer = $request->user();
+
+        if ($viewer->is($user)) {
+            return $this->__invoke($request, $presenter);
+        }
+
+        abort_unless($viewer->isFollowing($user) && $user->isFollowing($viewer), 403);
+
+        $scope = $request->string('scope')->lower()->toString();
+        $scope = in_array($scope, ['friend', 'following'], true) ? $scope : 'friend';
+        $followingIds = $user->following()
+            ->whereNull('deactivated_at')
+            ->pluck('users.id');
+        $userIds = $scope === 'following' ? $followingIds : collect([$user->id]);
+        $activities = Activity::query()
+            ->visibleToReaders()
+            ->with(['user', 'literature.authors', 'literature.metadataOverride', 'literature.sourceMapping.canonicalWork.metadataOverride', 'review', 'discussion', 'comment'])
+            ->whereIn('user_id', $userIds)
+            ->orderByDesc('occurred_at')
+            ->orderByDesc('id')
+            ->paginate(20)
+            ->withQueryString();
+
+        $activities->through(fn (Activity $activity): array => $this->presentActivity($activity));
+
+        return Inertia::render('Activity/Index', [
+            'viewer' => $presenter->user($user),
+            'navigation' => $presenter->navigation($user, 'activity', $viewer),
+            'activities' => $activities,
+            'scope' => $scope,
+            'heading' => $user->name.'\'s Activity',
+            'scopes' => [
+                [
+                    'key' => 'friend',
+                    'label' => $user->name.'\'s activity',
+                    'short_label' => 'Teman',
+                    'url' => route('profiles.activity', $user),
+                ],
+                [
+                    'key' => 'following',
+                    'label' => 'Activity from people they follow',
+                    'short_label' => 'Following',
+                    'url' => route('profiles.activity', [$user, 'scope' => 'following']),
+                ],
             ],
         ]);
     }

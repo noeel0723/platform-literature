@@ -86,7 +86,20 @@ class LiteratureController extends Controller
                 ->take($displayLimit)
                 ->map(fn (Literature $literature): array => $this->present($literature));
         } else {
-            $canExpand = false;
+            $canExpand = $canonicalSearch->query()
+                ->latest('updated_at')
+                ->latest('id')
+                ->limit($displayLimit + 1)
+                ->get()
+                ->count() > $displayLimit;
+            $literatures = collect(Literature::supportedTypes())
+                ->map(fn (string $type) => $canonicalSearch->query('', $type)
+                    ->latest('updated_at')
+                    ->latest('id')
+                    ->first())
+                ->filter()
+                ->take($displayLimit)
+                ->map(fn (Literature $literature): array => $this->present($literature));
         }
 
         return Inertia::render('Catalog/Index', [
@@ -114,7 +127,7 @@ class LiteratureController extends Controller
         $literatures = $canonicalSearch->query($query, $selectedType)
             ->latest('updated_at')
             ->latest('id')
-            ->paginate(15)
+            ->paginate(18)
             ->withQueryString()
             ->through(fn (Literature $literature): array => $this->present($literature));
 

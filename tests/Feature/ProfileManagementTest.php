@@ -115,6 +115,24 @@ class ProfileManagementTest extends TestCase
         }
     }
 
+    public function test_mutual_friend_profile_exposes_activity_and_diary_navigation(): void
+    {
+        $viewer = User::factory()->create();
+        $friend = User::factory()->create();
+        $viewer->following()->attach($friend);
+        $friend->following()->attach($viewer);
+
+        $response = $this->actingAs($viewer)->get(route('profiles.show', $friend))->assertOk();
+
+        $this->assertTrue($response->inertiaProps('profile.is_friend'));
+        $this->assertSame(route('profiles.activity', $friend), $response->inertiaProps('routes.activity'));
+        $this->assertSame(route('profiles.diary', $friend), $response->inertiaProps('routes.diary'));
+        $this->assertSame(
+            ['Profile', 'Activity', 'Literature', 'Diary', 'Reviews', 'Readlist'],
+            collect($response->inertiaProps('navigation.links'))->pluck('label')->all(),
+        );
+    }
+
     public function test_owner_can_update_identity_and_four_favorites(): void
     {
         $user = User::factory()->create(['username' => 'old_reader']);
@@ -141,6 +159,40 @@ class ProfileManagementTest extends TestCase
             $user->favoriteLiteratures()->pluck('literatures.id')->all(),
         );
         $this->assertSame($authors->pluck('id')->all(), $user->favoriteAuthors()->pluck('authors.id')->all());
+    }
+
+    public function test_profile_editor_is_react_and_exposes_four_visual_favorite_slots(): void
+    {
+        $user = User::factory()->create();
+        $literature = Literature::factory()->create(['title' => 'Visual Favorite', 'cover_url' => 'https://example.test/cover.jpg']);
+        $author = Author::factory()->create(['name' => 'Portrait Author', 'image_url' => 'https://example.test/author.jpg']);
+        $user->favoriteLiteratures()->attach($literature, ['position' => 1]);
+        $user->favoriteAuthors()->attach($author, ['position' => 1]);
+
+        $this->actingAs($user)->get(route('profiles.edit'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Profile/Edit')
+                ->where('profile.username', $user->username)
+                ->where('literatures.0.cover_url', 'https://example.test/cover.jpg')
+                ->where('authors.0.image_url', 'https://example.test/author.jpg')
+                ->has('favoriteLiteratureIds', 4)
+                ->has('favoriteAuthorIds', 4)
+                ->where('routes.update', route('profiles.update')));
+    }
+
+    public function test_react_profile_form_can_submit_with_http_method_spoofing(): void
+    {
+        $user = User::factory()->create(['username' => 'before_edit']);
+
+        $this->actingAs($user)->post(route('profiles.update'), [
+            '_method' => 'put',
+            'name' => 'After Edit',
+            'username' => 'after_edit',
+            'favorite_literature_ids' => [],
+            'favorite_author_ids' => [],
+        ])->assertRedirect(route('profiles.show', 'after_edit'));
+
+        $this->assertSame('After Edit', $user->fresh()->name);
     }
 
     public function test_profile_rejects_more_than_four_favorites_and_duplicate_username(): void

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Review;
+use App\Models\User;
 use App\Support\ProfilePagePresenter;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -12,8 +13,24 @@ class ReadingDiaryController extends Controller
 {
     public function index(Request $request, ProfilePagePresenter $presenter): Response
     {
-        $reader = $request->user();
-        $activities = $request->user()
+        return $this->renderDiary($request->user(), $request, $presenter);
+    }
+
+    public function show(Request $request, User $user, ProfilePagePresenter $presenter): Response
+    {
+        $viewer = $request->user();
+
+        if (! $viewer->is($user)) {
+            abort_unless($viewer->isFollowing($user) && $user->isFollowing($viewer), 403);
+        }
+
+        return $this->renderDiary($user, $request, $presenter);
+    }
+
+    private function renderDiary(User $reader, Request $request, ProfilePagePresenter $presenter): Response
+    {
+        $isOwner = $request->user()->is($reader);
+        $activities = $reader
             ->reviews()
             ->whereNull('hidden_at')
             ->with(['literature.authors', 'literature.metadataOverride', 'literature.sourceMapping.canonicalWork.metadataOverride'])
@@ -27,12 +44,12 @@ class ReadingDiaryController extends Controller
                 'rating' => $review->rating,
                 'review' => $review->body,
                 'contains_spoiler' => $review->contains_spoiler,
-                'edit_url' => route('literatures.show', $review->literature).'?review=edit',
+                'edit_url' => $isOwner ? route('literatures.show', $review->literature).'?review=edit' : null,
             ]);
 
         return Inertia::render('Profile/Diary', [
             'profile' => $presenter->user($reader),
-            'navigation' => $presenter->navigation($reader, 'diary', $reader),
+            'navigation' => $presenter->navigation($reader, 'diary', $request->user()),
             'activities' => $activities->values()->all(),
         ]);
     }
