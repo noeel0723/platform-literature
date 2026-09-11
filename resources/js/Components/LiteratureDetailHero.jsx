@@ -45,7 +45,7 @@ export default function LiteratureDetailHero({ literature }) {
                 </div>
             </div>
 
-            <div className="self-start pt-1 md:pt-28">
+            <div className="self-start pt-1">
                 <div className="flex flex-wrap items-center gap-3 text-sm font-semibold uppercase tracking-wider text-ink-950/60">
                     <span className="bg-brand-coral px-2.5 py-1 text-brand-cream">
                         {literature.type_label}

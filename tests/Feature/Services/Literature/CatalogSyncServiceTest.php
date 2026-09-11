@@ -115,6 +115,7 @@ class CatalogSyncServiceTest extends TestCase
             'title' => 'Fullmetal Alchemist',
             'type' => 'manga',
             'identifier' => 'ANILIST:5114',
+            'backdrop_url' => 'https://s4.anilist.co/banner.jpg',
         ]);
         $this->assertDatabaseHas('api_sources', [
             'key' => 'anilist',
@@ -390,6 +391,7 @@ class CatalogSyncServiceTest extends TestCase
             'genres' => ['Action'],
             'countryOfOrigin' => 'JP',
             'coverImage' => ['large' => 'https://s4.anilist.co/cover.jpg'],
+            'bannerImage' => 'https://s4.anilist.co/banner.jpg',
             'format' => 'MANGA',
             'staff' => [
                 'edges' => [[

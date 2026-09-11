@@ -129,6 +129,7 @@ final class AniListAdapter
             originalTitle: $this->originalTitle($item, $title),
             relations: $includeRelations ? $this->relations(Arr::get($item, 'relations.edges')) : [],
             authorDetails: $authorDetails,
+            backdropUrl: $this->cleanUrl(Arr::get($item, 'bannerImage')),
         );
     }
 
@@ -319,6 +320,7 @@ final class AniListAdapter
                     large
                     medium
                   }
+                  bannerImage
                   format
                   staff(perPage: 10) {
                     edges {
@@ -359,6 +361,7 @@ final class AniListAdapter
                           large
                           medium
                         }
+                        bannerImage
                         format
                       }
                     }

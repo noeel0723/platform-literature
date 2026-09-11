@@ -248,6 +248,7 @@ class SemanticLiteratureResolver
             'format',
             'identifier',
             'cover_url',
+            'backdrop_url',
             'knowledge_graph_id',
         ];
 

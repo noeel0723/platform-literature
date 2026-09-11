@@ -1,5 +1,5 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 
 import LiteratureCard from '../../Components/LiteratureCard';
 import LiteratureDetailHero from '../../Components/LiteratureDetailHero';
@@ -84,6 +84,8 @@ function Discovery({ relationshipGroups, authorDiscoveries }) {
 
 export default function Show({ literature, viewer, ratingSummary, reviews, discussions, discussionCount, relationshipGroups, authorDiscoveries, reportReasons, successMessage, routes }) {
     const [reviewOpen, setReviewOpen] = useState(false);
+    const backdropUrl = literature.backdrop_url || literature.cover_url;
+    const hasDedicatedBackdrop = Boolean(literature.backdrop_url);
     const reviewForm = useForm({
         rating: viewer.current_review?.rating ?? '',
         body: viewer.current_review?.body ?? '',
@@ -94,6 +96,12 @@ export default function Show({ literature, viewer, ratingSummary, reviews, discu
         if (reviewForm.errors.rating || reviewForm.errors.body) setReviewOpen(true);
     }, [reviewForm.errors.rating, reviewForm.errors.body]);
 
+    useLayoutEffect(() => {
+        document.body.classList.add('has-literature-hero');
+
+        return () => document.body.classList.remove('has-literature-hero');
+    }, []);
+
     const chooseRating = (rating) => {
         reviewForm.setData('rating', rating);
         setReviewOpen(true);
@@ -103,15 +111,15 @@ export default function Show({ literature, viewer, ratingSummary, reviews, discu
         <>
             <Head title={literature.title} />
             {successMessage && <div role="status" className="border-b border-brand-sky/50 bg-brand-sky/20 px-5 py-3 text-center text-sm font-semibold text-ink-950">{successMessage}</div>}
-            <section data-literature-backdrop className="relative isolate min-h-[360px] overflow-hidden bg-ink-950 sm:min-h-[460px] lg:min-h-[540px]">
-                {literature.cover_url ? (
+            <section data-literature-backdrop className="relative isolate min-h-[420px] overflow-hidden bg-ink-950 sm:min-h-[500px] lg:min-h-[620px]">
+                {backdropUrl ? (
                     <>
-                        <div className="absolute inset-0 -z-20 overflow-hidden" aria-hidden="true"><img src={literature.cover_url} alt="" className="size-full scale-110 object-cover object-center opacity-65 blur-[2px]" /></div>
-                        <div className="absolute inset-0 -z-10 bg-linear-to-t from-brand-cream via-ink-950/15 to-ink-950/45" aria-hidden="true" />
-                        <div className="absolute inset-0 -z-10 bg-linear-to-r from-ink-950/50 via-transparent to-ink-950/45" aria-hidden="true" />
+                        <div className="absolute inset-0 -z-20 overflow-hidden" aria-hidden="true"><img src={backdropUrl} alt="" className={`size-full object-cover object-center ${hasDedicatedBackdrop ? 'scale-[1.02] opacity-90' : 'scale-110 opacity-62 blur-[3px]'}`} /></div>
+                        <div className="absolute inset-0 -z-10 bg-linear-to-t from-brand-cream via-ink-950/5 to-ink-950/25" aria-hidden="true" />
+                        <div className="absolute inset-0 -z-10 bg-linear-to-r from-ink-950/45 via-transparent to-ink-950/35" aria-hidden="true" />
                     </>
                 ) : <div className="catalog-grid absolute inset-0 -z-10 opacity-70" aria-hidden="true" />}
-                <div className="relative mx-auto max-w-7xl px-5 pt-8 sm:px-8 lg:px-10 lg:pt-10">
+                <div className="relative mx-auto max-w-7xl px-5 pt-24 sm:px-8 lg:px-10 lg:pt-28">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <Link href={routes.catalog} className="inline-flex items-center gap-2 rounded-full bg-ink-950/65 px-4 py-2 text-sm font-semibold text-brand-cream backdrop-blur transition hover:bg-brand-coral"><span aria-hidden="true">←</span> Back to catalog</Link>
                         {routes.admin_edit_metadata && <Link href={routes.admin_edit_metadata} className="rounded-full border border-brand-cream/40 bg-ink-950/65 px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] text-brand-cream backdrop-blur transition hover:border-brand-coral hover:bg-brand-coral">Edit metadata</Link>}
@@ -120,7 +128,7 @@ export default function Show({ literature, viewer, ratingSummary, reviews, discu
             </section>
 
             <section className="border-b border-ink-950/10 bg-brand-cream">
-                <div data-literature-detail-grid className="relative mx-auto -mt-24 grid max-w-7xl gap-8 px-5 pb-14 sm:px-8 md:grid-cols-[220px_minmax(0,1fr)] lg:grid-cols-[250px_minmax(0,1fr)_300px] lg:px-10 lg:pb-20">
+                <div data-literature-detail-grid className="relative mx-auto -mt-20 grid max-w-7xl items-start gap-8 px-5 pb-14 sm:px-8 md:grid-cols-[220px_minmax(0,1fr)] lg:grid-cols-[250px_minmax(0,1fr)_300px] lg:px-10 lg:pb-20">
                     <LiteratureDetailHero literature={literature} />
                     <ActionPanel viewer={viewer} ratingSummary={ratingSummary} routes={routes} onOpenReview={() => setReviewOpen(true)} onChooseRating={chooseRating} />
                 </div>

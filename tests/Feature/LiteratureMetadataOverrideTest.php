@@ -34,6 +34,7 @@ class LiteratureMetadataOverrideTest extends TestCase
             'title' => 'API Title',
             'synopsis' => 'API synopsis.',
             'cover_url' => 'https://images.example.test/api.jpg',
+            'backdrop_url' => 'https://images.example.test/api-hero.jpg',
         ]);
 
         $this->actingAs($admin)
@@ -41,6 +42,7 @@ class LiteratureMetadataOverrideTest extends TestCase
                 'title' => 'Curated Title',
                 'synopsis' => 'Curated synopsis.',
                 'cover_url' => 'https://images.example.test/curated.jpg',
+                'backdrop_url' => 'https://images.example.test/curated-hero.jpg',
                 'source_url' => 'https://example.test/reference',
                 'notes' => 'Checked against the publisher page.',
             ])
@@ -51,9 +53,14 @@ class LiteratureMetadataOverrideTest extends TestCase
             'edited_by' => $admin->id,
             'title' => 'Curated Title',
             'synopsis' => 'Curated synopsis.',
+            'backdrop_url' => 'https://images.example.test/curated-hero.jpg',
         ]);
         $this->assertSame('API Title', $literature->fresh()->getRawOriginal('title'));
         $this->assertSame('API synopsis.', $literature->fresh()->getRawOriginal('synopsis'));
+        $this->assertSame(
+            'https://images.example.test/curated-hero.jpg',
+            $literature->fresh()->load('metadataOverride')->displayBackdropUrl(),
+        );
 
         $this->actingAs($admin)
             ->get(route('literatures.show', $literature))

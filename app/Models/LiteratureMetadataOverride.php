@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'tagline',
     'synopsis',
     'cover_url',
+    'backdrop_url',
     'publisher',
     'language',
     'format',

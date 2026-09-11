@@ -41,6 +41,7 @@ class AniListAdapterTest extends TestCase
         $this->assertSame(2001, $manga->publicationYear);
         $this->assertSame('ANILIST:5114', $manga->identifier);
         $this->assertSame('https://s4.anilist.co/file/anilistcdn/media/manga/cover/large.jpg', $manga->coverUrl);
+        $this->assertSame('https://s4.anilist.co/file/anilistcdn/media/manga/banner.jpg', $manga->backdropUrl);
         $this->assertSame('A story about two brothers.', $manga->synopsis);
         $this->assertSame('Manga', $manga->format);
         $this->assertSame('Hiromu Arakawa', $manga->authorDetails[0]->name);
@@ -232,6 +233,7 @@ class AniListAdapterTest extends TestCase
             'coverImage' => [
                 'extraLarge' => 'https://s4.anilist.co/file/anilistcdn/media/manga/cover/large.jpg',
             ],
+            'bannerImage' => 'https://s4.anilist.co/file/anilistcdn/media/manga/banner.jpg',
             'format' => 'MANGA',
             'staff' => [
                 'edges' => [

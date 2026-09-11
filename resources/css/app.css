@@ -63,6 +63,17 @@
         background-color: color-mix(in srgb, var(--color-brand-yogurt) 42%, var(--color-brand-plate));
     }
 
+    body.has-literature-hero [data-app-header] {
+        position: absolute !important;
+        inset-inline: 0;
+        top: 0;
+        width: 100%;
+        border-color: transparent !important;
+        background: linear-gradient(180deg, rgb(16 47 98 / 0.48), rgb(16 47 98 / 0.12) 72%, transparent) !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+    }
+
     .poster-shine::after {
         position: absolute;
         inset: 0;

@@ -29,6 +29,7 @@ class UpdateLiteratureMetadataOverrideRequest extends FormRequest
             'tagline' => ['nullable', 'string', 'max:2000'],
             'synopsis' => ['nullable', 'string', 'max:20000'],
             'cover_url' => ['nullable', 'url:http,https', 'max:4096'],
+            'backdrop_url' => ['nullable', 'url:http,https', 'max:4096'],
             'publisher' => ['nullable', 'string', 'max:255'],
             'language' => ['nullable', 'string', 'max:30'],
             'format' => ['nullable', 'string', 'max:100'],

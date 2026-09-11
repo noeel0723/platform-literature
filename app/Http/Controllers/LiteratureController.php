@@ -420,6 +420,7 @@ class LiteratureController extends Controller
             'genres' => $literature->categories->pluck('name')->all(),
             'identifier' => $literature->identifier ?? $literature->external_id,
             'cover_url' => $literature->displayCoverUrl(),
+            'backdrop_url' => $literature->displayBackdropUrl(),
             'theme' => $literature->theme,
             'is_curated' => $literature->hasCuratedMetadata(),
             'initials' => $this->initials($displayTitle),

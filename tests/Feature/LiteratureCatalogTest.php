@@ -270,7 +270,12 @@ class LiteratureCatalogTest extends TestCase
     public function test_literature_detail_renders_catalog_metadata(): void
     {
         $literature = $this->createLiterature(
-            ['title' => 'Watchmen', 'slug' => 'watchmen', 'type' => 'western-comic'],
+            [
+                'title' => 'Watchmen',
+                'slug' => 'watchmen',
+                'type' => 'western-comic',
+                'backdrop_url' => 'https://images.example.test/watchmen-panel.jpg',
+            ],
             'Comic Vine',
             ['Alan Moore', 'Dave Gibbons'],
             ['Misteri'],
@@ -283,6 +288,7 @@ class LiteratureCatalogTest extends TestCase
             ->where('literature.title', 'Watchmen')
             ->where('literature.author', 'Alan Moore & Dave Gibbons')
             ->where('literature.source', 'Comic Vine')
+            ->where('literature.backdrop_url', 'https://images.example.test/watchmen-panel.jpg')
             ->where('literature.author_links.0.url', route('authors.show', $literature->authors()->where('name', 'Alan Moore')->firstOrFail()))
             ->where('viewer.authenticated', false)
             ->where('ratingSummary.count', 0)

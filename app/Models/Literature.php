@@ -34,6 +34,7 @@ use Illuminate\Support\Str;
     'format',
     'identifier',
     'cover_url',
+    'backdrop_url',
     'theme',
 ])]
 class Literature extends Model
@@ -176,6 +177,11 @@ class Literature extends Model
     public function displayCoverUrl(): ?string
     {
         return $this->effectiveMetadataOverride()?->cover_url ?? $this->cover_url;
+    }
+
+    public function displayBackdropUrl(): ?string
+    {
+        return $this->effectiveMetadataOverride()?->backdrop_url ?? $this->backdrop_url;
     }
 
     public function displayPublisher(): ?string

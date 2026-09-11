@@ -103,7 +103,7 @@ export default function AppHeader({ routes, user, csrf_token: csrfToken, search_
     const openQuickLog = () => document.getElementById('quick-log-search-dialog')?.showModal();
 
     return (
-        <header className="sticky top-0 z-40 border-b border-brand-blueberry/15 bg-brand-stem/95 text-brand-plate backdrop-blur-xl">
+        <header data-app-header className="sticky top-0 z-40 border-b border-brand-blueberry/15 bg-brand-stem/95 text-brand-plate backdrop-blur-xl">
             <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
                 <div className="relative flex h-18 min-w-0 items-center gap-3 lg:gap-5">
                     <div className="shrink-0"><BrandMark href={routes.home} /></div>

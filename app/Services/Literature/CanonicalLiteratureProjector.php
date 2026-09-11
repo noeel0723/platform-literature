@@ -65,6 +65,7 @@ final class CanonicalLiteratureProjector
 
         if ($preferred !== null && $preferredMapping !== null) {
             $this->inheritFallbackCover($preferred, $preferredMapping, $rankedMappings);
+            $this->inheritFallbackBackdrop($preferred, $preferredMapping, $rankedMappings);
         }
 
         if ($canonicalWork->preferred_literature_id !== $preferred?->id) {
@@ -107,6 +108,36 @@ final class CanonicalLiteratureProjector
         ])->save();
     }
 
+    /** @param Collection<int, LiteratureSourceMapping> $rankedMappings */
+    private function inheritFallbackBackdrop(
+        Literature $preferred,
+        LiteratureSourceMapping $preferredMapping,
+        Collection $rankedMappings,
+    ): void {
+        if (filled($preferred->backdrop_url)) {
+            return;
+        }
+
+        $backdropMapping = $rankedMappings
+            ->first(fn (LiteratureSourceMapping $mapping): bool => filled($mapping->literature?->backdrop_url));
+
+        if ($backdropMapping === null) {
+            return;
+        }
+
+        $preferred->forceFill(['backdrop_url' => $backdropMapping->literature->backdrop_url])->save();
+
+        $fieldProvenance = $preferredMapping->field_provenance ?? [];
+        $fieldProvenance['backdrop_url'] = $backdropMapping->apiSource?->key
+            ?? $backdropMapping->literature->apiSource?->key
+            ?? 'fallback';
+
+        $preferredMapping->forceFill([
+            'field_provenance' => $fieldProvenance,
+            'quality_score' => $this->score($preferredMapping),
+        ])->save();
+    }
+
     private function score(LiteratureSourceMapping $mapping): int
     {
         $literature = $mapping->literature;
@@ -117,6 +148,7 @@ final class CanonicalLiteratureProjector
             + ($literature->authors->isNotEmpty() ? 60 : 0)
             + (filled($literature->identifier) ? 25 : 0)
             + $this->coverQualityScore($literature->cover_url)
+            + (filled($literature->backdrop_url) ? 20 : 0)
             + (filled($literature->synopsis) ? 35 : 0)
             + (filled($literature->publisher) ? 15 : 0)
             + ($literature->publication_year !== null ? 10 : 0)

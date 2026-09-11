@@ -123,6 +123,7 @@ class CanonicalLiteratureProjectionTest extends TestCase
             'type' => 'novel',
             'identifier' => null,
             'cover_url' => 'https://books.google.com/books/content?id=silver-chair&zoom=6&w=1000',
+            'backdrop_url' => 'https://images.example.test/silver-chair-artwork.jpg',
             'synopsis' => null,
             'publisher' => null,
             'publication_year' => 1953,
@@ -136,7 +137,9 @@ class CanonicalLiteratureProjectionTest extends TestCase
 
         $this->assertTrue($preferred->is($primary));
         $this->assertSame($fallback->cover_url, $primary->fresh()->cover_url);
+        $this->assertSame($fallback->backdrop_url, $primary->fresh()->backdrop_url);
         $this->assertSame('google-books', $primaryMapping->fresh()->field_provenance['cover_url']);
+        $this->assertSame('google-books', $primaryMapping->fresh()->field_provenance['backdrop_url']);
 
         $primaryMapping->update(['field_provenance' => ['cover_url' => 'hardcover']]);
         app(CanonicalLiteratureProjector::class)->refresh($work->fresh());

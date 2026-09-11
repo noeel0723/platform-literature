@@ -7,6 +7,7 @@
             'tagline' => ['label' => 'Short description', 'type' => 'textarea', 'base' => $literature->tagline],
             'synopsis' => ['label' => 'Synopsis', 'type' => 'textarea', 'base' => $literature->synopsis],
             'cover_url' => ['label' => 'Cover URL', 'type' => 'url', 'base' => $literature->cover_url],
+            'backdrop_url' => ['label' => 'Hero artwork URL', 'type' => 'url', 'base' => $literature->backdrop_url],
             'publisher' => ['label' => 'Publisher', 'type' => 'text', 'base' => $literature->publisher],
             'language' => ['label' => 'Language code', 'type' => 'text', 'base' => $literature->language],
             'format' => ['label' => 'Format', 'type' => 'text', 'base' => $literature->format],
@@ -33,7 +34,7 @@
 
                     <div class="mt-6 grid gap-5 sm:grid-cols-2">
                         @foreach ($fields as $name => $field)
-                            <div @class(['sm:col-span-2' => in_array($name, ['tagline', 'synopsis', 'cover_url'], true)])>
+                            <div @class(['sm:col-span-2' => in_array($name, ['tagline', 'synopsis', 'cover_url', 'backdrop_url'], true)])>
                                 <label for="{{ $name }}" class="text-xs font-semibold uppercase tracking-[0.12em] text-ink-950">{{ $field['label'] }}</label>
                                 @if ($field['type'] === 'textarea')
                                     <textarea id="{{ $name }}" name="{{ $name }}" rows="{{ $name === 'synopsis' ? 7 : 3 }}" class="mt-2 w-full border border-ink-950/20 bg-brand-cream/65 px-3 py-2.5 text-sm leading-6 text-ink-950 outline-none focus:border-brand-coral">{{ old($name, $override?->{$name}) }}</textarea>
@@ -73,6 +74,14 @@
 
             <aside class="h-fit border border-ink-950/12 bg-brand-sky/15 p-5">
                 <p class="text-xs font-semibold uppercase tracking-[0.14em] text-ink-950/55">Effective preview</p>
+                <div class="mt-4 aspect-video overflow-hidden border border-ink-950/15 bg-brand-cream">
+                    @if ($literature->displayBackdropUrl())
+                        <img src="{{ $literature->displayBackdropUrl() }}" alt="" class="size-full object-cover">
+                    @elseif ($literature->displayCoverUrl())
+                        <img src="{{ $literature->displayCoverUrl() }}" alt="" class="size-full scale-110 object-cover blur-sm">
+                    @endif
+                </div>
+                <p class="mt-2 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-ink-950/45">Hero artwork</p>
                 <div class="mt-4 aspect-[2/3] overflow-hidden border border-ink-950/15 bg-brand-cream">
                     @if ($literature->displayCoverUrl())
                         <img src="{{ $literature->displayCoverUrl() }}" alt="" class="size-full object-cover">

@@ -355,6 +355,7 @@ final class CatalogSyncService
             'format' => $item->format ?? $literature->format,
             'identifier' => $item->identifier ?? $literature->identifier,
             'cover_url' => $item->coverUrl ?? $literature->cover_url,
+            'backdrop_url' => $item->backdropUrl ?? $literature->backdrop_url,
             'theme' => $literature->theme ?? 'cream',
         ]);
         $literature->save();

@@ -36,6 +36,7 @@ class LiteratureFactory extends Factory
             'format' => 'Novel',
             'identifier' => fake()->unique()->isbn13(),
             'cover_url' => null,
+            'backdrop_url' => null,
             'theme' => 'cream',
         ];
     }

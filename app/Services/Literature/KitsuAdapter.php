@@ -145,6 +145,11 @@ final class KitsuAdapter
             ),
             originalTitle: $this->originalTitle($attributes, $originalLanguage, $title),
             authorDetails: $authorDetails,
+            backdropUrl: $this->cleanText(
+                Arr::get($attributes, 'coverImage.original')
+                    ?: Arr::get($attributes, 'coverImage.large')
+                    ?: Arr::get($attributes, 'coverImage.small'),
+            ),
         );
     }
 

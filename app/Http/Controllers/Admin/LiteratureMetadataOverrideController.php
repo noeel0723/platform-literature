@@ -19,6 +19,7 @@ class LiteratureMetadataOverrideController extends Controller
         'tagline',
         'synopsis',
         'cover_url',
+        'backdrop_url',
         'publisher',
         'language',
         'format',

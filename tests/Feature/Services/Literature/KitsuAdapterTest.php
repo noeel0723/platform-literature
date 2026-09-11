@@ -40,6 +40,7 @@ class KitsuAdapterTest extends TestCase
         $this->assertSame(2012, $manga->publicationYear);
         $this->assertSame('KITSU:12619', $manga->identifier);
         $this->assertSame('https://media.kitsu.app/haikyu-medium.jpg', $manga->coverUrl);
+        $this->assertSame('https://media.kitsu.app/haikyu-hero.jpg', $manga->backdropUrl);
         $this->assertSame('A volleyball story.', $manga->synopsis);
         $this->assertSame('ja', $manga->language);
         $this->assertSame('person-id', $manga->authorDetails[0]->externalId);
@@ -147,6 +148,7 @@ class KitsuAdapterTest extends TestCase
                 'subtype' => 'manga',
                 'startDate' => '2012-02-20',
                 'posterImage' => ['medium' => 'https://media.kitsu.app/haikyu-medium.jpg'],
+                'coverImage' => ['original' => 'https://media.kitsu.app/haikyu-hero.jpg'],
             ],
             'relationships' => [
                 'staff' => ['data' => [['id' => 'staff-id', 'type' => 'mediaStaff']]],

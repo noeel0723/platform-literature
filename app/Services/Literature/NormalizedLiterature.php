@@ -29,5 +29,6 @@ final readonly class NormalizedLiterature
         public ?string $synopsisSourceUrl = null,
         public array $relations = [],
         public array $authorDetails = [],
+        public ?string $backdropUrl = null,
     ) {}
 }
