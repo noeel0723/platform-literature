@@ -49,26 +49,55 @@ function Summary({ literature }) {
 }
 
 function Discovery({ relationshipGroups, authorDiscoveries }) {
+    const [expandedGroups, setExpandedGroups] = useState({});
+
+    const toggleGroup = (groupType) => {
+        setExpandedGroups((current) => ({
+            ...current,
+            [groupType]: !current[groupType],
+        }));
+    };
+
     return (
         <section id="relationships" className="scroll-mt-24 border-t border-ink-950/10 bg-white/20">
             <SiteContainer className="py-9 lg:py-10">
                 <div className="border-b border-ink-950/15 pb-3"><SectionHeading>Relationship Explorer</SectionHeading></div>
-                {relationshipGroups.length > 0 ? relationshipGroups.map((group) => (
-                    <section key={group.type} className="mt-6" aria-labelledby={`relationship-${group.type}`}>
-                        <div className="mb-3 flex items-center justify-between gap-4">
-                            <SectionHeading as="h3" id={`relationship-${group.type}`}>{group.label}</SectionHeading>
-                            <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-ink-950/40">{plural(group.items.length, 'work')}</span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-x-3 gap-y-5 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
-                            {group.items.map((item) => (
-                                <div key={`${group.type}-${item.slug}`} className="min-w-0">
-                                    <div className="mb-1.5 flex items-center justify-between gap-1 border-l-2 border-brand-coral bg-brand-cream/70 px-2 py-1.5 text-[0.52rem] font-bold uppercase tracking-[0.1em] text-ink-950"><span>{group.label}</span><span className="truncate text-ink-950/45">{item.relation_source}</span></div>
-                                    <LiteratureCard literature={item} compact />
+                {relationshipGroups.length > 0 ? relationshipGroups.map((group) => {
+                    const isExpanded = Boolean(expandedGroups[group.type]);
+                    const canExpand = group.items.length > 6;
+                    const visibleItems = isExpanded ? group.items : group.items.slice(0, 6);
+                    const gridId = `relationship-grid-${group.type}`;
+
+                    return (
+                        <section key={group.type} className="mt-6" aria-labelledby={`relationship-${group.type}`}>
+                            <div className="mb-3 flex items-center justify-between gap-4">
+                                <SectionHeading as="h3" id={`relationship-${group.type}`}>{group.label}</SectionHeading>
+                                <div className="flex items-center gap-3">
+                                    <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-ink-950/40">{plural(group.items.length, 'work')}</span>
+                                    {canExpand && (
+                                        <button
+                                            type="button"
+                                            aria-controls={gridId}
+                                            aria-expanded={isExpanded}
+                                            onClick={() => toggleGroup(group.type)}
+                                            className="text-[10px] font-bold uppercase tracking-[0.14em] text-brand-coral transition hover:text-ink-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-coral"
+                                        >
+                                            {isExpanded ? 'Show less' : 'More'}
+                                        </button>
+                                    )}
                                 </div>
-                            ))}
-                        </div>
-                    </section>
-                )) : (
+                            </div>
+                            <div id={gridId} className="grid grid-cols-3 gap-x-3 gap-y-5 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+                                {visibleItems.map((item) => (
+                                    <div key={`${group.type}-${item.slug}`} className="min-w-0">
+                                        <div className="mb-1.5 flex items-center justify-between gap-1 border-l-2 border-brand-coral bg-brand-cream/70 px-2 py-1.5 text-[0.52rem] font-bold uppercase tracking-[0.1em] text-ink-950"><span>{group.label}</span><span className="truncate text-ink-950/45">{item.relation_source}</span></div>
+                                        <LiteratureCard literature={item} compact />
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+                    );
+                }) : (
                     <div className="mt-6 border border-dashed border-ink-950/20 bg-brand-cream/40 p-5">
                         <p className="font-serif text-xl font-bold text-ink-950">No confirmed relationships yet</p>
                         <p className="mt-1.5 max-w-2xl text-sm leading-6 text-ink-950/55">Relationship data appears after this work is refreshed from a supported source or linked through internal catalog curation.</p>

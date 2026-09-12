@@ -28,6 +28,43 @@ final class HardcoverAdapter
         }
         GRAPHQL;
 
+    private const SERIES_QUERY = <<<'GRAPHQL'
+        query SeriesBooks($seriesIds: [Int!]!, $limit: Int!) {
+          series(where: {id: {_in: $seriesIds}}) {
+            id
+            book_series(
+              where: {
+                book: {
+                  book_status_id: {_eq: 1}
+                  compilation: {_eq: false}
+                  default_physical_edition: {language_id: {_eq: 1}}
+                }
+              }
+              order_by: {position: asc}
+              limit: $limit
+            ) {
+              position
+              book {
+                id
+                title
+                subtitle
+                release_date
+                cached_image
+                contributions {
+                  author {
+                    name
+                  }
+                }
+                editions(limit: 10) {
+                  isbn_10
+                  isbn_13
+                }
+              }
+            }
+          }
+        }
+        GRAPHQL;
+
     /** @return Collection<int, NormalizedLiterature> */
     public function search(string $query, int $limit = 6): Collection
     {
@@ -44,15 +81,24 @@ final class HardcoverAdapter
         }
 
         $normalizedLimit = max(1, min($limit, 40));
-        $cacheKey = 'literature-source:hardcover:v1:'.hash('sha256', Str::lower($query).":{$normalizedLimit}");
+        $cacheKey = 'literature-source:hardcover:v2:'.hash('sha256', Str::lower($query).":{$normalizedLimit}");
         $items = Cache::remember(
             $cacheKey,
             now()->addMinutes(max(1, (int) config('services.hardcover.cache_minutes', 30))),
             fn (): array => $this->request($query, $normalizedLimit, $token),
         );
+        $seriesBooks = $this->seriesBooks($items, $token);
 
         return collect($items)
-            ->map(fn (mixed $item): ?NormalizedLiterature => $this->normalize($item, $query))
+            ->map(function (mixed $item) use ($query, $seriesBooks): ?NormalizedLiterature {
+                $seriesId = $this->featuredSeriesId($item);
+
+                return $this->normalize(
+                    $item,
+                    $query,
+                    $seriesId === null ? [] : ($seriesBooks[$seriesId] ?? []),
+                );
+            })
             ->filter()
             ->values();
     }
@@ -126,7 +172,8 @@ final class HardcoverAdapter
             ->all();
     }
 
-    private function normalize(mixed $item, string $query): ?NormalizedLiterature
+    /** @param list<array<string, mixed>> $seriesBooks */
+    private function normalize(mixed $item, string $query, array $seriesBooks = []): ?NormalizedLiterature
     {
         if (! is_array($item)) {
             return null;
@@ -169,7 +216,181 @@ final class HardcoverAdapter
             format: 'Novel',
             identifier: $identifier,
             coverUrl: $this->coverUrl($item),
+            relations: $this->seriesRelations($item, $seriesBooks),
         );
+    }
+
+    /**
+     * @param  list<mixed>  $items
+     * @return array<string, list<array<string, mixed>>>
+     */
+    private function seriesBooks(array $items, string $token): array
+    {
+        $seriesIds = collect($items)
+            ->map(fn (mixed $item): ?string => $this->featuredSeriesId($item))
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values();
+
+        if ($seriesIds->isEmpty()) {
+            return [];
+        }
+
+        $limit = max(2, min((int) config('services.hardcover.relationship_limit', 40), 100));
+        $cacheKey = 'literature-source:hardcover:series:v1:'.hash(
+            'sha256',
+            $seriesIds->join(',').":{$limit}",
+        );
+
+        return Cache::remember(
+            $cacheKey,
+            now()->addMinutes(max(1, (int) config('services.hardcover.cache_minutes', 30))),
+            fn (): array => $this->requestSeriesBooks($seriesIds->map(fn (string $id): int => (int) $id)->all(), $limit, $token),
+        );
+    }
+
+    /**
+     * @param  list<int>  $seriesIds
+     * @return array<string, list<array<string, mixed>>>
+     */
+    private function requestSeriesBooks(array $seriesIds, int $limit, string $token): array
+    {
+        try {
+            $response = Http::acceptJson()
+                ->withToken($token)
+                ->withUserAgent((string) config('services.hardcover.user_agent'))
+                ->connectTimeout((int) config('services.hardcover.connect_timeout', 3))
+                ->timeout((int) config('services.hardcover.timeout', 10))
+                ->post((string) config('services.hardcover.base_url'), [
+                    'query' => self::SERIES_QUERY,
+                    'variables' => [
+                        'seriesIds' => $seriesIds,
+                        'limit' => $limit,
+                    ],
+                ]);
+        } catch (ConnectionException) {
+            return [];
+        }
+
+        if ($response->failed() || (is_array($response->json('errors')) && $response->json('errors') !== [])) {
+            return [];
+        }
+
+        $series = $response->json('data.series');
+
+        if (! is_array($series)) {
+            return [];
+        }
+
+        return collect($series)
+            ->filter(fn (mixed $item): bool => is_array($item)
+                && filled(Arr::get($item, 'id'))
+                && is_array(Arr::get($item, 'book_series')))
+            ->mapWithKeys(fn (array $item): array => [
+                (string) Arr::get($item, 'id') => array_values(Arr::get($item, 'book_series')),
+            ])
+            ->all();
+    }
+
+    /** @param list<array<string, mixed>> $seriesBooks */
+    private function seriesRelations(array $item, array $seriesBooks): array
+    {
+        $externalId = $this->cleanText(Arr::get($item, 'id'));
+
+        if ($externalId === null || $seriesBooks === []) {
+            return [];
+        }
+
+        $currentPosition = $this->seriesPosition(
+            Arr::get($item, 'featured_series.position')
+                ?? Arr::get($item, 'featured_series_position'),
+        );
+        $positions = collect($seriesBooks)
+            ->map(fn (array $seriesBook): ?float => $this->seriesPosition(Arr::get($seriesBook, 'position')))
+            ->filter(fn (?float $position): bool => $position !== null)
+            ->unique()
+            ->sort()
+            ->values();
+        $previousPosition = $currentPosition === null
+            ? null
+            : $positions->filter(fn (float $position): bool => $position < $currentPosition)->last();
+        $nextPosition = $currentPosition === null
+            ? null
+            : $positions->first(fn (float $position): bool => $position > $currentPosition);
+
+        return collect($seriesBooks)
+            ->filter(fn (mixed $seriesBook): bool => is_array($seriesBook)
+                && (string) Arr::get($seriesBook, 'book.id', '') !== $externalId)
+            ->map(function (array $seriesBook) use ($previousPosition, $nextPosition): ?NormalizedLiteratureRelation {
+                $book = Arr::get($seriesBook, 'book');
+
+                if (! is_array($book)) {
+                    return null;
+                }
+
+                $related = $this->normalize(
+                    $this->seriesBookSearchItem($book),
+                    (string) Arr::get($book, 'title', ''),
+                );
+
+                if ($related === null) {
+                    return null;
+                }
+
+                $position = $this->seriesPosition(Arr::get($seriesBook, 'position'));
+                $relationType = match (true) {
+                    $position !== null && $previousPosition !== null && $position === $previousPosition => 'prequel',
+                    $position !== null && $nextPosition !== null && $position === $nextPosition => 'sequel',
+                    default => 'related',
+                };
+
+                return new NormalizedLiteratureRelation($relationType, $related);
+            })
+            ->filter()
+            ->unique(fn (NormalizedLiteratureRelation $relation): string => $relation->literature->externalId)
+            ->values()
+            ->all();
+    }
+
+    /** @return array<string, mixed> */
+    private function seriesBookSearchItem(array $book): array
+    {
+        $releaseDate = $this->cleanText(Arr::get($book, 'release_date'));
+
+        return [
+            'id' => Arr::get($book, 'id'),
+            'title' => Arr::get($book, 'title'),
+            'subtitle' => Arr::get($book, 'subtitle'),
+            'release_year' => $releaseDate === null ? null : substr($releaseDate, 0, 4),
+            'author_names' => collect(Arr::get($book, 'contributions', []))
+                ->map(fn (mixed $contribution): mixed => Arr::get($contribution, 'author.name'))
+                ->filter()
+                ->values()
+                ->all(),
+            'image' => Arr::get($book, 'cached_image'),
+            'isbns' => collect(Arr::get($book, 'editions', []))
+                ->flatMap(fn (mixed $edition): array => is_array($edition)
+                    ? [Arr::get($edition, 'isbn_13'), Arr::get($edition, 'isbn_10')]
+                    : [])
+                ->filter()
+                ->values()
+                ->all(),
+        ];
+    }
+
+    private function featuredSeriesId(mixed $item): ?string
+    {
+        if (! is_array($item)) {
+            return null;
+        }
+
+        return $this->cleanText(Arr::get($item, 'featured_series.series.id'));
+    }
+
+    private function seriesPosition(mixed $position): ?float
+    {
+        return is_numeric($position) ? (float) $position : null;
     }
 
     /** @param array<string, mixed> $item */

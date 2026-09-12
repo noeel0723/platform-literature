@@ -8,6 +8,7 @@ use App\Models\Literature;
 use App\Models\LiteratureRelation;
 use App\Services\Literature\CatalogSyncService;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -309,6 +310,112 @@ class CatalogSyncServiceTest extends TestCase
         Http::assertSentCount(1);
     }
 
+    public function test_hardcover_series_relations_are_persisted_with_provider_provenance(): void
+    {
+        $this->configureHardcover();
+        config()->set('services.knowledge_graph.key', null);
+        Http::preventStrayRequests();
+        Http::fake(function (Request $request) {
+            if (str_contains((string) $request['query'], 'query SeriesBooks')) {
+                return Http::response([
+                    'data' => [
+                        'series' => [[
+                            'id' => 77,
+                            'book_series' => [
+                                $this->hardcoverSeriesBook(1, 1, 'Saga One'),
+                                $this->hardcoverSeriesBook(2, 2, 'Saga Two'),
+                                $this->hardcoverSeriesBook(3, 3, 'Saga Three'),
+                            ],
+                        ]],
+                    ],
+                ]);
+            }
+
+            return Http::response([
+                'data' => [
+                    'search' => [
+                        'results' => [[
+                            'id' => 2,
+                            'title' => 'Saga Two',
+                            'release_year' => 2002,
+                            'author_names' => ['Example Author'],
+                            'isbns' => ['9780000000002'],
+                            'featured_series' => [
+                                'position' => 2,
+                                'series' => ['id' => 77, 'name' => 'Example Saga'],
+                            ],
+                        ]],
+                    ],
+                ],
+            ]);
+        });
+
+        $this->assertSame(1, app(CatalogSyncService::class)->syncHardcover('Saga Two'));
+
+        $main = Literature::query()->where('external_id', '2')->firstOrFail();
+        $prequel = Literature::query()->where('external_id', '1')->firstOrFail();
+        $sequel = Literature::query()->where('external_id', '3')->firstOrFail();
+
+        $this->assertDatabaseHas('literature_relations', [
+            'literature_id' => $main->id,
+            'related_literature_id' => $prequel->id,
+            'relation_type' => 'prequel',
+            'source' => 'Hardcover',
+        ]);
+        $this->assertDatabaseHas('literature_relations', [
+            'literature_id' => $main->id,
+            'related_literature_id' => $sequel->id,
+            'relation_type' => 'sequel',
+            'source' => 'Hardcover',
+        ]);
+        $this->assertDatabaseCount('literature_relations', 4);
+        Http::assertSentCount(2);
+    }
+
+    public function test_comic_vine_volume_issues_are_persisted_as_related_works(): void
+    {
+        $this->configureComicVine();
+        config()->set([
+            'services.comic_vine.creator_enrichment_limit' => 0,
+            'services.knowledge_graph.key' => null,
+        ]);
+        Http::preventStrayRequests();
+        $volume = $this->comicVolume();
+        $volume['first_issue'] = ['id' => 367155];
+        $volume['last_issue'] = ['id' => 367156];
+
+        Http::fake([
+            'https://comicvine.gamespot.com/api/search/*' => Http::response([
+                'status_code' => 1,
+                'error' => 'OK',
+                'results' => [$volume],
+            ]),
+            'https://comicvine.gamespot.com/api/issues/*' => Http::response([
+                'status_code' => 1,
+                'error' => 'OK',
+                'results' => [
+                    $this->comicIssue(367155, '1'),
+                    $this->comicIssue(367156, '2'),
+                ],
+            ]),
+        ]);
+
+        $this->assertSame(1, app(CatalogSyncService::class)->syncComicVine('Watchmen'));
+
+        $main = Literature::query()->where('external_id', '1815')->firstOrFail();
+        $issue = Literature::query()->where('external_id', 'issue-367155')->firstOrFail();
+
+        $this->assertDatabaseHas('literature_relations', [
+            'literature_id' => $main->id,
+            'related_literature_id' => $issue->id,
+            'relation_type' => 'related',
+            'source' => 'Comic Vine',
+        ]);
+        $this->assertSame('Comic Issue', $issue->format);
+        $this->assertDatabaseCount('literature_relations', 4);
+        Http::assertSentCount(2);
+    }
+
     private function configureGoogleBooks(): void
     {
         config()->set([
@@ -317,6 +424,20 @@ class CatalogSyncServiceTest extends TestCase
             'services.google_books.max_results' => 6,
             'services.google_books.connect_timeout' => 1,
             'services.google_books.timeout' => 2,
+        ]);
+    }
+
+    private function configureHardcover(): void
+    {
+        config()->set([
+            'services.hardcover.base_url' => 'https://api.hardcover.app/v1/graphql',
+            'services.hardcover.token' => 'test-hardcover-token',
+            'services.hardcover.user_agent' => 'Literahaven/1.0 test-suite',
+            'services.hardcover.max_results' => 6,
+            'services.hardcover.relationship_limit' => 40,
+            'services.hardcover.cache_minutes' => 30,
+            'services.hardcover.connect_timeout' => 1,
+            'services.hardcover.timeout' => 2,
         ]);
     }
 
@@ -338,6 +459,8 @@ class CatalogSyncServiceTest extends TestCase
             'services.comic_vine.user_agent' => 'LiteratureSocialDiscovery/1.0 test-suite',
             'services.comic_vine.max_results' => 6,
             'services.comic_vine.creator_enrichment_limit' => 4,
+            'services.comic_vine.relationship_enrichment_limit' => 4,
+            'services.comic_vine.relationship_limit' => 100,
             'services.comic_vine.cache_minutes' => 30,
             'services.comic_vine.connect_timeout' => 1,
             'services.comic_vine.timeout' => 2,
@@ -430,6 +553,35 @@ class CatalogSyncServiceTest extends TestCase
             'start_year' => 1986,
             'publisher' => ['name' => 'DC Comics'],
             'image' => ['super_url' => 'https://comicvine.gamespot.com/watchmen.jpg'],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function hardcoverSeriesBook(int $id, float $position, string $title): array
+    {
+        return [
+            'position' => $position,
+            'book' => [
+                'id' => $id,
+                'title' => $title,
+                'release_date' => '200'.(int) $position.'-01-01',
+                'cached_image' => "https://images.hardcover.app/{$id}.jpg",
+                'contributions' => [['author' => ['name' => 'Example Author']]],
+                'editions' => [['isbn_13' => '978000000000'.$id, 'isbn_10' => null]],
+            ],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function comicIssue(int $id, string $number): array
+    {
+        return [
+            'id' => $id,
+            'name' => "Issue {$number}",
+            'issue_number' => $number,
+            'cover_date' => '1986-09-01',
+            'volume' => ['id' => 1815, 'name' => 'Watchmen'],
+            'image' => ['super_url' => "https://comicvine.gamespot.com/{$id}.jpg"],
         ];
     }
 }

@@ -189,6 +189,7 @@ final class CatalogSyncService
         $literatures = Literature::query()
             ->whereBelongsTo($source)
             ->where('type', 'western-comic')
+            ->where('external_id', 'not like', 'issue-%')
             ->whereDoesntHave('authors')
             ->oldest('id')
             ->limit(max(1, min($limit, 100)))

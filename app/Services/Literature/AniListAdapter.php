@@ -28,8 +28,11 @@ final class AniListAdapter
             default => throw new InvalidArgumentException('AniList only supports all, manga, and manhwa catalog types.'),
         };
 
-        $countryOfOrigin = $literatureType === 'manhwa' ? 'KR' : null;
-        $excludedCountries = $literatureType === 'manga' ? ['KR'] : null;
+        $countries = match ($literatureType) {
+            'manga' => ['JP'],
+            'manhwa' => ['KR'],
+            'all' => ['JP', 'KR'],
+        };
 
         try {
             $response = Http::acceptJson()
@@ -41,8 +44,7 @@ final class AniListAdapter
                         'search' => $query,
                         'perPage' => max(1, min($limit, 50)),
                         'formats' => $formats,
-                        'countryOfOrigin' => $countryOfOrigin,
-                        'excludedCountries' => $excludedCountries,
+                        'countries' => $countries,
                     ],
                 ]);
         } catch (ConnectionException $exception) {
@@ -292,14 +294,13 @@ final class AniListAdapter
     private function searchQuery(): string
     {
         return <<<'GRAPHQL'
-            query SearchLiterature($search: String!, $perPage: Int!, $formats: [MediaFormat], $countryOfOrigin: CountryCode, $excludedCountries: [CountryCode]) {
+            query SearchLiterature($search: String!, $perPage: Int!, $formats: [MediaFormat], $countries: [CountryCode]) {
               Page(page: 1, perPage: $perPage) {
                 media(
                   search: $search
                   type: MANGA
                   format_in: $formats
-                  countryOfOrigin: $countryOfOrigin
-                  countryOfOrigin_not_in: $excludedCountries
+                  countryOfOrigin_in: $countries
                   isAdult: false
                   sort: SEARCH_MATCH
                 ) {

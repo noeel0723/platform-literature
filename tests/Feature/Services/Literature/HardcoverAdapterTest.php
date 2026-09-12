@@ -21,6 +21,7 @@ class HardcoverAdapterTest extends TestCase
             'services.hardcover.base_url' => 'https://api.hardcover.app/v1/graphql',
             'services.hardcover.token' => 'test-hardcover-token',
             'services.hardcover.user_agent' => 'Literahaven/1.0 test-suite',
+            'services.hardcover.relationship_limit' => 40,
             'services.hardcover.cache_minutes' => 30,
             'services.hardcover.connect_timeout' => 1,
             'services.hardcover.timeout' => 2,
@@ -97,6 +98,67 @@ class HardcoverAdapterTest extends TestCase
         Http::assertSentCount(1);
     }
 
+    public function test_search_normalizes_featured_series_relations_from_provider_positions(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake(function (Request $request) {
+            if (str_contains((string) $request['query'], 'query SeriesBooks')) {
+                return Http::response([
+                    'data' => [
+                        'series' => [[
+                            'id' => 77,
+                            'book_series' => [
+                                $this->seriesBook(1, 1, 'Saga One', '9780000000001'),
+                                $this->seriesBook(2, 2, 'Saga Two', '9780000000002'),
+                                $this->seriesBook(3, 3, 'Saga Three', '9780000000003'),
+                                $this->seriesBook(5, 5, 'Saga Five', '9780000000005'),
+                            ],
+                        ]],
+                    ],
+                ]);
+            }
+
+            return Http::response([
+                'data' => [
+                    'search' => [
+                        'results' => [[
+                            'id' => 2,
+                            'title' => 'Saga Two',
+                            'release_year' => 2002,
+                            'author_names' => ['Example Author'],
+                            'isbns' => ['9780000000002'],
+                            'featured_series' => [
+                                'position' => 2,
+                                'series' => ['id' => 77, 'name' => 'Example Saga'],
+                            ],
+                        ]],
+                    ],
+                ],
+            ]);
+        });
+
+        $novel = app(HardcoverAdapter::class)->search('Saga Two')->sole();
+        $relations = collect($novel->relations)->keyBy(
+            fn ($relation): string => $relation->literature->externalId,
+        );
+
+        $this->assertCount(3, $relations);
+        $this->assertSame('prequel', $relations['1']->type);
+        $this->assertSame('sequel', $relations['3']->type);
+        $this->assertSame('related', $relations['5']->type);
+        $this->assertSame('Saga Three', $relations['3']->literature->title);
+        $this->assertSame('9780000000003', $relations['3']->literature->identifier);
+
+        Http::assertSent(function (Request $request): bool {
+            $variables = $request['variables'] ?? [];
+
+            return str_contains((string) ($request['query'] ?? ''), 'query SeriesBooks')
+                && $variables['seriesIds'] === [77]
+                && $variables['limit'] === 40;
+        });
+        Http::assertSentCount(2);
+    }
+
     public function test_search_requires_a_token_before_sending_a_request(): void
     {
         config()->set('services.hardcover.token');
@@ -145,5 +207,26 @@ class HardcoverAdapterTest extends TestCase
 
         $this->assertCount(0, $results);
         Http::assertSentCount(1);
+    }
+
+    /** @return array<string, mixed> */
+    private function seriesBook(int $id, float $position, string $title, string $isbn): array
+    {
+        return [
+            'position' => $position,
+            'book' => [
+                'id' => $id,
+                'title' => $title,
+                'release_date' => '200'.$position.'-01-01',
+                'cached_image' => "http://images.hardcover.app/{$id}.jpg",
+                'contributions' => [[
+                    'author' => ['name' => 'Example Author'],
+                ]],
+                'editions' => [[
+                    'isbn_10' => null,
+                    'isbn_13' => $isbn,
+                ]],
+            ],
+        ];
     }
 }

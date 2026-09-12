@@ -55,8 +55,9 @@ class AniListAdapterTest extends TestCase
                 && $data['variables']['search'] === 'Fullmetal Alchemist'
                 && $data['variables']['perPage'] === 4
                 && $data['variables']['formats'] === ['MANGA', 'ONE_SHOT']
-                && $data['variables']['countryOfOrigin'] === null
-                && $data['variables']['excludedCountries'] === ['KR'];
+                && $data['variables']['countries'] === ['JP']
+                && str_contains($data['query'], 'countryOfOrigin_in: $countries')
+                && ! str_contains($data['query'], 'countryOfOrigin: $countryOfOrigin');
         });
     }
 
@@ -87,8 +88,7 @@ class AniListAdapterTest extends TestCase
             $variables = $request->data()['variables'];
 
             return $variables['formats'] === ['MANGA', 'ONE_SHOT']
-                && $variables['countryOfOrigin'] === 'KR'
-                && $variables['excludedCountries'] === null;
+                && $variables['countries'] === ['KR'];
         });
     }
 
@@ -117,7 +117,7 @@ class AniListAdapterTest extends TestCase
         Http::assertSent(fn (Request $request): bool => $request->data()['variables']['formats'] === [
             'MANGA',
             'ONE_SHOT',
-        ]);
+        ] && $request->data()['variables']['countries'] === ['JP', 'KR']);
         Http::assertSentCount(1);
     }
 

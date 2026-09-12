@@ -108,6 +108,53 @@ class ComicVineAdapterTest extends TestCase
         Http::assertSentCount(1);
     }
 
+    public function test_search_normalizes_only_issues_from_the_exact_provider_volume_as_relations(): void
+    {
+        $this->configureComicVine();
+        config()->set('services.comic_vine.creator_enrichment_limit', 0);
+        Http::preventStrayRequests();
+        $volume = $this->completeVolume();
+        $volume['last_issue'] = ['id' => 367166];
+
+        Http::fake([
+            'https://comicvine.gamespot.com/api/search/*' => Http::response([
+                'status_code' => 1,
+                'error' => 'OK',
+                'results' => [$volume],
+            ]),
+            'https://comicvine.gamespot.com/api/issues/*' => Http::response([
+                'status_code' => 1,
+                'error' => 'OK',
+                'results' => [
+                    $this->issue(367155, 1, 'At Midnight, All the Agents...', 1815),
+                    $this->issue(367156, '2', 'Absent Friends', 1815),
+                    $this->issue(999999, '3', 'A similarly named but unrelated issue', 999),
+                ],
+            ]),
+        ]);
+
+        $comic = app(ComicVineAdapter::class)->search('Watchmen')->sole();
+
+        $this->assertCount(2, $comic->relations);
+        $this->assertSame(['issue-367155', 'issue-367156'], collect($comic->relations)
+            ->map(fn ($relation): string => $relation->literature->externalId)
+            ->all());
+        $this->assertSame('related', $comic->relations[0]->type);
+        $this->assertSame('Watchmen #1: At Midnight, All the Agents...', $comic->relations[0]->literature->title);
+        $this->assertSame(1986, $comic->relations[0]->literature->publicationYear);
+        $this->assertSame('Comic Issue', $comic->relations[0]->literature->format);
+        $this->assertSame('COMICVINE:4000-367155', $comic->relations[0]->literature->identifier);
+
+        Http::assertSent(function (Request $request): bool {
+            $data = $request->data();
+
+            return str_contains($request->url(), '/api/issues/')
+                && $data['filter'] === 'volume:1815'
+                && str_contains($data['field_list'], 'volume');
+        });
+        Http::assertSentCount(2);
+    }
+
     public function test_search_reports_api_level_errors_as_an_unavailable_source(): void
     {
         $this->configureComicVine();
@@ -173,6 +220,8 @@ class ComicVineAdapterTest extends TestCase
             'services.comic_vine.user_agent' => 'LiteratureSocialDiscovery/1.0 test-suite',
             'services.comic_vine.max_results' => 6,
             'services.comic_vine.creator_enrichment_limit' => 4,
+            'services.comic_vine.relationship_enrichment_limit' => 4,
+            'services.comic_vine.relationship_limit' => 100,
             'services.comic_vine.cache_minutes' => 30,
             'services.comic_vine.connect_timeout' => 1,
             'services.comic_vine.timeout' => 2,
@@ -193,6 +242,21 @@ class ComicVineAdapterTest extends TestCase
             'first_issue' => ['id' => 367155],
             'image' => [
                 'super_url' => 'http://comicvine.gamespot.com/a/uploads/scale_large/watchmen.jpg',
+            ],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function issue(int $id, int|string $number, string $name, int $volumeId): array
+    {
+        return [
+            'id' => $id,
+            'name' => $name,
+            'issue_number' => $number,
+            'cover_date' => '1986-09-01',
+            'volume' => ['id' => $volumeId, 'name' => 'Watchmen'],
+            'image' => [
+                'super_url' => "http://comicvine.gamespot.com/a/uploads/{$id}.jpg",
             ],
         ];
     }

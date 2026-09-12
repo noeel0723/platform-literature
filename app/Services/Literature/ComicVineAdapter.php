@@ -57,7 +57,7 @@ final class ComicVineAdapter
         }
 
         $normalizedLimit = max(1, min($limit, 100));
-        $cacheKey = 'literature-source:comic-vine:'.hash(
+        $cacheKey = 'literature-source:comic-vine:v2:'.hash(
             'sha256',
             Str::lower($query).":{$normalizedLimit}",
         );
@@ -72,17 +72,24 @@ final class ComicVineAdapter
             0,
             (int) config('services.comic_vine.creator_enrichment_limit', 4),
         );
+        $relationshipEnrichmentLimit = max(
+            0,
+            (int) config('services.comic_vine.relationship_enrichment_limit', 4),
+        );
 
         return collect($items)
             ->filter(fn (mixed $item): bool => is_array($item)
                 && Arr::get($item, 'resource_type') === 'volume')
             ->values()
-            ->map(function (mixed $item, int $position) use ($apiKey, $creatorEnrichmentLimit): ?NormalizedLiterature {
+            ->map(function (mixed $item, int $position) use ($apiKey, $creatorEnrichmentLimit, $relationshipEnrichmentLimit): ?NormalizedLiterature {
                 $creators = $position < $creatorEnrichmentLimit
                     ? $this->creators($item, $apiKey)
                     : [];
+                $relations = $position < $relationshipEnrichmentLimit
+                    ? $this->issueRelations($item, $apiKey)
+                    : [];
 
-                return $this->normalize($item, $creators);
+                return $this->normalize($item, $creators, $relations);
             })
             ->filter()
             ->values();
@@ -112,6 +119,7 @@ final class ComicVineAdapter
                         'publisher',
                         'image',
                         'first_issue',
+                        'last_issue',
                         'resource_type',
                     ]),
                 ]);
@@ -159,8 +167,9 @@ final class ComicVineAdapter
 
     /**
      * @param  list<NormalizedAuthor>  $creators
+     * @param  list<NormalizedLiteratureRelation>  $relations
      */
-    private function normalize(mixed $item, array $creators = []): ?NormalizedLiterature
+    private function normalize(mixed $item, array $creators = [], array $relations = []): ?NormalizedLiterature
     {
         if (! is_array($item) || Arr::get($item, 'resource_type') !== 'volume') {
             return null;
@@ -200,8 +209,134 @@ final class ComicVineAdapter
             format: 'Western Comic',
             identifier: "COMICVINE:4050-{$externalId}",
             coverUrl: $coverUrl,
+            relations: $relations,
             authorDetails: $creators,
         );
+    }
+
+    /** @return list<NormalizedLiteratureRelation> */
+    private function issueRelations(mixed $volume, string $apiKey): array
+    {
+        if (! is_array($volume)) {
+            return [];
+        }
+
+        $volumeId = trim((string) Arr::get($volume, 'id', ''));
+        $volumeName = $this->cleanText(Arr::get($volume, 'name'));
+        $hasIssueRange = filled(Arr::get($volume, 'first_issue.id'))
+            && filled(Arr::get($volume, 'last_issue.id'));
+
+        if ($volumeId === '' || $volumeName === null || ! $hasIssueRange) {
+            return [];
+        }
+
+        $issues = Cache::remember(
+            'literature-source:comic-vine:volume-issues:v1:'.$volumeId,
+            now()->addMinutes(max(1, (int) config('services.comic_vine.cache_minutes', 30))),
+            fn (): array => $this->requestIssues($volumeId, $apiKey),
+        );
+
+        return collect($issues)
+            ->filter(fn (mixed $issue): bool => is_array($issue)
+                && (string) Arr::get($issue, 'volume.id', '') === $volumeId)
+            ->sortBy(fn (array $issue): array => $this->issueSortKey(Arr::get($issue, 'issue_number')))
+            ->map(function (array $issue) use ($volume, $volumeName): ?NormalizedLiteratureRelation {
+                $related = $this->normalizeIssue($issue, $volume, $volumeName);
+
+                return $related === null
+                    ? null
+                    : new NormalizedLiteratureRelation('related', $related);
+            })
+            ->filter()
+            ->unique(fn (NormalizedLiteratureRelation $relation): string => $relation->literature->externalId)
+            ->values()
+            ->all();
+    }
+
+    /** @return list<mixed> */
+    private function requestIssues(string $volumeId, string $apiKey): array
+    {
+        try {
+            $response = Http::baseUrl(rtrim((string) config('services.comic_vine.base_url'), '/'))
+                ->acceptJson()
+                ->withUserAgent((string) config('services.comic_vine.user_agent'))
+                ->connectTimeout((int) config('services.comic_vine.connect_timeout', 3))
+                ->timeout((int) config('services.comic_vine.timeout', 12))
+                ->get('/issues/', [
+                    'api_key' => $apiKey,
+                    'format' => 'json',
+                    'filter' => "volume:{$volumeId}",
+                    'limit' => max(1, min((int) config('services.comic_vine.relationship_limit', 100), 100)),
+                    'field_list' => 'id,name,issue_number,cover_date,image,volume',
+                ]);
+        } catch (ConnectionException) {
+            return [];
+        }
+
+        if ($response->failed() || (int) $response->json('status_code', 0) !== 1) {
+            return [];
+        }
+
+        $issues = $response->json('results');
+
+        return is_array($issues) ? array_values($issues) : [];
+    }
+
+    private function normalizeIssue(array $issue, array $volume, string $volumeName): ?NormalizedLiterature
+    {
+        $issueId = trim((string) Arr::get($issue, 'id', ''));
+        $rawIssueNumber = Arr::get($issue, 'issue_number');
+        $issueNumber = is_string($rawIssueNumber) || is_int($rawIssueNumber) || is_float($rawIssueNumber)
+            ? $this->cleanText((string) $rawIssueNumber)
+            : null;
+
+        if ($issueId === '' || $issueNumber === null) {
+            return null;
+        }
+
+        $issueName = $this->cleanText(Arr::get($issue, 'name'));
+        $title = Str::limit(
+            "{$volumeName} #{$issueNumber}".($issueName === null ? '' : ": {$issueName}"),
+            255,
+            '',
+        );
+        $coverUrl = $this->cleanText(
+            Arr::get($issue, 'image.super_url')
+                ?? Arr::get($issue, 'image.original_url')
+                ?? Arr::get($issue, 'image.medium_url'),
+        );
+
+        if ($coverUrl !== null) {
+            $coverUrl = preg_replace('#^http://#', 'https://', $coverUrl) ?? $coverUrl;
+        }
+
+        return new NormalizedLiterature(
+            externalId: "issue-{$issueId}",
+            title: $title,
+            type: 'western-comic',
+            authors: [],
+            categories: [],
+            publicationYear: $this->publicationYearFromDate(Arr::get($issue, 'cover_date')),
+            tagline: $issueName,
+            synopsis: null,
+            publisher: $this->cleanText(Arr::get($volume, 'publisher.name')),
+            language: null,
+            format: 'Comic Issue',
+            identifier: "COMICVINE:4000-{$issueId}",
+            coverUrl: $coverUrl,
+        );
+    }
+
+    /** @return array{0: int, 1: float|string} */
+    private function issueSortKey(mixed $issueNumber): array
+    {
+        $number = is_string($issueNumber) || is_int($issueNumber) || is_float($issueNumber)
+            ? $this->cleanText((string) $issueNumber)
+            : null;
+
+        return $number !== null && is_numeric($number)
+            ? [0, (float) $number]
+            : [1, $number ?? ''];
     }
 
     /**
@@ -375,6 +510,15 @@ final class ComicVineAdapter
         $normalizedYear = (int) $year;
 
         return $normalizedYear > 0 ? $normalizedYear : null;
+    }
+
+    private function publicationYearFromDate(mixed $date): ?int
+    {
+        if (! is_string($date) || preg_match('/^(?<year>\d{4})/', trim($date), $matches) !== 1) {
+            return null;
+        }
+
+        return $this->publicationYear($matches['year']);
     }
 
     private function cleanText(mixed $value): ?string
