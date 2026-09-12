@@ -24,6 +24,7 @@ class HomeController extends Controller
         if ($friendIds->isNotEmpty()) {
             $activities = Activity::query()
                 ->visibleToReaders()
+                ->withoutRedundantCompletions()
                 ->with(['user', 'literature.authors', 'literature.metadataOverride', 'literature.sourceMapping.canonicalWork.metadataOverride', 'review'])
                 ->whereIn('user_id', $friendIds)
                 ->whereIn('type', [

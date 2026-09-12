@@ -93,6 +93,23 @@ class Activity extends Model
             });
     }
 
+    /** @param Builder<Activity> $query */
+    public function scopeWithoutRedundantCompletions(Builder $query): Builder
+    {
+        return $query->where(function (Builder $activities): void {
+            $activities
+                ->where('activities.type', '!=', self::TYPE_COMPLETED)
+                ->orWhereNotExists(function ($reviews): void {
+                    $reviews
+                        ->selectRaw('1')
+                        ->from('reviews')
+                        ->whereColumn('reviews.user_id', 'activities.user_id')
+                        ->whereColumn('reviews.literature_id', 'activities.literature_id')
+                        ->whereNull('reviews.hidden_at');
+                });
+        });
+    }
+
     /** @return array<string, string> */
     protected function casts(): array
     {

@@ -29,6 +29,7 @@ class ActivityController extends Controller
 
         $activities = Activity::query()
             ->visibleToReaders()
+            ->withoutRedundantCompletions()
             ->with(['user', 'literature.authors', 'literature.metadataOverride', 'literature.sourceMapping.canonicalWork.metadataOverride', 'review', 'discussion', 'comment'])
             ->whereIn('user_id', $userIds)
             ->orderByDesc('occurred_at')
@@ -70,6 +71,7 @@ class ActivityController extends Controller
         $userIds = $scope === 'following' ? $followingIds : collect([$user->id]);
         $activities = Activity::query()
             ->visibleToReaders()
+            ->withoutRedundantCompletions()
             ->with(['user', 'literature.authors', 'literature.metadataOverride', 'literature.sourceMapping.canonicalWork.metadataOverride', 'review', 'discussion', 'comment'])
             ->whereIn('user_id', $userIds)
             ->orderByDesc('occurred_at')

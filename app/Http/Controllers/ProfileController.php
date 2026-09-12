@@ -65,6 +65,7 @@ class ProfileController extends Controller
 
         $recentActivities = Activity::query()
             ->visibleToReaders()
+            ->withoutRedundantCompletions()
             ->whereBelongsTo($user)
             ->with(['literature.metadataOverride', 'literature.sourceMapping.canonicalWork.metadataOverride', 'review', 'discussion', 'comment'])
             ->latest('occurred_at')
@@ -320,7 +321,12 @@ class ProfileController extends Controller
         $user->loadCount(['following', 'followers', 'blockedUsers']);
         $relation = $relationship === 'blocked' ? 'blockedUsers' : $relationship;
         $connections = $user->{$relation}()
-            ->withCount(['followers', 'following'])
+            ->withCount([
+                'followers',
+                'following',
+                'readingLists as completed_count' => fn ($readingLists) => $readingLists->where('status', 'completed'),
+                'readingLists as readlist_count' => fn ($readingLists) => $readingLists->where('status', 'want_to_read'),
+            ])
             ->orderBy('name')
             ->orderBy('users.id')
             ->paginate(24)
@@ -329,6 +335,8 @@ class ProfileController extends Controller
                 ...$presenter->user($connection),
                 'followers_count' => $connection->followers_count,
                 'following_count' => $connection->following_count,
+                'completed_count' => $connection->completed_count,
+                'readlist_count' => $connection->readlist_count,
                 'block_url' => $isOwner ? route('profiles.block.store', $connection) : null,
                 'unblock_url' => $isOwner ? route('profiles.block.destroy', $connection) : null,
             ]);

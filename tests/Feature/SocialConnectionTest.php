@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Literature;
+use App\Models\ReadingList;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -92,6 +94,10 @@ class SocialConnectionTest extends TestCase
             'username' => 'faithful_reader',
         ]);
         $profileOwner->followers()->attach($follower);
+        ReadingList::factory()->for($follower)->for(Literature::factory())->create(['status' => 'completed']);
+        ReadingList::factory()->for($follower)->for(Literature::factory())->create(['status' => 'completed']);
+        ReadingList::factory()->for($follower)->for(Literature::factory())->create(['status' => 'want_to_read']);
+        ReadingList::factory()->for($follower)->for(Literature::factory())->create(['status' => 'reading']);
 
         $profileResponse = $this->actingAs(User::factory()->create())
             ->get(route('profiles.show', $profileOwner))
@@ -108,7 +114,9 @@ class SocialConnectionTest extends TestCase
                 ->where('profile.username', 'profile_owner')
                 ->has('connections.data', 1)
                 ->where('connections.data.0.name', 'Faithful Reader')
-                ->where('connections.data.0.username', 'faithful_reader'));
+                ->where('connections.data.0.username', 'faithful_reader')
+                ->where('connections.data.0.completed_count', 2)
+                ->where('connections.data.0.readlist_count', 1));
 
         $this->get(route('profiles.following', $follower))
             ->assertInertia(fn (Assert $page) => $page

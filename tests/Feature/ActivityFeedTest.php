@@ -158,6 +158,15 @@ class ActivityFeedTest extends TestCase
         $this->assertSame('Reviewed Story', $response->inertiaProps('activities.0.literature.title'));
         $this->assertSame(4.5, $response->inertiaProps('activities.0.rating'));
         $this->assertSame('Reviewing Reader', $response->inertiaProps('activities.0.reader.name'));
+
+        $activityResponse = $this->actingAs($user)
+            ->get(route('activity.index', ['scope' => 'you']))
+            ->assertOk();
+
+        $this->assertSame(
+            [Activity::TYPE_REVIEWED],
+            collect($activityResponse->inertiaProps('activities.data'))->pluck('type')->all(),
+        );
     }
 
     public function test_feed_exposes_utc_activity_for_browser_localization(): void
