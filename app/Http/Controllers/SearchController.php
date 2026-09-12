@@ -116,6 +116,7 @@ class SearchController extends Controller
             'cover_url' => $literature->displayCoverUrl(),
             'initials' => $this->initials($title),
             'year' => $literature->displayPublicationYear(),
+            'alternative_title' => $literature->alternateTitle(),
             'author' => $literature->authors->pluck('name')->implode(' & ') ?: 'Author unavailable',
             'synopsis' => in_array($language, ['', 'en', 'eng', 'english'], true)
                 ? ($literature->displaySynopsis() ?: 'English synopsis unavailable.')

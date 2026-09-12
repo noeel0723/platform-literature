@@ -48,6 +48,7 @@ class SearchPageTest extends TestCase
             ->where('query', 'Haikyu')
             ->where('scope', 'all')
             ->where('literatures.0.title', 'Haikyuu!!')
+            ->where('literatures.0.alternative_title', 'Haikyu!!')
             ->where('readers.0.username', 'haikyuu_reader')
             ->where('readers.0.completed_count', 1)
             ->where('readers.0.reviews_count', 1));
