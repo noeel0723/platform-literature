@@ -24,6 +24,7 @@ final class CustomListManager
                 'slug' => $this->uniqueSlug((string) $attributes['title']),
                 'description' => $attributes['description'] ?? null,
                 'is_private' => (bool) ($attributes['is_private'] ?? false),
+                'is_ranked' => (bool) ($attributes['is_ranked'] ?? false),
             ]);
 
             if (isset($attributes['literature_id'])) {
@@ -41,6 +42,7 @@ final class CustomListManager
             'title' => $attributes['title'],
             'description' => $attributes['description'] ?? null,
             'is_private' => (bool) ($attributes['is_private'] ?? false),
+            'is_ranked' => (bool) ($attributes['is_ranked'] ?? false),
         ]);
 
         return $list->refresh();

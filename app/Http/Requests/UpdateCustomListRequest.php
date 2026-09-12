@@ -28,6 +28,7 @@ class UpdateCustomListRequest extends FormRequest
             'title' => ['required', 'string', 'max:120'],
             'description' => ['nullable', 'string', 'max:3000'],
             'is_private' => ['sometimes', 'boolean'],
+            'is_ranked' => ['sometimes', 'boolean'],
         ];
     }
 }

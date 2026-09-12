@@ -74,6 +74,8 @@ class ProfilePagePresenter
             'cover_url' => $literature->displayCoverUrl(),
             'author' => $literature->authors->pluck('name')->implode(' & ') ?: 'Author unavailable',
             'year' => $literature->displayPublicationYear(),
+            'type' => $literature->type,
+            'type_label' => $literature->typeLabel(),
             'initials' => mb_strtoupper(mb_substr($title, 0, 2)),
         ];
     }

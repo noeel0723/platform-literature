@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 
 import LiteratureCard from '../../Components/LiteratureCard';
+import SiteContainer from '../../Components/SiteContainer';
 
 function PaginationLink({ href, relation, children }) {
     const classes = 'inline-flex min-h-10 items-center border px-5 text-sm font-semibold';
@@ -18,8 +19,8 @@ export default function AuthorShow({ author, literatures, profileSourceUrl, imag
     return (
         <>
             <Head title={author.name} />
-            <main className="mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:px-10 lg:py-14" aria-labelledby="author-heading">
-                <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_290px] lg:gap-12 xl:grid-cols-[minmax(0,1fr)_320px]">
+            <SiteContainer as="main" className="py-8 lg:py-10" aria-labelledby="author-heading">
+                <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_250px] lg:gap-9">
                     <section className="min-w-0" aria-labelledby="author-heading">
                         <header className="border-b border-ink-950/15 pb-4">
                             <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-coral">Works by</p>
@@ -31,7 +32,7 @@ export default function AuthorShow({ author, literatures, profileSourceUrl, imag
 
                         {literatures.data.length > 0 ? (
                             <>
-                                <div className="mt-5 grid grid-cols-3 gap-x-3 gap-y-6 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-4 xl:grid-cols-5">
+                                <div className="mt-5 grid grid-cols-3 gap-x-3 gap-y-5 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-4">
                                     {literatures.data.map((literature) => (
                                         <div key={literature.slug} className="min-w-0">
                                             <LiteratureCard literature={literature} compact />
@@ -78,7 +79,7 @@ export default function AuthorShow({ author, literatures, profileSourceUrl, imag
                         </div>
                     </aside>
                 </div>
-            </main>
+            </SiteContainer>
         </>
     );
 }

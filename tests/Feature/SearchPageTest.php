@@ -71,6 +71,24 @@ class SearchPageTest extends TestCase
         $this->assertSame(route('search.index'), $props['routes']['search']);
     }
 
+    public function test_authenticated_header_exposes_the_complete_compact_account_navigation(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->get(route('home'));
+        $props = $this->embeddedReactProps($response->getContent(), 'data-react-header-props');
+        $navigation = collect($props['user']['navigation']);
+
+        $this->assertSame(
+            ['Home', 'Profile', 'Stats', 'Activity', 'Literature', 'Diary', 'Reviews', 'Readlist', 'Lists', 'Connections'],
+            $navigation->pluck('label')->all(),
+        );
+        $this->assertSame(route('home'), $navigation->firstWhere('label', 'Home')['url']);
+        $this->assertSame(route('profiles.stats', $user), $navigation->firstWhere('label', 'Stats')['url']);
+        $this->assertSame(route('profiles.lists', $user), $navigation->firstWhere('label', 'Lists')['url']);
+        $this->assertNull($props['user']['moderation_url']);
+    }
+
     public function test_global_search_displays_a_mangas_global_title_while_native_title_remains_searchable(): void
     {
         Literature::factory()->create([

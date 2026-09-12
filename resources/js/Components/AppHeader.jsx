@@ -62,20 +62,62 @@ function Search({ action, initialQuery }) {
 function AccountMenu({ user, csrfToken }) {
     const [open, setOpen] = useState(false);
     const menuRef = useRef(null);
+    const buttonRef = useRef(null);
+    const closeTimerRef = useRef(null);
+
+    const cancelScheduledClose = () => {
+        if (closeTimerRef.current !== null) {
+            window.clearTimeout(closeTimerRef.current);
+            closeTimerRef.current = null;
+        }
+    };
+
+    const openMenu = () => {
+        cancelScheduledClose();
+        setOpen(true);
+    };
+
+    const scheduleClose = () => {
+        cancelScheduledClose();
+        closeTimerRef.current = window.setTimeout(() => {
+            if (!menuRef.current?.contains(document.activeElement)) setOpen(false);
+        }, 200);
+    };
 
     useEffect(() => {
         const close = (event) => {
-            if (!menuRef.current?.contains(event.target)) setOpen(false);
+            if (!menuRef.current?.contains(event.target)) {
+                cancelScheduledClose();
+                setOpen(false);
+            }
         };
         document.addEventListener('pointerdown', close);
-        return () => document.removeEventListener('pointerdown', close);
+        return () => {
+            document.removeEventListener('pointerdown', close);
+            cancelScheduledClose();
+        };
     }, []);
 
     return (
-        <div ref={menuRef} className="account-menu relative" data-account-menu data-open={open} onKeyDown={(event) => {
-            if (event.key === 'Escape') setOpen(false);
-        }}>
-            <button type="button" className="flex h-10 items-center gap-2 rounded-full px-2 text-left text-brand-plate transition hover:bg-brand-plate/12 focus-visible:bg-brand-plate/12" data-account-menu-button aria-expanded={open} aria-controls="account-menu-panel" onClick={() => setOpen((value) => !value)}>
+        <div
+            ref={menuRef}
+            className="account-menu relative"
+            data-account-menu
+            data-open={open}
+            onPointerEnter={(event) => { if (event.pointerType === 'mouse') openMenu(); }}
+            onPointerLeave={(event) => { if (event.pointerType === 'mouse') scheduleClose(); }}
+            onFocusCapture={cancelScheduledClose}
+            onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) scheduleClose(); }}
+            onKeyDown={(event) => {
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    cancelScheduledClose();
+                    setOpen(false);
+                    buttonRef.current?.focus();
+                }
+            }}
+        >
+            <button ref={buttonRef} type="button" className="flex h-10 items-center gap-2 rounded-sm px-2 text-left text-brand-plate transition hover:bg-brand-plate/12 focus-visible:bg-brand-plate/12" data-account-menu-button aria-haspopup="true" aria-expanded={open} aria-controls="account-menu-panel" onClick={() => { cancelScheduledClose(); setOpen((value) => !value); }}>
                 <span className="grid size-7 shrink-0 place-items-center overflow-hidden rounded-full border border-brand-plate/45 bg-brand-blueberry text-[0.65rem] font-bold text-brand-plate">
                     {user.avatar_url ? <img src={user.avatar_url} alt="" className="size-full object-cover" /> : user.initials}
                 </span>
@@ -83,15 +125,14 @@ function AccountMenu({ user, csrfToken }) {
                 <svg aria-hidden="true" className={`size-3.5 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg>
             </button>
             {open && (
-                <div id="account-menu-panel" className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-xl border border-brand-blueberry/12 bg-brand-plate p-2 text-sm text-ink-950 shadow-2xl shadow-brand-blueberry/20" data-account-menu-panel>
-                    <div className="border-b border-brand-blueberry/10 px-3 py-2.5"><p className="truncate font-bold text-ink-950">{user.name}</p><p className="mt-0.5 truncate text-xs text-ink-950/55">@{user.username}</p></div>
-                    <nav className="py-1" aria-label="Account navigation">
-                        {user.navigation.map((item) => <a key={item.label} href={item.url} className="account-menu-link">{item.label}</a>)}
+                <div id="account-menu-panel" className="absolute left-0 top-full z-50 mt-1 w-52 overflow-hidden rounded-sm border border-brand-blueberry/15 bg-brand-plate py-1 text-[0.8rem] text-ink-950 shadow-lg shadow-brand-blueberry/15" data-account-menu-panel>
+                    <nav aria-label="Account navigation">
+                        {user.navigation.map((item) => <a key={item.label} href={item.url} className="account-menu-link rounded-none px-3 py-1.5">{item.label}</a>)}
                     </nav>
-                    <div className="border-t border-brand-blueberry/10 pt-1">
-                        <a href={user.edit_url} className="account-menu-link">Edit profile</a>
-                        {user.moderation_url && <a href={user.moderation_url} className="account-menu-link">Moderation</a>}
-                        <form action={user.logout_url} method="POST"><input type="hidden" name="_token" value={csrfToken} /><button className="account-menu-link w-full text-left">Log out</button></form>
+                    <div className="mt-1 border-t border-brand-blueberry/12 pt-1">
+                        <a href={user.edit_url} className="account-menu-link rounded-none px-3 py-1.5">Edit Profile</a>
+                        {user.moderation_url && <a href={user.moderation_url} className="account-menu-link rounded-none px-3 py-1.5">Moderation</a>}
+                        <form action={user.logout_url} method="POST"><input type="hidden" name="_token" value={csrfToken} /><button className="account-menu-link w-full rounded-none px-3 py-1.5 text-left">Log Out</button></form>
                     </div>
                 </div>
             )}
@@ -118,7 +159,7 @@ export default function AppHeader({ routes, user, csrf_token: csrfToken, search_
                     </div>
                 </div>
             </SiteContainer>
-            {mobileOpen && <nav id="mobile-menu" className="border-t border-brand-plate/15 bg-brand-stem py-4 lg:hidden" aria-label="Mobile navigation"><SiteContainer className="grid gap-1 text-sm font-semibold uppercase tracking-[0.14em] text-brand-plate"><a href={routes.home} className="px-3 py-3 transition hover:bg-brand-plate/10">Home</a><a href={routes.catalog} className="px-3 py-3 transition hover:bg-brand-plate/10">Catalog</a>{user ? <>{user.navigation.map((item) => <a key={item.label} href={item.url} className="px-3 py-3 transition hover:bg-brand-plate/10">{item.label}</a>)}<a href={user.edit_url} className="px-3 py-3 transition hover:bg-brand-plate/10">Edit profile</a>{user.moderation_url && <a href={user.moderation_url} className="px-3 py-3 transition hover:bg-brand-plate/10">Moderation</a>}<form action={user.logout_url} method="POST"><input type="hidden" name="_token" value={csrfToken} /><button className="w-full px-3 py-3 text-left transition hover:bg-brand-plate/10">Log out</button></form></> : <><a href={routes.login} className="px-3 py-3 transition hover:bg-brand-plate/10">Log in</a><a href={routes.register} className="px-3 py-3 transition hover:bg-brand-plate/10">Join</a></>}</SiteContainer></nav>}
+            {mobileOpen && <nav id="mobile-menu" className="border-t border-brand-plate/15 bg-brand-stem py-4 lg:hidden" aria-label="Mobile navigation"><SiteContainer className="grid gap-1 text-sm font-semibold uppercase tracking-[0.14em] text-brand-plate"><a href={routes.home} className="px-3 py-3 transition hover:bg-brand-plate/10">Home</a><a href={routes.catalog} className="px-3 py-3 transition hover:bg-brand-plate/10">Catalog</a>{user ? <>{user.navigation.filter((item) => item.label !== 'Home').map((item) => <a key={item.label} href={item.url} className="px-3 py-3 transition hover:bg-brand-plate/10">{item.label}</a>)}<a href={user.edit_url} className="px-3 py-3 transition hover:bg-brand-plate/10">Edit profile</a>{user.moderation_url && <a href={user.moderation_url} className="px-3 py-3 transition hover:bg-brand-plate/10">Moderation</a>}<form action={user.logout_url} method="POST"><input type="hidden" name="_token" value={csrfToken} /><button className="w-full px-3 py-3 text-left transition hover:bg-brand-plate/10">Log out</button></form></> : <><a href={routes.login} className="px-3 py-3 transition hover:bg-brand-plate/10">Log in</a><a href={routes.register} className="px-3 py-3 transition hover:bg-brand-plate/10">Join</a></>}</SiteContainer></nav>}
         </header>
     );
 }

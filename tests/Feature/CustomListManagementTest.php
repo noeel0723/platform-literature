@@ -8,6 +8,7 @@ use App\Models\Literature;
 use App\Models\LiteratureSourceMapping;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class CustomListManagementTest extends TestCase
@@ -22,6 +23,7 @@ class CustomListManagementTest extends TestCase
             'title' => 'Best Fantasy Novels',
             'description' => 'Personal favorites.',
             'is_private' => false,
+            'is_ranked' => true,
         ])->assertRedirect();
 
         $list = CustomList::query()->firstOrFail();
@@ -29,11 +31,49 @@ class CustomListManagementTest extends TestCase
             'title' => 'Essential Fantasy',
             'description' => 'Updated.',
             'is_private' => true,
+            'is_ranked' => false,
         ])->assertRedirect(route('custom-lists.show', $list));
 
-        $this->assertDatabaseHas('custom_lists', ['id' => $list->id, 'title' => 'Essential Fantasy', 'is_private' => true]);
+        $this->assertDatabaseHas('custom_lists', [
+            'id' => $list->id,
+            'title' => 'Essential Fantasy',
+            'is_private' => true,
+            'is_ranked' => false,
+        ]);
         $this->actingAs($owner)->delete(route('custom-lists.destroy', $list))->assertRedirect(route('profiles.lists', $owner));
         $this->assertDatabaseMissing('custom_lists', ['id' => $list->id]);
+    }
+
+    public function test_owner_can_directly_add_and_remove_literature_from_the_edit_workflow(): void
+    {
+        $owner = User::factory()->create();
+        $list = CustomList::factory()->for($owner)->create(['is_ranked' => true]);
+        $literature = Literature::factory()->create(['title' => 'The Left Hand of Darkness']);
+
+        $this->actingAs($owner)
+            ->post(route('custom-lists.items.store', $list), ['literature_id' => $literature->id])
+            ->assertRedirect();
+
+        $item = $list->items()->firstOrFail();
+        $this->assertSame(1, $item->position);
+        $this->actingAs($owner)
+            ->get(route('custom-lists.edit', $list))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Lists/Edit')
+                ->where('list.is_ranked', true)
+                ->where('searchUrl', route('quick-log.literatures'))
+                ->where('addUrl', route('custom-lists.items.store', $list))
+                ->where('reorderUrl', route('custom-lists.items.reorder', $list))
+                ->has('items', 1)
+                ->where('items.0.id', $item->id)
+                ->where('items.0.literature.title', 'The Left Hand of Darkness')
+                ->where('items.0.remove_url', route('custom-lists.items.destroy', [$list, $item])));
+
+        $this->actingAs($owner)
+            ->delete(route('custom-lists.items.destroy', [$list, $item]))
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('custom_list_items', ['id' => $item->id]);
     }
 
     public function test_canonical_work_cannot_be_duplicated_in_the_same_list(): void

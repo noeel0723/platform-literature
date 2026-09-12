@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['user_id', 'title', 'slug', 'description', 'is_private'])]
+#[Fillable(['user_id', 'title', 'slug', 'description', 'is_private', 'is_ranked'])]
 class CustomList extends Model
 {
     /** @use HasFactory<CustomListFactory> */
@@ -37,6 +37,7 @@ class CustomList extends Model
     {
         return [
             'is_private' => 'boolean',
+            'is_ranked' => 'boolean',
         ];
     }
 }

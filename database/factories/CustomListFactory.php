@@ -27,6 +27,7 @@ class CustomListFactory extends Factory
             'slug' => Str::slug($title).'-'.fake()->unique()->numberBetween(100, 999),
             'description' => fake()->optional()->sentence(),
             'is_private' => false,
+            'is_ranked' => false,
         ];
     }
 }

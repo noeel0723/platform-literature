@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateCustomListRequest;
 use App\Models\CustomList;
 use App\Models\CustomListItem;
 use App\Models\Literature;
+use App\Models\Review;
 use App\Models\User;
 use App\Services\Lists\CustomListManager;
 use App\Support\ProfilePagePresenter;
@@ -34,18 +35,19 @@ class CustomListController extends Controller
                     'canonicalWork.preferredLiterature.metadataOverride',
                     'canonicalWork.preferredLiterature.sourceMapping.canonicalWork.metadataOverride',
                 ])
-                ->limit(4)])
+                ->limit(5)])
             ->withCount('items')
             ->latest('updated_at')
             ->paginate(12);
 
-        $lists->through(fn (CustomList $list): array => $this->presentList($list, $presenter));
+        $isOwner = $request->user()?->is($user) ?? false;
+        $lists->through(fn (CustomList $list): array => $this->presentList($list, $presenter, $isOwner));
 
         return Inertia::render('Profile/Lists', [
             'profile' => $presenter->user($user),
             'navigation' => $presenter->navigation($user, 'lists', $request->user()),
             'lists' => $lists,
-            'isOwner' => $request->user()?->is($user) ?? false,
+            'isOwner' => $isOwner,
             'createUrl' => route('custom-lists.create'),
         ]);
     }
@@ -61,6 +63,12 @@ class CustomListController extends Controller
             'list' => null,
             'formUrl' => route('custom-lists.store'),
             'profileUrl' => route('profiles.lists', $request->user()),
+            'searchUrl' => route('quick-log.literatures'),
+            'items' => [],
+            'addUrl' => null,
+            'reorderUrl' => null,
+            'showUrl' => null,
+            'successMessage' => session('success'),
         ]);
     }
 
@@ -78,7 +86,7 @@ class CustomListController extends Controller
             return redirect()->route('literatures.show', $literature)->with('success', 'List created and literature added.');
         }
 
-        return redirect()->route('custom-lists.show', $list)->with('success', 'List created.');
+        return redirect()->route('custom-lists.edit', $list)->with('success', 'List created. Add literature below.');
     }
 
     /**
@@ -114,6 +122,7 @@ class CustomListController extends Controller
                 'title' => $customList->title,
                 'description' => $customList->description,
                 'is_private' => $customList->is_private,
+                'is_ranked' => $customList->is_ranked,
                 'owner' => $presenter->user($customList->user),
                 'items' => $items,
                 'edit_url' => route('custom-lists.edit', $customList),
@@ -128,18 +137,60 @@ class CustomListController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(CustomList $customList): Response
+    public function edit(CustomList $customList, ProfilePagePresenter $presenter): Response
     {
         Gate::authorize('update', $customList);
+        $customList->load(['items' => fn ($query) => $query->with([
+            'literature.authors',
+            'literature.metadataOverride',
+            'literature.sourceMapping.canonicalWork.metadataOverride',
+            'canonicalWork.preferredLiterature.authors',
+            'canonicalWork.preferredLiterature.metadataOverride',
+            'canonicalWork.preferredLiterature.sourceMapping.canonicalWork.metadataOverride',
+        ])]);
+        $literatureIds = $customList->items
+            ->map(fn (CustomListItem $item): ?int => $item->displayLiterature()?->id)
+            ->filter()
+            ->values();
+        $averageRatings = Review::query()
+            ->whereIn('literature_id', $literatureIds)
+            ->whereNull('hidden_at')
+            ->selectRaw('literature_id, AVG(rating) as average_rating')
+            ->groupBy('literature_id')
+            ->pluck('average_rating', 'literature_id');
+        $items = $customList->items->map(function (CustomListItem $item) use ($customList, $presenter, $averageRatings): ?array {
+            $literature = $item->displayLiterature();
+
+            if ($literature === null) {
+                return null;
+            }
+
+            return [
+                'id' => $item->id,
+                'position' => $item->position,
+                'literature' => $presenter->literature($literature),
+                'average_rating' => $averageRatings->has($literature->id)
+                    ? (float) $averageRatings->get($literature->id)
+                    : null,
+                'remove_url' => route('custom-lists.items.destroy', [$customList, $item]),
+            ];
+        })->filter()->values();
 
         return Inertia::render('Lists/Edit', [
             'list' => [
                 'title' => $customList->title,
                 'description' => $customList->description ?? '',
                 'is_private' => $customList->is_private,
+                'is_ranked' => $customList->is_ranked,
             ],
             'formUrl' => route('custom-lists.update', $customList),
             'profileUrl' => route('profiles.lists', $customList->user),
+            'searchUrl' => route('quick-log.literatures'),
+            'items' => $items,
+            'addUrl' => route('custom-lists.items.store', $customList),
+            'reorderUrl' => route('custom-lists.items.reorder', $customList),
+            'showUrl' => route('custom-lists.show', $customList),
+            'successMessage' => session('success'),
         ]);
     }
 
@@ -166,15 +217,17 @@ class CustomListController extends Controller
     }
 
     /** @return array<string, mixed> */
-    private function presentList(CustomList $list, ProfilePagePresenter $presenter): array
+    private function presentList(CustomList $list, ProfilePagePresenter $presenter, bool $isOwner): array
     {
         return [
             'id' => $list->id,
             'title' => $list->title,
             'description' => $list->description,
             'is_private' => $list->is_private,
+            'is_ranked' => $list->is_ranked,
             'items_count' => $list->items_count,
             'url' => route('custom-lists.show', $list),
+            'edit_url' => $isOwner ? route('custom-lists.edit', $list) : null,
             'updated_at' => $list->updated_at->utc()->toIso8601String(),
             'previews' => $list->items->map(function (CustomListItem $item) use ($presenter): ?array {
                 $literature = $item->displayLiterature();
