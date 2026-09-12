@@ -37,6 +37,7 @@ class ProfileManagementTest extends TestCase
             $firstAuthor->id => ['position' => 1],
         ]);
         ReadingList::factory()->for($user)->for(Literature::factory())->create(['status' => 'completed']);
+        ReadingList::factory()->for($user)->for(Literature::factory())->create(['status' => 'want_to_read']);
         Review::factory()->for($user)->for(Literature::factory())->create(['rating' => 4.5]);
 
         $response = $this->get(route('profiles.show', $user))->assertOk();
@@ -48,7 +49,8 @@ class ProfileManagementTest extends TestCase
             ->where('profile.location', 'Makassar, Indonesia')
             ->where('profile.bio', 'I read fantasy novels and graphic narratives.')
             ->where('profile.is_owner', false)
-            ->where('profile.stats.literature', 1)
+            ->where('profile.stats.literature', 2)
+            ->where('profile.stats.completed', 1)
             ->where('profile.stats.reviews', 1)
             ->where('routes.diary', null)
             ->where('navigation.current', 'profile')

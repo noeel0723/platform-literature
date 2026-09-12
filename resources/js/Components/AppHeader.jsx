@@ -1,17 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
+import SiteContainer from './SiteContainer';
 
 function BrandMark({ href }) {
     return (
         <a href={href} className="group flex items-center gap-3" aria-label="Literahaven - Home">
             <span className="grid grid-cols-2 gap-0.5" aria-hidden="true">
-                <span className="size-3.5 rounded-full bg-brand-plate" />
-                <span className="size-3.5 rounded-full bg-brand-sky" />
-                <span className="size-3.5 rounded-full bg-brand-coral" />
-                <span className="size-3.5 rounded-full bg-brand-sun" />
+                <span className="size-4 rounded-full bg-brand-plate" />
+                <span className="size-4 rounded-full bg-brand-sky" />
+                <span className="size-4 rounded-full bg-brand-coral" />
+                <span className="size-4 rounded-full bg-brand-sun" />
             </span>
             <span>
-                <span className="block text-lg font-bold leading-none tracking-tight text-brand-plate">Literahaven</span>
-                <span className="mt-1 block text-[0.58rem] font-semibold uppercase leading-none tracking-[0.24em] text-brand-plate/70">Social Discovery</span>
+                <span className="block text-xl font-bold leading-none tracking-tight text-brand-plate">Literahaven</span>
+                <span className="mt-1 block text-[0.6rem] font-semibold uppercase leading-none tracking-[0.24em] text-brand-plate/70">Social Discovery</span>
             </span>
         </a>
     );
@@ -104,7 +105,7 @@ export default function AppHeader({ routes, user, csrf_token: csrfToken, search_
 
     return (
         <header data-app-header className="sticky top-0 z-40 border-b border-brand-blueberry/15 bg-brand-stem/95 text-brand-plate backdrop-blur-xl">
-            <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+            <SiteContainer>
                 <div className="relative flex h-18 min-w-0 items-center gap-3 lg:gap-5">
                     <div className="shrink-0"><BrandMark href={routes.home} /></div>
                     <div className="ml-auto flex min-w-0 items-center gap-2 md:gap-3 lg:gap-4">
@@ -116,8 +117,8 @@ export default function AppHeader({ routes, user, csrf_token: csrfToken, search_
                         <button type="button" className="grid size-10 shrink-0 place-items-center rounded-full border border-brand-plate/35 bg-transparent text-brand-plate transition hover:bg-brand-plate hover:text-brand-stem lg:hidden" aria-expanded={mobileOpen} aria-controls="mobile-menu" onClick={() => setMobileOpen((value) => !value)}><span className="sr-only">Open navigation</span><svg aria-hidden="true" className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 7h16M4 12h16M4 17h16" /></svg></button>
                     </div>
                 </div>
-            </div>
-            {mobileOpen && <nav id="mobile-menu" className="border-t border-brand-plate/15 bg-brand-stem px-5 py-4 lg:hidden" aria-label="Mobile navigation"><div className="mx-auto grid max-w-7xl gap-1 text-sm font-semibold uppercase tracking-[0.14em] text-brand-plate sm:px-3 lg:px-5"><a href={routes.home} className="px-3 py-3 transition hover:bg-brand-plate/10">Home</a><a href={routes.catalog} className="px-3 py-3 transition hover:bg-brand-plate/10">Catalog</a>{user ? <>{user.navigation.map((item) => <a key={item.label} href={item.url} className="px-3 py-3 transition hover:bg-brand-plate/10">{item.label}</a>)}<a href={user.edit_url} className="px-3 py-3 transition hover:bg-brand-plate/10">Edit profile</a>{user.moderation_url && <a href={user.moderation_url} className="px-3 py-3 transition hover:bg-brand-plate/10">Moderation</a>}<form action={user.logout_url} method="POST"><input type="hidden" name="_token" value={csrfToken} /><button className="w-full px-3 py-3 text-left transition hover:bg-brand-plate/10">Log out</button></form></> : <><a href={routes.login} className="px-3 py-3 transition hover:bg-brand-plate/10">Log in</a><a href={routes.register} className="px-3 py-3 transition hover:bg-brand-plate/10">Join</a></>}</div></nav>}
+            </SiteContainer>
+            {mobileOpen && <nav id="mobile-menu" className="border-t border-brand-plate/15 bg-brand-stem py-4 lg:hidden" aria-label="Mobile navigation"><SiteContainer className="grid gap-1 text-sm font-semibold uppercase tracking-[0.14em] text-brand-plate"><a href={routes.home} className="px-3 py-3 transition hover:bg-brand-plate/10">Home</a><a href={routes.catalog} className="px-3 py-3 transition hover:bg-brand-plate/10">Catalog</a>{user ? <>{user.navigation.map((item) => <a key={item.label} href={item.url} className="px-3 py-3 transition hover:bg-brand-plate/10">{item.label}</a>)}<a href={user.edit_url} className="px-3 py-3 transition hover:bg-brand-plate/10">Edit profile</a>{user.moderation_url && <a href={user.moderation_url} className="px-3 py-3 transition hover:bg-brand-plate/10">Moderation</a>}<form action={user.logout_url} method="POST"><input type="hidden" name="_token" value={csrfToken} /><button className="w-full px-3 py-3 text-left transition hover:bg-brand-plate/10">Log out</button></form></> : <><a href={routes.login} className="px-3 py-3 transition hover:bg-brand-plate/10">Log in</a><a href={routes.register} className="px-3 py-3 transition hover:bg-brand-plate/10">Join</a></>}</SiteContainer></nav>}
         </header>
     );
 }

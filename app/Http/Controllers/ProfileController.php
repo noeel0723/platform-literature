@@ -30,6 +30,7 @@ class ProfileController extends Controller
                 'reviews' => fn ($query) => $query->whereNull('hidden_at'),
                 'followers',
                 'following',
+                'readingLists as literature_count',
                 'readingLists as completed_literature_count' => fn ($query) => $query->where('status', 'completed'),
                 'readingLists as readlist_count' => fn ($query) => $query->where('status', 'want_to_read'),
             ]);
@@ -107,7 +108,8 @@ class ProfileController extends Controller
                 'is_friend' => $isFriend,
                 'viewer_authenticated' => $viewer !== null,
                 'stats' => [
-                    'literature' => $user->completed_literature_count,
+                    'literature' => $user->literature_count,
+                    'completed' => $user->completed_literature_count,
                     'reviews' => $user->reviews_count,
                     'following' => $user->following_count,
                     'followers' => $user->followers_count,
