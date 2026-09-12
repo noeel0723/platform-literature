@@ -53,7 +53,7 @@ export default function HomeIndex({ activities, popularLiteratures, viewer, rout
             <section>
                 <SiteContainer className="py-7 sm:py-9">
                     <header className="border-b border-ink-950/15 pb-5">
-                        <h1 className="text-lg font-medium tracking-tight text-ink-950 sm:text-xl">
+                        <h1 className="text-center text-lg font-medium tracking-tight text-ink-950 sm:text-xl">
                             {viewer ? <>Welcome back, <span className="font-bold">{viewer.name}</span>. Here is what your friends have been reading...</> : 'Welcome to Literahaven.'}
                         </h1>
                         {!viewer && (

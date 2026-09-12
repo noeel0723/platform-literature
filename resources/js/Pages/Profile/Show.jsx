@@ -96,7 +96,7 @@ function ProfileOverview({ profile, routes, reportReasons }) {
 function FavoriteLiteratures({ items }) {
     return (
         <section>
-            <SectionHeader eyebrow="Favorite literature" aside={<span className="text-sm text-ink-950/50">Up to four</span>} />
+            <SectionHeader eyebrow="Favorite literature" aside={<span className="text-sm text-ink-950/50"></span>} />
             {items.length ? <div data-favorite-literature-grid className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4">{items.map((literature, index) => <article key={literature.id} className="group min-w-0"><Link href={literature.url} className="block"><span className="relative block"><Cover literature={literature} loading="eager" className="aspect-[2/3] rounded-sm shadow-[0_3px_10px_rgba(47,58,85,0.06)] transition duration-200 group-hover:-translate-y-0.5 group-hover:border-brand-coral" /><span className="absolute left-2 top-2 grid size-6 place-items-center bg-ink-950 text-[0.62rem] font-bold text-brand-cream">{String(index + 1).padStart(2, '0')}</span></span><h3 className="mt-1.5 truncate text-sm font-bold text-ink-950 transition group-hover:text-brand-coral">{literature.title}</h3><p className="mt-0.5 truncate text-[0.68rem] text-ink-950/55">{literature.author}</p></Link></article>)}</div> : <EmptyState className="mt-4">No favorite literature has been selected.</EmptyState>}
         </section>
     );
@@ -105,7 +105,7 @@ function FavoriteLiteratures({ items }) {
 function FavoriteAuthors({ items }) {
     return (
         <section className="mt-8">
-            <SectionHeader eyebrow="Favorite authors" aside={<span className="text-sm text-ink-950/50">Up to four</span>} />
+            <SectionHeader eyebrow="Favorite authors" aside={<span className="text-sm text-ink-950/50"></span>} />
             {items.length ? <ol data-favorite-author-grid className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4">{items.map((author, index) => <li key={author.id} className="group min-w-0"><a href={author.url} className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-coral"><div className="relative aspect-[4/5] overflow-hidden rounded-sm border border-ink-950/15 bg-brand-sky/30 shadow-[0_3px_10px_rgba(47,58,85,0.06)] transition duration-200 group-hover:-translate-y-0.5 group-hover:border-brand-coral">{author.image_url ? <img src={author.image_url} alt={`Portrait of ${author.name}`} className="size-full object-cover" /> : <div className="grid size-full place-items-center bg-linear-to-br from-brand-sky/45 to-brand-coral/35 text-4xl font-bold text-ink-950">{author.initials}</div>}<div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-ink-950 via-ink-950/80 to-transparent px-2.5 pb-2.5 pt-10 text-brand-cream"><p className="truncate text-sm font-bold">{author.name}</p><p className="mt-0.5 text-[0.58rem] font-bold uppercase tracking-wider text-brand-cream/65">Favorite author {String(index + 1).padStart(2, '0')}</p></div></div></a></li>)}</ol> : <EmptyState className="mt-4">No favorite authors have been selected.</EmptyState>}
         </section>
     );

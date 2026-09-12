@@ -41,10 +41,6 @@ export default function Connections({ profile, navigation, connections, relation
             <ProfileSubNavigation navigation={navigation} />
             <ProfileContentContainer className="py-7 lg:py-9" aria-labelledby="connections-heading">
                 <ProfilePageHeading
-                    eyebrow="Reader network"
-                    title="Connections"
-                    count={`${connections.total} ${title.toLowerCase()}`}
-                    id="connections-heading"
                 />
                 <nav className="mt-5 flex items-end gap-6 overflow-x-auto border-b border-ink-950/15" aria-label="Connection categories">
                     {tabs.map((tab) => (

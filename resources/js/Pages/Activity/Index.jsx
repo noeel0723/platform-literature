@@ -50,7 +50,6 @@ export default function Index({ navigation, activities, scope, scopes, heading =
             <ProfileContentContainer className="grid gap-7 py-7 lg:grid-cols-[minmax(0,1fr)_200px] lg:gap-6 lg:py-9">
                 <div className="min-w-0" aria-labelledby="activity-heading">
                     <div className="flex flex-wrap items-end justify-between gap-3 border-b border-ink-950/20 pb-2.5">
-                        <div><p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-coral">Social reading stream</p><h1 id="activity-heading" className="mt-0.5 text-2xl font-bold text-ink-950">{heading}</h1></div>
                         <nav className="flex gap-3 text-[11px] font-bold uppercase tracking-wider sm:gap-4" aria-label="Activity scopes">
                             {scopes.map((item) => <Link key={item.key} href={item.url} className={`border-b-2 py-0.5 ${scope === item.key ? 'border-brand-coral text-ink-950' : 'border-transparent text-ink-950/45 hover:text-ink-950'}`} aria-current={scope === item.key ? 'page' : undefined}>{item.short_label}</Link>)}
                         </nav>

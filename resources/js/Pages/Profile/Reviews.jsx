@@ -46,8 +46,6 @@ export default function ProfileReviews({ profile, navigation, reviews, summary }
 
             <ProfileContentContainer className="py-7 lg:py-9">
                 <div className="min-w-0" aria-labelledby="profile-reviews-heading">
-                    <ProfilePageHeading eyebrow="Reader notes" title={`${profile.name}'s Reviews`} count={plural(summary.total_reviews, 'review')} id="profile-reviews-heading" />
-
                     <div className="flex min-h-10 flex-wrap items-center justify-between gap-2 border-b border-ink-950/12 text-xs text-ink-950/50" data-review-summary>
                         <span className="font-bold uppercase tracking-[0.13em] text-ink-950/65">Reviews</span>
                         <span className="flex items-center gap-2">

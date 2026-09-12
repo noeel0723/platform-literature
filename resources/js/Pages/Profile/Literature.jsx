@@ -12,10 +12,6 @@ export default function ProfileLiterature({ profile, navigation, completedLitera
 
             <ProfileContentContainer className="py-7 lg:py-9" aria-labelledby="completed-literature-heading">
                 <ProfilePageHeading
-                    eyebrow="Completed shelf"
-                    title={`${profile.name}'s Literature`}
-                    count={`${completedLiterature.total} completed`}
-                    id="completed-literature-heading"
                 />
 
                 {completedLiterature.data.length === 0 ? (

@@ -25,8 +25,6 @@ export default function ProfileDiary({ profile, navigation, activities }) {
             <ProfileSubNavigation navigation={navigation} />
 
             <ProfileContentContainer className="py-7 lg:py-9" aria-labelledby="activity-history-heading">
-                <ProfilePageHeading eyebrow="Personal reading record" title="Activity history" count={`${activities.length} rated ${activities.length === 1 ? 'literature' : 'literatures'}`} id="activity-history-heading" />
-
                 <div className="mt-4 overflow-x-auto" data-diary-activity-history>
                     <div className="hidden min-w-[760px] grid-cols-[72px_54px_minmax(230px,1fr)_70px_125px_65px_50px] border-y border-ink-950/15 px-2 py-2 text-[0.65rem] font-bold uppercase tracking-wider text-ink-950/45 md:grid" role="row">
                         <span>Month</span><span>Day</span><span>Literature</span><span>Released</span><span>Rating</span><span>Review</span><span>Edit</span>

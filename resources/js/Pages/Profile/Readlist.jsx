@@ -58,7 +58,6 @@ export default function ProfileReadlist({ profile, navigation, readlist, suggest
 
             <ProfileContentContainer className="grid gap-7 py-7 lg:grid-cols-[minmax(0,1fr)_220px] lg:gap-6 lg:py-9">
                 <div className="min-w-0" aria-labelledby="readlist-heading">
-                    <ProfilePageHeading eyebrow="Saved shelf" title={`${profile.name}'s Readlist`} count={plural(readlist.total, 'title')} id="readlist-heading" />
                     {readlist.data.length === 0 ? (
                         <div className="mt-5 border-y border-dashed border-ink-950/20 px-5 py-10 text-center"><p className="text-lg font-bold text-ink-950">This Readlist is empty.</p><p className="mt-1.5 text-sm text-ink-950/60">{isOwner ? 'Use Quick add to save your next read.' : 'This reader has not saved any literature for later.'}</p></div>
                     ) : (
