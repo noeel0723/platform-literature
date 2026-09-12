@@ -1,5 +1,13 @@
 import { Link } from '@inertiajs/react';
 
+export function ProfileContentContainer({ as: Element = 'section', className = '', children, ...props }) {
+    return (
+        <Element className={`mx-auto w-full max-w-5xl px-5 sm:px-8 ${className}`} {...props}>
+            {children}
+        </Element>
+    );
+}
+
 export function LiteratureCover({ literature, className = '', loading = 'lazy', alt = true }) {
     return (
         <span className={`grid overflow-hidden border border-ink-950/15 bg-brand-sky/25 ${className}`}>

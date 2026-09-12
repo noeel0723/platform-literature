@@ -1,6 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 
-import { Pagination, ProfilePageHeading } from '../../Components/ProfilePageUi';
+import { Pagination, ProfileContentContainer, ProfilePageHeading } from '../../Components/ProfilePageUi';
 import ProfileSubNavigation from '../../Components/ProfileSubNavigation';
 
 function ConnectionMetric({ type, value, compact = false }) {
@@ -39,7 +39,7 @@ export default function Connections({ profile, navigation, connections, relation
         <>
             <Head title={`${title} - ${profile.name}`} />
             <ProfileSubNavigation navigation={navigation} />
-            <section className="mx-auto max-w-5xl px-5 py-8 sm:px-8 lg:px-10 lg:py-10" aria-labelledby="connections-heading">
+            <ProfileContentContainer className="py-7 lg:py-9" aria-labelledby="connections-heading">
                 <ProfilePageHeading
                     eyebrow="Reader network"
                     title="Connections"
@@ -79,7 +79,7 @@ export default function Connections({ profile, navigation, connections, relation
                     </div>
                 ) : <div className="mt-5 border border-dashed border-ink-950/20 p-8 text-ink-950/55">No readers are listed in {title.toLowerCase()} yet.</div>}
                 <Pagination paginator={connections} label={`${title} pagination`} />
-            </section>
+            </ProfileContentContainer>
         </>
     );
 }
