@@ -32,6 +32,12 @@ class User extends Authenticatable
         return $this->hasMany(ReadingList::class);
     }
 
+    /** @return HasMany<CustomList, $this> */
+    public function customLists(): HasMany
+    {
+        return $this->hasMany(CustomList::class);
+    }
+
     /** @return HasManyThrough<ReadingLog, ReadingList, $this> */
     public function readingLogs(): HasManyThrough
     {

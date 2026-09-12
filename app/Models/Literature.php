@@ -135,6 +135,20 @@ class Literature extends Model
         return $this->hasMany(Discussion::class);
     }
 
+    /** @return HasMany<CustomListItem, $this> */
+    public function customListItems(): HasMany
+    {
+        return $this->hasMany(CustomListItem::class);
+    }
+
+    /** @return BelongsToMany<User, $this> */
+    public function favoriteByUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'user_favorite_literatures')
+            ->withPivot('position')
+            ->withTimestamps();
+    }
+
     /** @return HasMany<LiteratureRelation, $this> */
     public function outgoingRelations(): HasMany
     {

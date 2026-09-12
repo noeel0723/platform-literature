@@ -41,10 +41,21 @@ class CanonicalWork extends Model
         return $this->hasMany(LiteratureSourceMapping::class);
     }
 
+    /** @return HasMany<CustomListItem, $this> */
+    public function customListItems(): HasMany
+    {
+        return $this->hasMany(CustomListItem::class);
+    }
+
     /** @return HasOne<LiteratureMetadataOverride, $this> */
     public function metadataOverride(): HasOne
     {
         return $this->hasOne(LiteratureMetadataOverride::class);
+    }
+
+    public function representative(): ?Literature
+    {
+        return $this->preferredLiterature;
     }
 
     /** @return BelongsToMany<Literature, $this> */

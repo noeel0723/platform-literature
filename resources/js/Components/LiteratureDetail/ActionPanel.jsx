@@ -1,12 +1,19 @@
-import { Link, router } from '@inertiajs/react';
+import { Link, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 
 import { RatingInput, StarRating, plural } from './DetailUi';
 
-export default function ActionPanel({ viewer, ratingSummary, routes, onOpenReview, onChooseRating }) {
+export default function ActionPanel({ literature, viewer, ratingSummary, routes, onOpenReview, onChooseRating }) {
     const [processing, setProcessing] = useState(false);
     const isCompleted = viewer.reading_status === 'completed';
     const isInReadlist = viewer.reading_status === 'want_to_read';
+    const listForm = useForm({
+        title: '',
+        description: '',
+        is_private: false,
+        literature_id: literature.id,
+        return_to: 'literature',
+    });
 
     const updateReading = (status, active) => {
         setProcessing(true);
@@ -14,6 +21,22 @@ export default function ActionPanel({ viewer, ratingSummary, routes, onOpenRevie
 
         if (active) router.delete(routes.reading_destroy, options);
         else router.put(routes.reading_update, { status }, options);
+    };
+
+    const toggleList = (list) => {
+        setProcessing(true);
+        const options = { preserveScroll: true, onFinish: () => setProcessing(false) };
+
+        if (list.contains) router.delete(list.destroy_url, options);
+        else router.post(list.store_url, { literature_id: literature.id }, options);
+    };
+
+    const createList = (event) => {
+        event.preventDefault();
+        listForm.post(routes.custom_list_store, {
+            preserveScroll: true,
+            onSuccess: () => listForm.reset('title'),
+        });
     };
 
     return (
@@ -69,6 +92,36 @@ export default function ActionPanel({ viewer, ratingSummary, routes, onOpenRevie
                         </div>
                         <p className="mt-2 text-xs text-ink-950/45">Hover to preview. Click a star to continue in the review form.</p>
                     </div>
+                    <details className="group border-b border-ink-950/10">
+                        <summary className="cursor-pointer list-none px-4 py-3 text-center text-sm font-bold text-ink-950 transition hover:bg-brand-sky/25">Add to List</summary>
+                        <div className="border-t border-ink-950/10 p-3">
+                            {viewer.custom_lists.length > 0 ? (
+                                <div className="space-y-1">
+                                    {viewer.custom_lists.map((list) => (
+                                        <button
+                                            key={list.id}
+                                            type="button"
+                                            disabled={processing}
+                                            onClick={() => toggleList(list)}
+                                            className={`flex w-full items-center justify-between gap-3 px-2.5 py-2 text-left text-xs font-semibold transition disabled:opacity-50 ${list.contains ? 'bg-brand-sky/35 text-ink-950' : 'hover:bg-brand-sky/20'}`}
+                                        >
+                                            <span className="truncate">{list.title}{list.is_private ? ' · Private' : ''}</span>
+                                            <span aria-hidden="true">{list.contains ? '✓' : '+'}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            ) : <p className="text-xs text-ink-950/50">You have no custom lists yet.</p>}
+
+                            <form onSubmit={createList} className="mt-3 border-t border-ink-950/10 pt-3">
+                                <label htmlFor="quick-list-title" className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-ink-950/50">Create a new list</label>
+                                <div className="mt-1.5 flex">
+                                    <input id="quick-list-title" value={listForm.data.title} onChange={(event) => listForm.setData('title', event.target.value)} className="min-w-0 flex-1 border border-ink-950/20 bg-white/60 px-2.5 py-2 text-xs outline-none focus:border-brand-coral" placeholder="List title" required maxLength={120} />
+                                    <button type="submit" disabled={listForm.processing} className="bg-ink-950 px-3 text-xs font-bold text-brand-cream transition hover:bg-brand-coral disabled:opacity-50">Create</button>
+                                </div>
+                                {listForm.errors.title && <p className="mt-1 text-[0.65rem] text-red-700">{listForm.errors.title}</p>}
+                            </form>
+                        </div>
+                    </details>
                 </>
             ) : (
                 <div className="p-5">

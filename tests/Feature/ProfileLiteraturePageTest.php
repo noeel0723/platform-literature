@@ -59,7 +59,7 @@ class ProfileLiteraturePageTest extends TestCase
             ->assertOk();
 
         $this->assertSame(
-            ['Profile', 'Activity', 'Literature', 'Diary', 'Reviews', 'Readlist', 'Connections'],
+            ['Profile', 'Stats', 'Activity', 'Literature', 'Diary', 'Reviews', 'Readlist', 'Lists', 'Connections'],
             collect($response->inertiaProps('navigation.links'))->pluck('label')->all(),
         );
     }

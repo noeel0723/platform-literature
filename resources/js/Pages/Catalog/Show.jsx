@@ -131,7 +131,7 @@ export default function Show({ literature, viewer, ratingSummary, reviews, discu
             <section className="border-b border-ink-950/10 bg-brand-cream">
                 <SiteContainer data-literature-detail-grid className="relative grid items-start gap-6 py-9 md:grid-cols-[180px_minmax(0,1fr)] lg:grid-cols-[190px_minmax(0,1fr)_240px] lg:gap-7 lg:py-11">
                     <LiteratureDetailHero literature={literature} />
-                    <ActionPanel viewer={viewer} ratingSummary={ratingSummary} routes={routes} onOpenReview={() => setReviewOpen(true)} onChooseRating={chooseRating} />
+                    <ActionPanel literature={literature} viewer={viewer} ratingSummary={ratingSummary} routes={routes} onOpenReview={() => setReviewOpen(true)} onChooseRating={chooseRating} />
                 </SiteContainer>
             </section>
 

@@ -17,6 +17,7 @@ class ProfilePagePresenter
             && $user->isFollowing($viewer);
         $links = [
             ['key' => 'profile', 'label' => 'Profile', 'url' => route('profiles.show', $user)],
+            ['key' => 'stats', 'label' => 'Stats', 'url' => route('profiles.stats', $user)],
         ];
 
         if ($isOwner || $isFriend) {
@@ -39,6 +40,7 @@ class ProfilePagePresenter
 
         $links[] = ['key' => 'reviews', 'label' => 'Reviews', 'url' => route('profiles.reviews', $user)];
         $links[] = ['key' => 'readlist', 'label' => 'Readlist', 'url' => route('profiles.readlist', $user)];
+        $links[] = ['key' => 'lists', 'label' => 'Lists', 'url' => route('profiles.lists', $user)];
         $links[] = ['key' => 'connections', 'label' => 'Connections', 'url' => route('profiles.connections', $user)];
 
         return [

@@ -45,7 +45,7 @@ function EmptyActivity({ viewer, routes }) {
     );
 }
 
-export default function HomeIndex({ activities, popularLiteratures, viewer, routes }) {
+export default function HomeIndex({ activities, popularLiteratures, recommendations, viewer, routes }) {
     return (
         <>
             <Head title="Home" />
@@ -62,6 +62,33 @@ export default function HomeIndex({ activities, popularLiteratures, viewer, rout
                             </p>
                         )}
                     </header>
+
+                    {viewer && (
+                        <section className="mt-6" aria-labelledby="recommended-heading">
+                            <div className="flex items-end justify-between gap-4 border-b border-ink-950/15 pb-2">
+                                <h2 id="recommended-heading" className="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">Recommended For You</h2>
+                                <span className="text-xs font-bold uppercase tracking-[0.16em] text-ink-950/45">Explainable picks</span>
+                            </div>
+
+                            {recommendations.length === 0 ? (
+                                <div className="mt-4 border-y border-dashed border-ink-950/20 px-5 py-8 text-center text-sm text-ink-950/60">
+                                    Recommendations will appear as the catalog grows.
+                                </div>
+                            ) : (
+                                <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-4 lg:grid-cols-8">
+                                    {recommendations.map((literature) => (
+                                        <article key={literature.id} className="min-w-0" data-recommendation>
+                                            <Link href={literature.url} className="group block overflow-hidden rounded-sm border border-ink-950/15 bg-brand-sky/25 shadow-[0_3px_10px_rgba(47,58,85,0.06)]">
+                                                <Cover literature={literature} />
+                                            </Link>
+                                            <Link href={literature.url} className="mt-1.5 block truncate text-xs font-bold text-ink-950 transition hover:text-brand-coral">{literature.title}</Link>
+                                            <p className="mt-0.5 line-clamp-2 text-[0.64rem] leading-4 text-ink-950/55">{literature.reason}</p>
+                                        </article>
+                                    ))}
+                                </div>
+                            )}
+                        </section>
+                    )}
 
                     <section className="mt-6" aria-labelledby="friends-activity-heading">
                         <div className="flex items-end justify-between gap-4 border-b border-ink-950/15 pb-2">

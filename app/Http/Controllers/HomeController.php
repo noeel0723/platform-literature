@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Activity;
 use App\Models\Literature;
+use App\Services\Recommendations\PersonalRecommendationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -11,7 +12,7 @@ use Inertia\Response;
 
 class HomeController extends Controller
 {
-    public function __invoke(Request $request): Response
+    public function __invoke(Request $request, PersonalRecommendationService $recommendations): Response
     {
         $viewer = $request->user();
         $friendIds = $viewer?->following()
@@ -20,6 +21,9 @@ class HomeController extends Controller
 
         $activities = collect();
         $popularLiteratures = collect();
+        $recommendedLiteratures = $viewer === null
+            ? collect()
+            : $recommendations->recommend($viewer, 8);
 
         if ($friendIds->isNotEmpty()) {
             $activities = Activity::query()
@@ -68,6 +72,14 @@ class HomeController extends Controller
             'activities' => $activities->map(fn (Activity $activity): array => $this->presentActivity($activity))->all(),
             'popularLiteratures' => $popularLiteratures
                 ->map(fn (Literature $literature): array => $this->presentPopularLiterature($literature))
+                ->all(),
+            'recommendations' => $recommendedLiteratures
+                ->map(fn (array $recommendation): array => [
+                    ...$this->presentRecommendation($recommendation['literature']),
+                    'reason' => $recommendation['reason'],
+                    'score' => $recommendation['score'],
+                    'cold_start' => $recommendation['cold_start'],
+                ])
                 ->all(),
             'viewer' => $viewer === null ? null : [
                 'name' => $viewer->name,
@@ -127,6 +139,18 @@ class HomeController extends Controller
                 ])
                 ->values()
                 ->all(),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function presentRecommendation(Literature $literature): array
+    {
+        return [
+            'id' => $literature->id,
+            'title' => $literature->displayTitle(),
+            'url' => route('literatures.show', $literature),
+            'cover_url' => $literature->displayCoverUrl(),
+            'initials' => $this->initials($literature->displayTitle()),
         ];
     }
 

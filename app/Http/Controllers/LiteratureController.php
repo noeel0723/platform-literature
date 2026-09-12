@@ -11,6 +11,7 @@ use App\Models\Report;
 use App\Models\Review;
 use App\Models\User;
 use App\Services\Literature\CanonicalLiteratureSearch;
+use App\Services\Literature\CanonicalWorkIdentity;
 use App\Services\Literature\CatalogResultRanker;
 use App\Services\Literature\CatalogSyncService;
 use Illuminate\Database\Eloquent\Builder;
@@ -145,7 +146,7 @@ class LiteratureController extends Controller
         ]);
     }
 
-    public function show(Literature $literature): Response
+    public function show(Literature $literature, CanonicalWorkIdentity $identity): Response
     {
         $userId = request()->user()?->id ?? 0;
 
@@ -174,6 +175,25 @@ class LiteratureController extends Controller
         $currentReview = request()->user()?->reviews()
             ->whereBelongsTo($literature)
             ->first();
+        $viewerLists = collect();
+
+        if (request()->user() !== null) {
+            $canonicalWork = $identity->canonicalWork($literature);
+            $viewerLists = request()->user()->customLists()
+                ->with(['items' => fn ($items) => $items->where('canonical_work_id', $canonicalWork->id)])
+                ->orderBy('title')
+                ->get()
+                ->map(fn ($list): array => [
+                    'id' => $list->id,
+                    'title' => $list->title,
+                    'is_private' => $list->is_private,
+                    'contains' => $list->items->isNotEmpty(),
+                    'store_url' => route('custom-lists.items.store', $list),
+                    'destroy_url' => $list->items->isEmpty()
+                        ? null
+                        : route('custom-lists.items.destroy', [$list, $list->items->first()]),
+                ]);
+        }
         $discussions = $literature->discussions()
             ->whereNull('hidden_at')
             ->with([
@@ -241,6 +261,7 @@ class LiteratureController extends Controller
                     'body' => $currentReview->body ?? '',
                     'contains_spoiler' => $currentReview->contains_spoiler,
                 ],
+                'custom_lists' => $viewerLists->all(),
             ],
             'ratingSummary' => [
                 'average' => $literature->reviews->avg('rating'),
@@ -275,6 +296,7 @@ class LiteratureController extends Controller
                 'review_destroy' => route('reviews.destroy', $literature),
                 'discussion_store' => route('discussions.store', $literature),
                 'report_store' => route('reports.store'),
+                'custom_list_store' => route('custom-lists.store'),
             ],
         ]);
     }
@@ -390,6 +412,7 @@ class LiteratureController extends Controller
         ];
 
         return [
+            'id' => $literature->id,
             'slug' => $literature->slug,
             'url' => route('literatures.show', $literature),
             'title' => $displayTitle,
