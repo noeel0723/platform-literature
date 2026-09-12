@@ -14,7 +14,7 @@ export default function LiteratureDetailHero({ literature }) {
 
     return (
         <>
-            <div className={`relative aspect-[2/3] overflow-hidden border border-ink-950/20 bg-linear-to-br ${coverTheme} shadow-[0_14px_36px_rgba(47,58,85,0.12)]`}>
+            <div className={`relative aspect-[2/3] w-full max-w-[190px] justify-self-center overflow-hidden border border-ink-950/20 bg-linear-to-br md:justify-self-start ${coverTheme} shadow-[0_14px_36px_rgba(47,58,85,0.12)]`}>
                 {literature.cover_url ? (
                     <>
                         <img
@@ -45,8 +45,8 @@ export default function LiteratureDetailHero({ literature }) {
                 </div>
             </div>
 
-            <div className="self-start">
-                <h1 className="text-4xl font-bold leading-[0.98] tracking-tight text-ink-950 sm:text-5xl lg:text-6xl">
+            <div className="min-w-0 self-start">
+                <h1 className="text-3xl font-bold leading-tight tracking-tight text-ink-950 sm:text-4xl lg:text-5xl">
                     {literature.title}
                 </h1>
 
@@ -92,10 +92,10 @@ export default function LiteratureDetailHero({ literature }) {
                     )}
                 </p>
 
-                <p className="mt-7 max-w-2xl text-lg font-medium uppercase leading-7 tracking-[0.08em] text-ink-950/70">
+                <p className="mt-6 max-w-[58ch] text-base font-medium uppercase leading-7 tracking-[0.08em] text-ink-950/70">
                     {literature.tagline}
                 </p>
-                <p className="mt-5 max-w-2xl text-base leading-8 text-ink-950/75">
+                <p className="mt-4 max-w-[58ch] text-base leading-7 text-ink-950/75">
                     {literature.synopsis}
                 </p>
             </div>

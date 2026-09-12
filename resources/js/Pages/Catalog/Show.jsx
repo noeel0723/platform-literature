@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useState } from 'react';
 
 import LiteratureCard from '../../Components/LiteratureCard';
 import LiteratureDetailHero from '../../Components/LiteratureDetailHero';
+import SiteContainer from '../../Components/SiteContainer';
 import ActionPanel from '../../Components/LiteratureDetail/ActionPanel';
 import DiscussionSection from '../../Components/LiteratureDetail/DiscussionSection';
 import ReviewDialog from '../../Components/LiteratureDetail/ReviewDialog';
@@ -11,7 +12,7 @@ import { SectionHeading, plural } from '../../Components/LiteratureDetail/Detail
 
 function Summary({ literature }) {
     return (
-        <section className="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:px-10 lg:py-20">
+        <SiteContainer as="section" className="py-10 lg:py-12">
             <nav className="flex gap-6 overflow-x-auto border-b border-ink-950/10 text-sm font-bold uppercase tracking-[0.14em] text-ink-950/60" aria-label="Literature details">
                 <a href="#summary" className="border-b-2 border-brand-coral pb-4 text-ink-950">Summary</a>
                 <a href="#authors" className="pb-4 text-ink-950/70 hover:text-brand-coral">Authors</a>
@@ -20,10 +21,10 @@ function Summary({ literature }) {
                 <a href="#reviews" className="pb-4 text-ink-950/70 hover:text-brand-coral">Reviews</a>
                 <a href="#discussions" className="pb-4 text-ink-950/70 hover:text-brand-coral">Discussions</a>
             </nav>
-            <div className="mt-10">
-                <div id="summary" className="scroll-mt-24 border border-ink-950/10 bg-white/40 p-6 sm:p-8">
+            <div className="mt-7">
+                <div id="summary" className="scroll-mt-24 border border-ink-950/10 bg-white/40 p-5 sm:p-6">
                     <SectionHeading>Metadata summary</SectionHeading>
-                    <p className="mt-4 max-w-3xl text-base leading-8 text-ink-900">{literature.synopsis}</p>
+                    <p className="mt-4 max-w-[68ch] text-base leading-7 text-ink-900">{literature.synopsis}</p>
                     {literature.synopsis_source_name && literature.synopsis_source_url && (
                         <p className="mt-4 text-xs leading-5 text-ink-950/50">
                             Supplemental summary from <a href={literature.synopsis_source_url} target="_blank" rel="noopener noreferrer" className="font-semibold underline decoration-brand-coral underline-offset-4">{literature.synopsis_source_name}</a> under the <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">CC BY-SA</a> license.
@@ -43,14 +44,14 @@ function Summary({ literature }) {
                     </div>
                 </div>
             </div>
-        </section>
+        </SiteContainer>
     );
 }
 
 function Discovery({ relationshipGroups, authorDiscoveries }) {
     return (
         <section id="relationships" className="scroll-mt-24 border-t border-ink-950/10 bg-white/20">
-            <div className="mx-auto max-w-7xl px-5 py-9 sm:px-8 lg:px-10 lg:py-12">
+            <SiteContainer className="py-9 lg:py-10">
                 <div className="border-b border-ink-950/15 pb-3"><SectionHeading>Relationship Explorer</SectionHeading></div>
                 {relationshipGroups.length > 0 ? relationshipGroups.map((group) => (
                     <section key={group.type} className="mt-6" aria-labelledby={`relationship-${group.type}`}>
@@ -77,7 +78,7 @@ function Discovery({ relationshipGroups, authorDiscoveries }) {
                     <div className="mb-3"><SectionHeading as="h3" id="more-by-authors">More by these authors</SectionHeading></div>
                     {authorDiscoveries.length > 0 ? <div className="grid grid-cols-3 gap-x-3 gap-y-5 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">{authorDiscoveries.map((item) => <LiteratureCard key={item.slug} literature={item} compact />)}</div> : <p className="border border-dashed border-ink-950/20 p-4 text-sm text-ink-950/55">No other works by the same authors are available in the local catalog yet.</p>}
                 </section>
-            </div>
+            </SiteContainer>
         </section>
     );
 }
@@ -111,7 +112,7 @@ export default function Show({ literature, viewer, ratingSummary, reviews, discu
         <>
             <Head title={literature.title} />
             {successMessage && <div role="status" className="border-b border-brand-sky/50 bg-brand-sky/20 px-5 py-3 text-center text-sm font-semibold text-ink-950">{successMessage}</div>}
-            <section data-literature-backdrop className="relative isolate min-h-[420px] overflow-hidden bg-ink-950 sm:min-h-[500px] lg:min-h-[620px]">
+            <section data-literature-backdrop className="relative isolate min-h-[360px] overflow-hidden bg-ink-950 sm:min-h-[430px] lg:min-h-[520px]">
                 {backdropUrl ? (
                     <>
                         <div className="absolute inset-0 -z-20 overflow-hidden" aria-hidden="true"><img src={backdropUrl} alt="" className={`size-full object-cover object-center ${hasDedicatedBackdrop ? 'scale-[1.02] opacity-90' : 'scale-110 opacity-62 blur-[3px]'}`} /></div>
@@ -119,19 +120,19 @@ export default function Show({ literature, viewer, ratingSummary, reviews, discu
                         <div className="absolute inset-0 -z-10 bg-linear-to-r from-ink-950/45 via-transparent to-ink-950/35" aria-hidden="true" />
                     </>
                 ) : <div className="catalog-grid absolute inset-0 -z-10 opacity-70" aria-hidden="true" />}
-                <div className="relative mx-auto max-w-7xl px-5 pt-24 sm:px-8 lg:px-10 lg:pt-28">
+                <SiteContainer className="relative pt-20 sm:pt-24 lg:pt-28">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <Link href={routes.catalog} className="inline-flex items-center gap-2 rounded-full bg-ink-950/65 px-4 py-2 text-sm font-semibold text-brand-cream backdrop-blur transition hover:bg-brand-coral"><span aria-hidden="true">←</span> Back to catalog</Link>
                         {routes.admin_edit_metadata && <Link href={routes.admin_edit_metadata} className="rounded-full border border-brand-cream/40 bg-ink-950/65 px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] text-brand-cream backdrop-blur transition hover:border-brand-coral hover:bg-brand-coral">Edit metadata</Link>}
                     </div>
-                </div>
+                </SiteContainer>
             </section>
 
             <section className="border-b border-ink-950/10 bg-brand-cream">
-                <div data-literature-detail-grid className="relative mx-auto grid max-w-7xl items-start gap-8 px-5 pb-14 pt-10 sm:px-8 sm:pt-12 md:grid-cols-[220px_minmax(0,1fr)] lg:grid-cols-[250px_minmax(0,1fr)_300px] lg:px-10 lg:pb-20 lg:pt-14">
+                <SiteContainer data-literature-detail-grid className="relative grid items-start gap-6 py-9 md:grid-cols-[180px_minmax(0,1fr)] lg:grid-cols-[190px_minmax(0,1fr)_240px] lg:gap-7 lg:py-11">
                     <LiteratureDetailHero literature={literature} />
                     <ActionPanel viewer={viewer} ratingSummary={ratingSummary} routes={routes} onOpenReview={() => setReviewOpen(true)} onChooseRating={chooseRating} />
-                </div>
+                </SiteContainer>
             </section>
 
             <Summary literature={literature} />

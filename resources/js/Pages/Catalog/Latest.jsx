@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 
 import LiteratureCard from '../../Components/LiteratureCard';
+import SiteContainer from '../../Components/SiteContainer';
 
 function PaginationLink({ href, relation, children }) {
     const sharedClasses = 'inline-flex min-h-10 items-center border px-5 text-sm font-semibold';
@@ -40,8 +41,8 @@ export default function CatalogLatest({ literatures, query, selectedType, types,
         <>
             <Head title={pageTitle} />
 
-            <section className="mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:px-10 lg:py-14" aria-labelledby="latest-literature-title">
-                <div className="mb-6 flex flex-col gap-3 border-b border-ink-950/15 pb-4 sm:flex-row sm:items-end sm:justify-between">
+            <SiteContainer as="section" className="py-8 lg:py-10" aria-labelledby="latest-literature-title">
+                <div className="mb-5 flex flex-col gap-3 border-b border-ink-950/15 pb-3 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                         <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">All latest matches</p>
                         <h1 id="latest-literature-title" className="mt-1 text-2xl font-bold text-ink-950 sm:text-3xl">
@@ -60,7 +61,7 @@ export default function CatalogLatest({ literatures, query, selectedType, types,
                     </div>
                 ) : (
                     <>
-                        <div className="grid grid-cols-2 gap-x-3 gap-y-7 sm:grid-cols-3 sm:gap-x-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6" data-latest-literature-grid>
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 sm:gap-x-4 md:grid-cols-4 lg:grid-cols-5" data-latest-literature-grid>
                             {literatures.data.map((literature) => (
                                 <LiteratureCard key={literature.slug} literature={literature} compact />
                             ))}
@@ -75,7 +76,7 @@ export default function CatalogLatest({ literatures, query, selectedType, types,
                         </nav>
                     </>
                 )}
-            </section>
+            </SiteContainer>
         </>
     );
 }

@@ -18,7 +18,7 @@ export default function ActionPanel({ viewer, ratingSummary, routes, onOpenRevie
 
     return (
         <aside className="self-start overflow-hidden border border-ink-950/25 bg-brand-cream/95 shadow-[0_12px_32px_rgba(47,58,85,0.08)] backdrop-blur-md md:col-span-2 lg:col-span-1" aria-label="Your literature actions">
-            <div data-community-rating className="border-b border-ink-950/10 p-5 text-center">
+            <div data-community-rating className="border-b border-ink-950/10 p-4 text-center">
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-ink-950/55">Community rating</p>
                 <div className="mt-3 flex items-center justify-center gap-3">
                     <StarRating rating={ratingSummary.average ?? 0} />
@@ -37,13 +37,13 @@ export default function ActionPanel({ viewer, ratingSummary, routes, onOpenRevie
                             disabled={processing}
                             aria-pressed={isCompleted}
                             title={isCompleted ? 'Remove completed status' : 'Mark as completed'}
-                            className={`px-2 py-5 text-center font-bold text-ink-950 transition disabled:opacity-50 ${isCompleted ? 'bg-brand-sky/30' : 'hover:bg-brand-sky/35'}`}
+                            className={`px-2 py-4 text-center font-bold text-ink-950 transition disabled:opacity-50 ${isCompleted ? 'bg-brand-sky/30' : 'hover:bg-brand-sky/35'}`}
                             onClick={() => updateReading('completed', isCompleted)}
                         >
                             <svg className={`mx-auto size-8 ${isCompleted ? 'text-brand-coral' : 'text-ink-950'}`} aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="16" cy="16" r="13" /><path d="m10 16 4 4 8-9" /></svg>
                             <span className="mt-2 block text-xs sm:text-sm">Completed</span>
                         </button>
-                        <button type="button" className="px-2 py-5 text-center font-bold text-ink-950 transition hover:bg-brand-coral hover:text-brand-cream" onClick={onOpenReview}>
+                        <button type="button" className="px-2 py-4 text-center font-bold text-ink-950 transition hover:bg-brand-coral hover:text-brand-cream" onClick={onOpenReview}>
                             <span className="block text-3xl leading-none" aria-hidden="true">★</span>
                             <span className="mt-2 block text-xs sm:text-sm">{viewer.current_review ? 'Edit Review' : 'Rate & Review'}</span>
                         </button>
@@ -54,14 +54,14 @@ export default function ActionPanel({ viewer, ratingSummary, routes, onOpenRevie
                             disabled={processing}
                             aria-pressed={isInReadlist}
                             title={isInReadlist ? 'Remove from Readlist' : 'Add to Readlist'}
-                            className={`px-2 py-5 text-center font-bold text-ink-950 transition disabled:opacity-50 ${isInReadlist ? 'bg-brand-sky/30' : 'hover:bg-brand-sky/35'}`}
+                            className={`px-2 py-4 text-center font-bold text-ink-950 transition disabled:opacity-50 ${isInReadlist ? 'bg-brand-sky/30' : 'hover:bg-brand-sky/35'}`}
                             onClick={() => updateReading('want_to_read', isInReadlist)}
                         >
                             <svg className={`mx-auto size-8 ${isInReadlist ? 'fill-brand-coral text-brand-coral' : 'text-ink-950'}`} aria-hidden="true" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 5h14a2 2 0 0 1 2 2v20l-9-5-9 5V7a2 2 0 0 1 2-2Z" /></svg>
                             <span className="mt-2 block text-xs sm:text-sm">Readlist</span>
                         </button>
                     </div>
-                    <div data-your-rating className="border-b border-ink-950/10 p-5 text-center">
+                    <div data-your-rating className="border-b border-ink-950/10 p-4 text-center">
                         <p className="text-xs font-bold uppercase tracking-[0.2em] text-ink-950/55">Your Rating</p>
                         <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
                             <RatingInput value={viewer.current_review?.rating ?? ''} onChange={() => {}} onCommit={onChooseRating} compact />

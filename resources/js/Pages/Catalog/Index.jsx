@@ -2,6 +2,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 
 import LiteratureCard from '../../Components/LiteratureCard';
+import SiteContainer from '../../Components/SiteContainer';
 
 function SearchIcon() {
     return (
@@ -65,7 +66,7 @@ export default function CatalogIndex({
             <Head title="Catalog" />
 
             <section className="catalog-grid border-b border-ink-950/10">
-                <div className="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-6 sm:px-8 lg:flex-row lg:items-center lg:justify-between lg:px-10">
+                <SiteContainer className="flex flex-col gap-4 py-5 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
                         <span className="shrink-0 text-xs font-bold uppercase tracking-[0.2em] text-ink-950/45">
                             Browse by format
@@ -105,11 +106,11 @@ export default function CatalogIndex({
                             <SearchIcon />
                         </button>
                     </form>
-                </div>
+                </SiteContainer>
             </section>
 
-            <section className="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:px-10 lg:py-16" aria-labelledby="catalog-results-title">
-                <div className="mb-7 flex flex-col gap-3 border-b border-ink-950/15 pb-4 sm:flex-row sm:items-end sm:justify-between">
+            <SiteContainer as="section" className="py-8 lg:py-10" aria-labelledby="catalog-results-title">
+                <div className="mb-5 flex flex-col gap-3 border-b border-ink-950/15 pb-3 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                         <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">Latest matches</p>
                         <h1 id="catalog-results-title" className="mt-1 font-serif text-3xl font-bold text-ink-950">
@@ -144,13 +145,13 @@ export default function CatalogIndex({
                         </Link>
                     </div>
                 ) : (
-                    <div className="mx-auto grid max-w-4xl grid-cols-2 gap-x-3 gap-y-7 sm:grid-cols-3 sm:gap-x-4 md:grid-cols-4" data-catalog-results>
+                    <div className="mx-auto grid w-full max-w-3xl grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-4 sm:gap-x-4" data-catalog-results>
                         {literatures.map((literature) => (
                             <LiteratureCard key={literature.slug} literature={literature} compact />
                         ))}
                     </div>
                 )}
-            </section>
+            </SiteContainer>
         </>
     );
 }

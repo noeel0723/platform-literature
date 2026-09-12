@@ -1,5 +1,6 @@
 import { Link, router } from '@inertiajs/react';
 
+import SiteContainer from '../SiteContainer';
 import { ReportForm, SectionHeading, SpoilerContent, StarRating, TimeLabel, plural } from './DetailUi';
 
 export default function ReviewSection({ reviews, ratingSummary, viewer, reportReasons, reportAction }) {
@@ -11,7 +12,7 @@ export default function ReviewSection({ reviews, ratingSummary, viewer, reportRe
 
     return (
         <section id="reviews" className="scroll-mt-24 border-t border-ink-950/10">
-            <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:px-10 lg:py-14">
+            <SiteContainer className="py-9 lg:py-10">
                 <div className="flex flex-col gap-3 border-b border-ink-950/15 pb-3 sm:flex-row sm:items-center sm:justify-between">
                     <SectionHeading>Ratings &amp; reviews</SectionHeading>
                     <div className="text-left sm:text-right">
@@ -56,7 +57,7 @@ export default function ReviewSection({ reviews, ratingSummary, viewer, reportRe
                         )) : <div className="border border-dashed border-ink-950/20 p-7 text-ink-950/60">No reviews yet. Be the first reader to share a rating.</div>}
                     </div>
                 </div>
-            </div>
+            </SiteContainer>
         </section>
     );
 }

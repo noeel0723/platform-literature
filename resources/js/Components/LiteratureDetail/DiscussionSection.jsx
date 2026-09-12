@@ -1,5 +1,6 @@
 import { Link, router, useForm } from '@inertiajs/react';
 
+import SiteContainer from '../SiteContainer';
 import { ReportForm, SectionHeading, SpoilerContent, TimeLabel, UserAvatar, plural } from './DetailUi';
 
 function CommentForm({ action, parentId = null, compact = false, label = 'Add a comment' }) {
@@ -141,7 +142,7 @@ export default function DiscussionSection({ literature, discussions, discussionC
 
     return (
         <section id="discussions" className="scroll-mt-24 border-t border-ink-950/10 bg-white/20">
-            <div className="mx-auto max-w-7xl px-5 py-9 sm:px-8 lg:px-10 lg:py-12">
+            <SiteContainer className="py-9 lg:py-10">
                 <div className="flex flex-col gap-2 border-b border-ink-950/15 pb-3 sm:flex-row sm:items-center sm:justify-between">
                     <SectionHeading>Discussions</SectionHeading>
                     <div className="text-left sm:text-right">
@@ -149,7 +150,7 @@ export default function DiscussionSection({ literature, discussions, discussionC
                         {discussionCount > discussions.length && <p className="mt-1 text-xs text-ink-950/45">Showing the latest {discussions.length}</p>}
                     </div>
                 </div>
-                <div className="mt-5 grid gap-7 lg:grid-cols-[280px_minmax(0,1fr)]">
+                <div className="mt-5 grid gap-7 lg:grid-cols-[240px_minmax(0,1fr)]">
                     <div>
                         {viewer.authenticated ? (
                             <form onSubmit={submit} className="grid gap-4 border border-ink-950/12 bg-brand-cream/55 p-4 lg:sticky lg:top-24">
@@ -176,7 +177,7 @@ export default function DiscussionSection({ literature, discussions, discussionC
                         {discussions.length > 0 ? discussions.map((discussion) => <DiscussionThread key={discussion.id} discussion={discussion} viewer={viewer} reportReasons={reportReasons} reportAction={routes.report_store} />) : <div className="border border-dashed border-ink-950/20 p-7 text-ink-950/60">No discussions yet. Start a focused conversation about this work.</div>}
                     </div>
                 </div>
-            </div>
+            </SiteContainer>
         </section>
     );
 }
