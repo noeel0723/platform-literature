@@ -13,6 +13,11 @@ use InvalidArgumentException;
 
 final class KitsuAdapter
 {
+    public function __construct(
+        private WikidataCreatorEnricher $wikidataCreators,
+        private MangaUpdatesCreatorEnricher $mangaUpdatesCreators,
+    ) {}
+
     /** @return Collection<int, NormalizedLiterature> */
     public function search(string $query, string $literatureType, int $limit = 6): Collection
     {
@@ -39,11 +44,65 @@ final class KitsuAdapter
         );
 
         $included = is_array($payload['included'] ?? null) ? $payload['included'] : [];
+        $items = collect($payload['data'] ?? []);
+        $fallbackWorks = $items
+            ->filter(fn (mixed $item): bool => is_array($item)
+                && filled(Arr::get($item, 'id'))
+                && $this->authors($item, $included) === [])
+            ->mapWithKeys(function (array $item): array {
+                $externalId = (string) Arr::get($item, 'id');
+                $title = $this->localizedText(Arr::get($item, 'attributes.titles'), ['en', 'en_us', 'en_jp'])
+                    ?? $this->cleanText(Arr::get($item, 'attributes.canonicalTitle'));
+                $type = Str::lower((string) (Arr::get($item, 'attributes.subtype')
+                    ?: Arr::get($item, 'attributes.mangaType')));
 
-        return collect($payload['data'] ?? [])
-            ->map(fn (mixed $item): ?NormalizedLiterature => $this->normalize($item, $included, $literatureType))
+                return $title === null || ! in_array($type, ['manga', 'manhwa'], true)
+                    ? []
+                    : [$externalId => ['title' => $title, 'type' => $type]];
+            })
+            ->all();
+        $creatorFallbacks = $this->wikidataCreators->forKitsuIds(array_keys($fallbackWorks));
+        $creatorFallbacks += $this->mangaUpdatesCreators->forWorks(
+            array_diff_key($fallbackWorks, $creatorFallbacks),
+        );
+
+        return $items
+            ->map(fn (mixed $item): ?NormalizedLiterature => $this->normalize(
+                $item,
+                $included,
+                $literatureType,
+                is_array($item) ? ($creatorFallbacks[(string) Arr::get($item, 'id')] ?? []) : [],
+            ))
             ->filter()
             ->values();
+    }
+
+    /**
+     * @param  list<string>  $externalIds
+     * @return array<string, list<NormalizedAuthor>>
+     */
+    public function creatorsForExternalIds(
+        array $externalIds,
+        array $titlesByExternalId = [],
+        array $typesByExternalId = [],
+    ): array {
+        $creators = $this->wikidataCreators->forKitsuIds($externalIds);
+        $fallbackWorks = collect($externalIds)
+            ->mapWithKeys(function (mixed $externalId) use ($creators, $titlesByExternalId, $typesByExternalId): array {
+                $externalId = (string) $externalId;
+
+                if (isset($creators[$externalId])) {
+                    return [];
+                }
+
+                return [$externalId => [
+                    'title' => (string) ($titlesByExternalId[$externalId] ?? ''),
+                    'type' => (string) ($typesByExternalId[$externalId] ?? ''),
+                ]];
+            })
+            ->all();
+
+        return $creators + $this->mangaUpdatesCreators->forWorks($fallbackWorks);
     }
 
     /** @return array{data: list<mixed>, included: list<mixed>} */
@@ -91,7 +150,7 @@ final class KitsuAdapter
     }
 
     /** @param list<mixed> $included */
-    private function normalize(mixed $item, array $included, string $requestedType): ?NormalizedLiterature
+    private function normalize(mixed $item, array $included, string $requestedType, array $creatorFallback = []): ?NormalizedLiterature
     {
         if (! is_array($item) || Arr::get($item, 'type') !== 'manga') {
             return null;
@@ -122,6 +181,10 @@ final class KitsuAdapter
 
         $originalLanguage = $type === 'manhwa' ? 'ko' : 'ja';
         $authorDetails = $this->authors($item, $included);
+
+        if ($authorDetails === []) {
+            $authorDetails = $creatorFallback;
+        }
 
         return new NormalizedLiterature(
             externalId: $externalId,

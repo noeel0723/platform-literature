@@ -1,6 +1,7 @@
 <?php
 
 use App\Console\Commands\BackfillComicCreators;
+use App\Console\Commands\BackfillKitsuCreators;
 use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -15,7 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-    ->withCommands([BackfillComicCreators::class])
+    ->withCommands([
+        BackfillComicCreators::class,
+        BackfillKitsuCreators::class,
+    ])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
             HandleInertiaRequests::class,

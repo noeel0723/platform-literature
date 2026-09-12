@@ -29,6 +29,8 @@ class KitsuFallbackTest extends TestCase
             'services.kitsu.cache_minutes' => 30,
             'services.kitsu.connect_timeout' => 1,
             'services.kitsu.timeout' => 2,
+            'services.work_metadata.wikidata_sparql_url' => null,
+            'services.mangaupdates.base_url' => null,
         ]);
     }
 

@@ -217,6 +217,55 @@ final class CatalogSyncService
         return ['scanned' => $literatures->count(), 'enriched' => $enriched];
     }
 
+    /** @return array{scanned: int, enriched: int} */
+    public function backfillKitsuCreators(int $limit = 100): array
+    {
+        $source = ApiSource::query()->where('key', 'kitsu')->first();
+
+        if ($source === null) {
+            return ['scanned' => 0, 'enriched' => 0];
+        }
+
+        $literatures = Literature::query()
+            ->whereBelongsTo($source)
+            ->whereIn('type', ['manga', 'manhwa'])
+            ->whereDoesntHave('authors')
+            ->oldest('id')
+            ->limit(max(1, min($limit, 100)))
+            ->get();
+        $creatorsByExternalId = $this->kitsu->creatorsForExternalIds(
+            $literatures->pluck('external_id')->filter()->values()->all(),
+            $literatures->mapWithKeys(fn (Literature $literature): array => [
+                $literature->external_id => $literature->title,
+            ])->all(),
+            $literatures->mapWithKeys(fn (Literature $literature): array => [
+                $literature->external_id => $literature->type,
+            ])->all(),
+        );
+        $enriched = 0;
+
+        foreach ($literatures as $literature) {
+            $creators = $creatorsByExternalId[$literature->external_id] ?? [];
+
+            if ($creators === []) {
+                continue;
+            }
+
+            DB::transaction(function () use ($source, $literature, $creators): void {
+                $this->syncAuthors(
+                    $source,
+                    $literature,
+                    array_map(fn (NormalizedAuthor $author): string => $author->name, $creators),
+                    $creators,
+                );
+                $this->semanticResolver->resolve($literature);
+            });
+            $enriched++;
+        }
+
+        return ['scanned' => $literatures->count(), 'enriched' => $enriched];
+    }
+
     /**
      * @param  list<string>  $supportedTypes
      * @param  Collection<int, NormalizedLiterature>  $items

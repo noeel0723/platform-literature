@@ -66,6 +66,7 @@ return [
 
     'work_metadata' => [
         'wikidata_url' => env('WIKIDATA_API_URL', 'https://www.wikidata.org/w/api.php'),
+        'wikidata_sparql_url' => env('WIKIDATA_SPARQL_URL', 'https://query.wikidata.org/sparql'),
         'content_language' => env('WORK_METADATA_CONTENT_LANGUAGE', 'en'),
         'wikipedia_summary_url' => env(
             'WIKIPEDIA_SUMMARY_URL',
@@ -92,6 +93,14 @@ return [
         'cache_minutes' => (int) env('KITSU_CACHE_MINUTES', 30),
         'connect_timeout' => (int) env('KITSU_CONNECT_TIMEOUT', 3),
         'timeout' => (int) env('KITSU_TIMEOUT', 12),
+    ],
+
+    'mangaupdates' => [
+        'base_url' => env('MANGAUPDATES_BASE_URL', 'https://api.mangaupdates.com/v1'),
+        'user_agent' => env('MANGAUPDATES_USER_AGENT', 'Literahaven/1.0 academic-project'),
+        'cache_days' => (int) env('MANGAUPDATES_CACHE_DAYS', 30),
+        'connect_timeout' => (int) env('MANGAUPDATES_CONNECT_TIMEOUT', 3),
+        'timeout' => (int) env('MANGAUPDATES_TIMEOUT', 12),
     ],
 
     'comic_vine' => [
