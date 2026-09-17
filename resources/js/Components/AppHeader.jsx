@@ -5,17 +5,14 @@ import SiteContainer from './SiteContainer';
 
 function BrandMark({ href }) {
     return (
-        <a href={href} className="group flex items-center gap-3" aria-label="Literahaven - Home">
+        <a href={href} className="group flex items-center gap-2.5" aria-label="Literahaven - Home">
             <span className="grid grid-cols-2 gap-0.5" aria-hidden="true">
                 <span className="size-4 rounded-full bg-brand-plate" />
                 <span className="size-4 rounded-full bg-brand-sky" />
                 <span className="size-4 rounded-full bg-brand-coral" />
                 <span className="size-4 rounded-full bg-brand-sun" />
             </span>
-            <span>
-                <span className="block text-xl font-bold leading-none tracking-tight text-brand-plate">Literahaven</span>
-                <span className="mt-1 block text-[0.6rem] font-semibold uppercase leading-none tracking-[0.24em] text-brand-plate/70">Social Discovery</span>
-            </span>
+            <span className="block text-2xl font-black leading-none tracking-[-0.04em] text-brand-plate sm:text-3xl">Literahaven</span>
         </a>
     );
 }
