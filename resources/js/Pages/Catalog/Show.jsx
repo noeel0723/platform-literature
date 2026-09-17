@@ -10,14 +10,14 @@ import ReviewDialog from '../../Components/LiteratureDetail/ReviewDialog';
 import ReviewSection from '../../Components/LiteratureDetail/ReviewSection';
 import { SectionHeading, plural } from '../../Components/LiteratureDetail/DetailUi';
 
-function Summary({ literature }) {
+function Summary({ literature, hasDiscovery }) {
     return (
         <SiteContainer as="section" className="py-10 lg:py-12">
             <nav className="flex gap-6 overflow-x-auto border-b border-ink-950/10 text-sm font-bold uppercase tracking-[0.14em] text-ink-950/60" aria-label="Literature details">
                 <a href="#summary" className="border-b-2 border-brand-coral pb-4 text-ink-950">Summary</a>
                 <a href="#authors" className="pb-4 text-ink-950/70 hover:text-brand-coral">Authors</a>
                 <a href="#genres" className="pb-4 text-ink-950/70 hover:text-brand-coral">Genre</a>
-                <a href="#relationships" className="pb-4 text-ink-950/70 hover:text-brand-coral">Discovery</a>
+                {hasDiscovery && <a href="#relationships" className="pb-4 text-ink-950/70 hover:text-brand-coral">Discovery</a>}
                 <a href="#reviews" className="pb-4 text-ink-950/70 hover:text-brand-coral">Reviews</a>
                 <a href="#discussions" className="pb-4 text-ink-950/70 hover:text-brand-coral">Discussions</a>
             </nav>
@@ -50,6 +50,9 @@ function Summary({ literature }) {
 
 function Discovery({ relationshipGroups, authorDiscoveries }) {
     const [expandedGroups, setExpandedGroups] = useState({});
+    const populatedGroups = relationshipGroups.filter((group) => group.items.length > 0);
+    const hasRelationships = populatedGroups.length > 0;
+    const hasAuthorDiscoveries = authorDiscoveries.length > 0;
 
     const toggleGroup = (groupType) => {
         setExpandedGroups((current) => ({
@@ -58,11 +61,13 @@ function Discovery({ relationshipGroups, authorDiscoveries }) {
         }));
     };
 
+    if (!hasRelationships && !hasAuthorDiscoveries) return null;
+
     return (
         <section id="relationships" className="scroll-mt-24 border-t border-ink-950/10 bg-white/20">
             <SiteContainer className="py-9 lg:py-10">
-                <div className="border-b border-ink-950/15 pb-3"><SectionHeading>Relationship Explorer</SectionHeading></div>
-                {relationshipGroups.length > 0 ? relationshipGroups.map((group) => {
+                {hasRelationships && <div className="border-b border-ink-950/15 pb-3"><SectionHeading>Relationship Explorer</SectionHeading></div>}
+                {populatedGroups.map((group) => {
                     const isExpanded = Boolean(expandedGroups[group.type]);
                     const canExpand = group.items.length > 6;
                     const visibleItems = isExpanded ? group.items : group.items.slice(0, 6);
@@ -97,16 +102,11 @@ function Discovery({ relationshipGroups, authorDiscoveries }) {
                             </div>
                         </section>
                     );
-                }) : (
-                    <div className="mt-6 border border-dashed border-ink-950/20 bg-brand-cream/40 p-5">
-                        <p className="font-serif text-xl font-bold text-ink-950">No confirmed relationships yet</p>
-                        <p className="mt-1.5 max-w-2xl text-sm leading-6 text-ink-950/55">Relationship data appears after this work is refreshed from a supported source or linked through internal catalog curation.</p>
-                    </div>
-                )}
-                <section className="mt-8 border-t border-ink-950/10 pt-5" aria-labelledby="more-by-authors">
+                })}
+                {hasAuthorDiscoveries && <section className={hasRelationships ? 'mt-8 border-t border-ink-950/10 pt-5' : ''} aria-labelledby="more-by-authors">
                     <div className="mb-3"><SectionHeading as="h3" id="more-by-authors">More by these authors</SectionHeading></div>
-                    {authorDiscoveries.length > 0 ? <div className="grid grid-cols-3 gap-x-3 gap-y-5 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">{authorDiscoveries.map((item) => <LiteratureCard key={item.slug} literature={item} compact />)}</div> : <p className="border border-dashed border-ink-950/20 p-4 text-sm text-ink-950/55">No other works by the same authors are available in the local catalog yet.</p>}
-                </section>
+                    <div className="grid grid-cols-3 gap-x-3 gap-y-5 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">{authorDiscoveries.map((item) => <LiteratureCard key={item.slug} literature={item} compact />)}</div>
+                </section>}
             </SiteContainer>
         </section>
     );
@@ -149,12 +149,11 @@ export default function Show({ literature, viewer, ratingSummary, reviews, discu
                         <div className="absolute inset-0 -z-10 bg-linear-to-r from-ink-950/45 via-transparent to-ink-950/35" aria-hidden="true" />
                     </>
                 ) : <div className="catalog-grid absolute inset-0 -z-10 opacity-70" aria-hidden="true" />}
-                <SiteContainer className="relative pt-20 sm:pt-24 lg:pt-28">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                        <Link href={routes.catalog} className="inline-flex items-center gap-2 rounded-full bg-ink-950/65 px-4 py-2 text-sm font-semibold text-brand-cream backdrop-blur transition hover:bg-brand-coral"><span aria-hidden="true">←</span> Back to catalog</Link>
+                {routes.admin_edit_metadata && <SiteContainer className="relative pt-20 sm:pt-24 lg:pt-28">
+                    <div className="flex justify-end">
                         {routes.admin_edit_metadata && <Link href={routes.admin_edit_metadata} className="rounded-full border border-brand-cream/40 bg-ink-950/65 px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] text-brand-cream backdrop-blur transition hover:border-brand-coral hover:bg-brand-coral">Edit metadata</Link>}
                     </div>
-                </SiteContainer>
+                </SiteContainer>}
             </section>
 
             <section className="border-b border-ink-950/10 bg-brand-cream">
@@ -164,7 +163,7 @@ export default function Show({ literature, viewer, ratingSummary, reviews, discu
                 </SiteContainer>
             </section>
 
-            <Summary literature={literature} />
+            <Summary literature={literature} hasDiscovery={relationshipGroups.some((group) => group.items.length > 0) || authorDiscoveries.length > 0} />
             <Discovery relationshipGroups={relationshipGroups} authorDiscoveries={authorDiscoveries} />
             <ReviewSection reviews={reviews} ratingSummary={ratingSummary} viewer={viewer} reportReasons={reportReasons} reportAction={routes.report_store} />
             {viewer.authenticated && <ReviewDialog literature={literature} viewer={viewer} routes={routes} form={reviewForm} open={reviewOpen} onClose={() => setReviewOpen(false)} />}
