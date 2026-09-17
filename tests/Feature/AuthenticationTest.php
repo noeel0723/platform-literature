@@ -17,6 +17,7 @@ class AuthenticationTest extends TestCase
         $this->get(route('login'))
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Auth/Login')
+                ->where('routes.home', route('home'))
                 ->where('routes.login', route('login'))
                 ->where('routes.register', route('register')));
 
@@ -56,6 +57,21 @@ class AuthenticationTest extends TestCase
 
         $this->post('/logout')->assertRedirect(route('home'));
         $this->assertGuest();
+    }
+
+    public function test_user_can_login_with_their_username(): void
+    {
+        $user = User::factory()->create([
+            'username' => 'compact_reader',
+            'password' => 'password123',
+        ]);
+
+        $this->post('/login', [
+            'email' => 'compact_reader',
+            'password' => 'password123',
+        ])->assertRedirect(route('literatures.index'));
+
+        $this->assertAuthenticatedAs($user);
     }
 
     public function test_login_rejects_invalid_credentials(): void

@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+
+import LoginPanel from './LoginPanel';
 import SiteContainer from './SiteContainer';
 
 function BrandMark({ href }) {
@@ -142,7 +144,12 @@ function AccountMenu({ user, csrfToken }) {
 
 export default function AppHeader({ routes, user, csrf_token: csrfToken, search_query: searchQuery }) {
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [loginOpen, setLoginOpen] = useState(false);
     const openQuickLog = () => document.getElementById('quick-log-search-dialog')?.showModal();
+    const toggleLogin = () => {
+        setMobileOpen(false);
+        setLoginOpen((current) => !current);
+    };
 
     return (
         <header data-app-header className="sticky top-0 z-40 border-b border-brand-blueberry/15 bg-brand-stem/95 text-brand-plate backdrop-blur-xl">
@@ -154,12 +161,13 @@ export default function AppHeader({ routes, user, csrf_token: csrfToken, search_
                         <nav className="hidden items-center gap-5 text-xs font-semibold uppercase tracking-[0.14em] text-brand-plate/85 lg:flex" aria-label="Main navigation"><a href={routes.home} className="whitespace-nowrap transition hover:text-white">Home</a><a href={routes.catalog} className="whitespace-nowrap transition hover:text-white">Catalog</a></nav>
                         <Search action={routes.search} initialQuery={searchQuery} />
                         {user && <button type="button" data-quick-log-open className="inline-flex h-8 shrink-0 items-center gap-1 rounded-sm bg-[#00c030] px-3 text-[0.7rem] font-extrabold uppercase tracking-[0.08em] text-white shadow-sm transition-colors hover:bg-[#00a628] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00c030]" aria-label="Log a rating or review" onClick={openQuickLog}><span className="text-base leading-none" aria-hidden="true">+</span><span>Log</span></button>}
-                        {!user && <><a href={routes.login} className="shrink-0 whitespace-nowrap text-xs font-bold uppercase tracking-wider text-brand-plate/85 hover:text-white">Log in</a><a href={routes.register} className="hidden shrink-0 whitespace-nowrap rounded-full bg-brand-plate px-4 py-2 text-xs font-bold uppercase tracking-wider text-brand-stem transition hover:bg-white sm:block">Join</a></>}
+                        {!user && <><a href={routes.login} onClick={(event) => { event.preventDefault(); toggleLogin(); }} aria-expanded={loginOpen} className="shrink-0 whitespace-nowrap text-xs font-bold uppercase tracking-wider text-brand-plate/85 hover:text-white">Log in</a><a href={routes.register} className="hidden shrink-0 whitespace-nowrap rounded-full bg-brand-plate px-4 py-2 text-xs font-bold uppercase tracking-wider text-brand-stem transition hover:bg-white sm:block">Join</a></>}
                         <button type="button" className="grid size-10 shrink-0 place-items-center rounded-full border border-brand-plate/35 bg-transparent text-brand-plate transition hover:bg-brand-plate hover:text-brand-stem lg:hidden" aria-expanded={mobileOpen} aria-controls="mobile-menu" onClick={() => setMobileOpen((value) => !value)}><span className="sr-only">Open navigation</span><svg aria-hidden="true" className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 7h16M4 12h16M4 17h16" /></svg></button>
                     </div>
                 </div>
             </SiteContainer>
-            {mobileOpen && <nav id="mobile-menu" className="border-t border-brand-plate/15 bg-brand-stem py-4 lg:hidden" aria-label="Mobile navigation"><SiteContainer className="grid gap-1 text-sm font-semibold uppercase tracking-[0.14em] text-brand-plate"><a href={routes.home} className="px-3 py-3 transition hover:bg-brand-plate/10">Home</a><a href={routes.catalog} className="px-3 py-3 transition hover:bg-brand-plate/10">Catalog</a>{user ? <>{user.navigation.filter((item) => item.label !== 'Home').map((item) => <a key={item.label} href={item.url} className="px-3 py-3 transition hover:bg-brand-plate/10">{item.label}</a>)}<a href={user.edit_url} className="px-3 py-3 transition hover:bg-brand-plate/10">Edit profile</a>{user.moderation_url && <a href={user.moderation_url} className="px-3 py-3 transition hover:bg-brand-plate/10">Moderation</a>}<form action={user.logout_url} method="POST"><input type="hidden" name="_token" value={csrfToken} /><button className="w-full px-3 py-3 text-left transition hover:bg-brand-plate/10">Log out</button></form></> : <><a href={routes.login} className="px-3 py-3 transition hover:bg-brand-plate/10">Log in</a><a href={routes.register} className="px-3 py-3 transition hover:bg-brand-plate/10">Join</a></>}</SiteContainer></nav>}
+            {mobileOpen && <nav id="mobile-menu" className="border-t border-brand-plate/15 bg-brand-stem py-4 lg:hidden" aria-label="Mobile navigation"><SiteContainer className="grid gap-1 text-sm font-semibold uppercase tracking-[0.14em] text-brand-plate"><a href={routes.home} className="px-3 py-3 transition hover:bg-brand-plate/10">Home</a><a href={routes.catalog} className="px-3 py-3 transition hover:bg-brand-plate/10">Catalog</a>{user ? <>{user.navigation.filter((item) => item.label !== 'Home').map((item) => <a key={item.label} href={item.url} className="px-3 py-3 transition hover:bg-brand-plate/10">{item.label}</a>)}<a href={user.edit_url} className="px-3 py-3 transition hover:bg-brand-plate/10">Edit profile</a>{user.moderation_url && <a href={user.moderation_url} className="px-3 py-3 transition hover:bg-brand-plate/10">Moderation</a>}<form action={user.logout_url} method="POST"><input type="hidden" name="_token" value={csrfToken} /><button className="w-full px-3 py-3 text-left transition hover:bg-brand-plate/10">Log out</button></form></> : <><a href={routes.login} onClick={(event) => { event.preventDefault(); toggleLogin(); }} className="px-3 py-3 transition hover:bg-brand-plate/10">Log in</a><a href={routes.register} className="px-3 py-3 transition hover:bg-brand-plate/10">Join</a></>}</SiteContainer></nav>}
+            {!user && loginOpen && <div className="absolute inset-x-0 top-full"><LoginPanel routes={routes} csrfToken={csrfToken} onClose={() => setLoginOpen(false)} /></div>}
         </header>
     );
 }

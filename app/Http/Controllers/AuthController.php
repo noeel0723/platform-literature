@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -38,7 +39,9 @@ class AuthController extends Controller
     public function showLogin(): Response
     {
         return Inertia::render('Auth/Login', [
+            'csrf_token' => csrf_token(),
             'routes' => [
+                'home' => route('home'),
                 'login' => route('login'),
                 'register' => route('register'),
             ],
@@ -47,14 +50,17 @@ class AuthController extends Controller
 
     public function login(LoginRequest $request): RedirectResponse
     {
+        $identifier = Str::lower(trim($request->validated('email')));
+        $identifierColumn = filter_var($identifier, FILTER_VALIDATE_EMAIL) === false ? 'username' : 'email';
         $credentials = [
-            ...$request->safe()->only(['email', 'password']),
+            $identifierColumn => $identifier,
+            'password' => $request->validated('password'),
             'deactivated_at' => null,
         ];
 
         if (! Auth::attempt($credentials, $request->boolean('remember'))) {
             throw ValidationException::withMessages([
-                'email' => 'The email address or password is incorrect.',
+                'email' => 'The username, email address, or password is incorrect.',
             ]);
         }
 
