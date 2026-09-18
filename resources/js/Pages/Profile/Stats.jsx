@@ -41,7 +41,7 @@ export default function ProfileStats({ profile, navigation, stats }) {
             <Head title={`${profile.name} Stats`} />
             <ProfileSubNavigation navigation={navigation} />
             <ProfileContentContainer className="py-7 lg:py-9">
-                <ProfilePageHeading eyebrow="Reading overview" title="Stats" count={`${stats.year} snapshot`} />
+                <ProfilePageHeading eyebrow="MY READING STATS" />
 
                 <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
                     <Metric label="Completed" value={summary.completed} />

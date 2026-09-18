@@ -11,7 +11,7 @@ export default function ProfileLists({ profile, navigation, lists, isOwner, crea
             <ProfileContentContainer className="py-7 lg:py-9">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
                     <div className="min-w-0 flex-1">
-                        <ProfilePageHeading eyebrow="Curated collections" title="Lists" count={`${lists.total} lists`} />
+                        <ProfilePageHeading eyebrow="MY LIST" />
                     </div>
                     {isOwner && (
                         <Link href={createUrl} className="inline-flex min-h-9 items-center justify-center bg-ink-950 px-4 text-xs font-bold uppercase tracking-wider text-brand-cream transition hover:bg-brand-coral">
