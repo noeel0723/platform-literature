@@ -68,9 +68,20 @@ class Activity extends Model
                 $visibility
                     ->whereIn('type', [
                         self::TYPE_STARTED_READING,
-                        self::TYPE_COMPLETED,
                         self::TYPE_ADDED_TO_READLIST,
                     ])
+                    ->orWhere(function (Builder $completed): void {
+                        $completed
+                            ->where('activities.type', self::TYPE_COMPLETED)
+                            ->whereExists(function ($readingLists): void {
+                                $readingLists
+                                    ->selectRaw('1')
+                                    ->from('reading_lists')
+                                    ->whereColumn('reading_lists.user_id', 'activities.user_id')
+                                    ->whereColumn('reading_lists.literature_id', 'activities.literature_id')
+                                    ->where('reading_lists.status', 'completed');
+                            });
+                    })
                     ->orWhere(function (Builder $reviews): void {
                         $reviews
                             ->whereIn('type', [self::TYPE_RATED, self::TYPE_REVIEWED])

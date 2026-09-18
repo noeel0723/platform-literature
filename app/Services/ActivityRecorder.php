@@ -8,6 +8,7 @@ use App\Models\Discussion;
 use App\Models\Literature;
 use App\Models\Review;
 use App\Models\User;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Str;
 
 class ActivityRecorder
@@ -18,7 +19,16 @@ class ActivityRecorder
         ?string $previousStatus,
         string $currentStatus,
         bool $isReread = false,
+        ?CarbonInterface $occurredAt = null,
     ): ?Activity {
+        if (! $isReread && $previousStatus === 'completed' && $currentStatus !== 'completed') {
+            Activity::query()
+                ->whereBelongsTo($user)
+                ->whereBelongsTo($literature)
+                ->where('type', Activity::TYPE_COMPLETED)
+                ->delete();
+        }
+
         $type = match (true) {
             $isReread => Activity::TYPE_STARTED_READING,
             $previousStatus === $currentStatus => null,
@@ -34,11 +44,24 @@ class ActivityRecorder
             'review_id' => null,
             'type' => $type,
             'metadata' => $isReread ? ['reread' => true] : null,
-            'occurred_at' => now(),
+            'occurred_at' => $occurredAt ?? now(),
         ]);
     }
 
-    public function recordReview(Review $review): Activity
+    public function removeReadingStatus(User $user, Literature $literature): void
+    {
+        Activity::query()
+            ->whereBelongsTo($user)
+            ->whereBelongsTo($literature)
+            ->whereIn('type', [
+                Activity::TYPE_STARTED_READING,
+                Activity::TYPE_COMPLETED,
+                Activity::TYPE_ADDED_TO_READLIST,
+            ])
+            ->delete();
+    }
+
+    public function recordReview(Review $review, ?CarbonInterface $occurredAt = null): Activity
     {
         $body = filled($review->body) ? trim((string) $review->body) : null;
 
@@ -52,7 +75,7 @@ class ActivityRecorder
                 'review_excerpt' => $body === null ? null : Str::limit($body, 280),
                 'contains_spoiler' => (bool) $review->contains_spoiler,
             ],
-            'occurred_at' => now(),
+            'occurred_at' => $occurredAt ?? now(),
         ]);
     }
 

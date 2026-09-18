@@ -2,10 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Models\Activity;
 use App\Models\Literature;
+use App\Models\ReadingList;
 use App\Models\Review;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class ReviewManagementTest extends TestCase
@@ -56,6 +59,42 @@ class ReviewManagementTest extends TestCase
             'status' => 'completed',
         ]);
         $this->assertDatabaseHas('reading_logs', ['event_type' => 'completed']);
+    }
+
+    public function test_review_log_uses_the_selected_read_date_across_detail_diary_and_activity(): void
+    {
+        Carbon::setTestNow('2026-09-18 12:00:00');
+
+        try {
+            $user = User::factory()->create();
+            $literature = Literature::factory()->create(['title' => 'A Dated Reading']);
+
+            $this->actingAs($user)->put(route('reviews.update', $literature), [
+                'rating' => 4.5,
+                'body' => 'Logged on the actual completion date.',
+                'completed_at' => '2026-08-23',
+            ])->assertRedirect(route('literatures.show', $literature).'#reviews');
+
+            $readingList = ReadingList::query()->sole();
+            $this->assertSame('2026-08-23', $readingList->completed_at?->toDateString());
+            $this->assertDatabaseHas('reading_logs', [
+                'reading_list_id' => $readingList->id,
+                'event_type' => 'completed',
+                'occurred_at' => '2026-08-23 00:00:00',
+            ]);
+            $this->assertSame(
+                '2026-08-23',
+                Activity::query()->where('type', Activity::TYPE_REVIEWED)->sole()->occurred_at?->toDateString(),
+            );
+
+            $detail = $this->actingAs($user)->get(route('literatures.show', $literature))->assertOk();
+            $this->assertSame('2026-08-23', $detail->inertiaProps('viewer.completed_at'));
+
+            $diary = $this->actingAs($user)->get(route('diary.index'))->assertOk();
+            $this->assertSame('2026-08-23T00:00:00+00:00', $diary->inertiaProps('activities.0.occurred_at'));
+        } finally {
+            Carbon::setTestNow();
+        }
     }
 
     public function test_user_can_save_a_half_star_rating(): void

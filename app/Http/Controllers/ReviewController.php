@@ -30,10 +30,15 @@ class ReviewController extends Controller
                 ],
             );
 
-            $readingManager->update($request->user(), $literature, ['status' => 'completed']);
+            $readingList = $readingManager->update($request->user(), $literature, [
+                'status' => 'completed',
+                'completed_at' => $data['completed_at'] ?? now()->toDateString(),
+            ]);
 
-            if ($review->wasRecentlyCreated || $review->wasChanged(['rating', 'body', 'contains_spoiler'])) {
-                $activityRecorder->recordReview($review);
+            if ($review->wasRecentlyCreated
+                || $review->wasChanged(['rating', 'body', 'contains_spoiler'])
+                || $readingList->wasChanged('completed_at')) {
+                $activityRecorder->recordReview($review, $readingList->completed_at);
             }
         });
 

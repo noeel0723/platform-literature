@@ -133,6 +133,39 @@ class ActivityFeedTest extends TestCase
         $this->assertDatabaseCount('activities', 3);
     }
 
+    public function test_cancelling_completed_status_removes_it_from_own_and_followers_activity_feeds(): void
+    {
+        $reader = User::factory()->create();
+        $follower = User::factory()->create();
+        $literature = Literature::factory()->create(['title' => 'Cancelled Completion']);
+        $follower->following()->attach($reader);
+
+        $this->actingAs($reader)->put(route('reading-list.update', $literature), [
+            'status' => 'completed',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('activities', [
+            'user_id' => $reader->id,
+            'literature_id' => $literature->id,
+            'type' => Activity::TYPE_COMPLETED,
+        ]);
+
+        $this->actingAs($reader)
+            ->delete(route('reading-list.destroy', $literature))
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('activities', [
+            'user_id' => $reader->id,
+            'literature_id' => $literature->id,
+            'type' => Activity::TYPE_COMPLETED,
+        ]);
+
+        $this->actingAs($reader)->get(route('activity.index', ['scope' => 'you']))
+            ->assertInertia(fn (Assert $page) => $page->has('activities.data', 0));
+        $this->actingAs($follower)->get(route('home'))
+            ->assertInertia(fn (Assert $page) => $page->has('activities', 0));
+    }
+
     public function test_rating_and_review_create_feed_activity_with_a_safe_excerpt(): void
     {
         $viewer = User::factory()->create();

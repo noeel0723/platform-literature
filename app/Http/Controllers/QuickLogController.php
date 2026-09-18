@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\QuickLogSearchRequest;
 use App\Models\Literature;
+use App\Models\ReadingList;
 use App\Models\Review;
 use App\Services\Literature\CanonicalLiteratureSearch;
 use Illuminate\Database\Eloquent\Builder;
@@ -50,10 +51,26 @@ class QuickLogController extends Controller
             ->latest('created_at')
             ->get()
             ->keyBy(fn (Review $review): string => $this->reviewKey($review->literature));
+        $readingLists = ReadingList::query()
+            ->select(['id', 'user_id', 'literature_id', 'status', 'completed_at'])
+            ->whereBelongsTo($request->user())
+            ->where(function (Builder $readingListQuery) use ($literatureIds, $canonicalIds): void {
+                $readingListQuery->whereIn('literature_id', $literatureIds);
+
+                if ($canonicalIds->isNotEmpty()) {
+                    $readingListQuery->orWhereHas('literature.sourceMapping', fn (Builder $mapping) => $mapping
+                        ->whereIn('canonical_work_id', $canonicalIds));
+                }
+            })
+            ->with('literature.sourceMapping')
+            ->latest('updated_at')
+            ->get()
+            ->keyBy(fn (ReadingList $readingList): string => $this->reviewKey($readingList->literature));
 
         $results = $literatures
-            ->map(function (Literature $literature) use ($reviews): array {
+            ->map(function (Literature $literature) use ($readingLists, $reviews): array {
                 $review = $reviews->get($this->reviewKey($literature));
+                $readingList = $readingLists->get($this->reviewKey($literature));
                 $reviewLiterature = $review?->literature ?? $literature;
 
                 return [
@@ -64,6 +81,7 @@ class QuickLogController extends Controller
                     'cover_url' => $literature->displayCoverUrl(),
                     'authors' => $literature->authors->pluck('name')->values()->all(),
                     'review_url' => route('reviews.update', $reviewLiterature),
+                    'completed_at' => $readingList?->completed_at?->toDateString(),
                     'review' => $review === null ? null : [
                         'rating' => $review->rating,
                         'body' => $review->body,

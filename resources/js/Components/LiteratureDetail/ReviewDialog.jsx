@@ -41,55 +41,76 @@ export default function ReviewDialog({ literature, viewer, routes, form, open, o
             ref={dialogRef}
             id="review-dialog"
             data-review-dialog
-            className="review-dialog m-auto max-h-[90vh] w-[min(920px,calc(100%_-_2rem))] overflow-y-auto border border-ink-950/20 bg-brand-cream p-0 text-ink-950 shadow-[0_18px_48px_rgba(47,58,85,0.18)] backdrop:bg-ink-950/70"
+            aria-labelledby="review-dialog-title"
+            className="review-dialog m-auto max-h-[92vh] w-[min(896px,calc(100%_-_1.5rem))] max-w-4xl overflow-y-auto rounded-sm border border-brand-cream/15 bg-ink-950 p-0 text-brand-cream shadow-[0_22px_60px_rgba(8,20,46,0.4)] backdrop:bg-ink-950/75"
             onCancel={(event) => { event.preventDefault(); onClose(); }}
             onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}
         >
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-ink-950/10 bg-ink-950 px-5 py-4 text-brand-cream sm:px-7">
+            <header className="sticky top-0 z-10 flex items-center justify-between border-b border-brand-cream/15 bg-ink-950 px-5 py-3.5 sm:px-6">
                 <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-sky">Your reading experience</p>
-                    <h2 className="mt-1 font-serif text-2xl font-bold">Rate &amp; review</h2>
+                    <p className="text-[0.65rem] font-bold uppercase tracking-[0.16em] text-brand-sky">Log literature</p>
+                    <h2 id="review-dialog-title" className="mt-0.5 text-xl font-extrabold tracking-tight sm:text-2xl">I read…</h2>
                 </div>
-                <button type="button" className="grid size-10 place-items-center border border-brand-cream/30 text-2xl leading-none transition hover:border-brand-coral hover:text-brand-coral" aria-label="Close review dialog" onClick={onClose}>×</button>
-            </div>
+                <button type="button" className="grid size-9 place-items-center rounded-sm border border-brand-cream/25 text-xl leading-none transition hover:border-brand-coral hover:text-brand-coral" aria-label="Close review dialog" onClick={onClose}>×</button>
+            </header>
 
-            <form onSubmit={submit} className="grid gap-7 p-5 sm:p-7 md:grid-cols-[180px_minmax(0,1fr)]">
-                <div>
-                    <div className={`aspect-[2/3] overflow-hidden border border-ink-950/15 bg-linear-to-br ${coverThemes[literature.theme] ?? 'from-brand-cream via-brand-sky to-brand-coral'} shadow-[0_8px_24px_rgba(47,58,85,0.10)]`}>
-                        {literature.cover_url ? <img src={literature.cover_url} alt={`Cover of ${literature.title}`} className="size-full object-cover" /> : <div className="grid size-full place-items-center p-4 text-center font-serif text-5xl font-bold">{literature.initials}</div>}
+            <form onSubmit={submit} className="grid gap-6 p-5 sm:p-6 md:grid-cols-[150px_minmax(0,1fr)] md:gap-7">
+                <div className="mx-auto w-32 md:w-full">
+                    <div className={`aspect-[2/3] overflow-hidden rounded-sm border border-brand-cream/20 bg-linear-to-br ${coverThemes[literature.theme] ?? 'from-brand-cream via-brand-sky to-brand-coral'} shadow-[0_8px_24px_rgba(0,0,0,0.24)]`}>
+                        {literature.cover_url ? <img src={literature.cover_url} alt={`Cover of ${literature.title}`} className="size-full object-cover" /> : <div className="grid size-full place-items-center p-4 text-center font-serif text-4xl font-bold text-ink-950">{literature.initials}</div>}
                     </div>
-                    <p className="mt-3 text-center text-xs font-bold uppercase tracking-[0.14em] text-ink-950/55">{literature.type_label}</p>
+                    <p className="mt-2 truncate text-center text-[0.62rem] font-bold uppercase tracking-[0.14em] text-brand-cream/55">{literature.type_label}</p>
                 </div>
 
                 <div className="min-w-0">
-                    <h3 className="font-serif text-3xl font-bold leading-tight text-ink-950">{literature.title}</h3>
-                    <p className="mt-1 text-sm text-ink-950/55">{literature.author} · {literature.year}</p>
+                    <h3 className="font-serif text-2xl font-bold leading-tight text-brand-cream">{literature.title}</h3>
+                    <p className="mt-1 text-sm text-brand-cream/60">{[literature.author, literature.year].filter(Boolean).join(' · ')}</p>
 
-                    <fieldset className="mt-6">
-                        <legend className="text-sm font-bold uppercase tracking-[0.16em] text-ink-950">Your Rating</legend>
-                        <div className="mt-2 flex flex-wrap items-center gap-4">
-                            <RatingInput value={form.data.rating} onChange={(rating) => form.setData('rating', rating)} />
-                            <output className="min-w-16 text-sm font-bold text-ink-950/60">{form.data.rating ? `${Number(form.data.rating).toFixed(1)} / 5` : 'Choose a rating'}</output>
-                        </div>
-                        <p className="mt-2 text-xs text-ink-950/50">Hover to preview a rating, then click to select it. Half-star ratings are supported.</p>
-                        {form.errors.rating && <p className="mt-2 text-sm font-semibold text-red-700">{form.errors.rating}</p>}
-                    </fieldset>
+                    <div className="mt-5 flex flex-wrap items-end gap-x-6 gap-y-4 border-y border-brand-cream/15 py-4">
+                        <label className="flex h-10 items-center gap-2 text-sm font-semibold text-brand-cream">
+                            <input type="checkbox" checked readOnly className="size-4 accent-brand-coral" />
+                            Completed / Read
+                        </label>
+                        <label htmlFor="review-completed-at" className="text-sm font-semibold text-brand-cream">
+                            <span className="mb-1 block text-xs text-brand-cream/65">Read on</span>
+                            <input
+                                id="review-completed-at"
+                                type="date"
+                                required
+                                value={form.data.completed_at}
+                                onChange={(event) => form.setData('completed_at', event.target.value)}
+                                className="h-10 rounded-sm border border-brand-cream/25 bg-brand-cream px-3 text-sm text-ink-950 outline-none focus:border-brand-coral focus:ring-2 focus:ring-brand-coral/25"
+                            />
+                        </label>
+                    </div>
+                    {form.errors.completed_at && <p className="mt-2 text-sm font-semibold text-red-300">{form.errors.completed_at}</p>}
 
-                    <div className="mt-6">
-                        <label htmlFor="review-body" className="text-sm font-bold text-ink-950">Review <span className="font-normal text-ink-950/50">(optional)</span></label>
-                        <textarea id="review-body" value={form.data.body} onChange={(event) => form.setData('body', event.target.value)} rows="7" maxLength="5000" placeholder="What stayed with you after reading?" className="mt-2 w-full resize-y border border-ink-950/20 bg-white/55 px-4 py-3 leading-7 outline-none focus:border-brand-coral" />
-                        {form.errors.body && <p className="mt-2 text-sm font-semibold text-red-700">{form.errors.body}</p>}
+                    <div className="mt-5">
+                        <label htmlFor="review-body" className="text-sm font-semibold text-brand-cream">Review <span className="font-normal text-brand-cream/55">(optional)</span></label>
+                        <textarea id="review-body" value={form.data.body} onChange={(event) => form.setData('body', event.target.value)} rows="7" maxLength="5000" placeholder="Add a review…" className="mt-2 w-full resize-y rounded-sm border border-brand-cream/25 bg-brand-cream px-4 py-3 text-base leading-6 text-ink-950 outline-none placeholder:text-ink-950/45 focus:border-brand-coral focus:ring-2 focus:ring-brand-coral/25" />
+                        {form.errors.body && <p className="mt-2 text-sm font-semibold text-red-300">{form.errors.body}</p>}
                     </div>
 
-                    <label className="mt-5 flex items-start gap-3 text-sm leading-6 text-ink-950/70">
-                        <input type="checkbox" checked={form.data.contains_spoiler} onChange={(event) => form.setData('contains_spoiler', event.target.checked)} className="mt-1 size-4 accent-brand-coral" />
-                        This review contains spoilers. Hide its text until another reader chooses to reveal it.
-                    </label>
+                    <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                        <fieldset>
+                            <legend className="text-sm font-semibold text-brand-cream">Rating</legend>
+                            <div className="mt-1 flex flex-wrap items-center gap-3">
+                                <RatingInput value={form.data.rating} onChange={(rating) => form.setData('rating', rating)} compact inactiveClassName="text-brand-cream/35" />
+                                <output className="text-xs font-semibold text-brand-cream/65">{form.data.rating ? `${Number(form.data.rating).toFixed(1)} out of 5` : 'Choose a rating'}</output>
+                            </div>
+                            {form.errors.rating && <p className="mt-1.5 text-sm font-semibold text-red-300">{form.errors.rating}</p>}
+                        </fieldset>
 
-                    <div className="mt-7 flex flex-wrap items-center justify-end gap-3 border-t border-ink-950/10 pt-5">
-                        {viewer.current_review && <button type="button" onClick={remove} className="border border-red-700/30 px-5 py-3 font-bold text-red-800 transition hover:border-red-700 hover:bg-red-700 hover:text-white sm:mr-auto">Delete review</button>}
-                        <button type="button" onClick={onClose} className="border border-ink-950/20 px-5 py-3 font-bold text-ink-950 transition hover:border-brand-coral">Cancel</button>
-                        <button disabled={form.processing} className="bg-ink-950 px-6 py-3 font-bold text-brand-cream transition hover:bg-brand-coral disabled:opacity-50">{viewer.current_review ? 'Update review' : 'Publish review'}</button>
+                        <label className="flex items-center gap-2 text-sm text-brand-cream/75">
+                            <input type="checkbox" checked={form.data.contains_spoiler} onChange={(event) => form.setData('contains_spoiler', event.target.checked)} className="size-4 accent-brand-coral" />
+                            Contains spoilers
+                        </label>
+                    </div>
+
+                    <div className="mt-6 flex flex-wrap items-center justify-end gap-2 border-t border-brand-cream/15 bg-white/5 px-4 py-3">
+                        {viewer.current_review && <button type="button" onClick={remove} className="mr-auto rounded-sm border border-red-300/35 px-3.5 py-2 text-xs font-bold text-red-200 transition hover:border-red-300 hover:bg-red-900/45">Delete review</button>}
+                        <button type="button" onClick={onClose} className="rounded-sm border border-brand-cream/25 px-3.5 py-2 text-xs font-bold text-brand-cream transition hover:border-brand-coral hover:text-brand-coral">Cancel</button>
+                        <button disabled={form.processing} className="rounded-sm bg-brand-stem px-5 py-2 text-sm font-bold text-white transition hover:bg-brand-coral disabled:opacity-50">Save</button>
                     </div>
                 </div>
             </form>

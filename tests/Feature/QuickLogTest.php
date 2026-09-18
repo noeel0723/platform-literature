@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Author;
 use App\Models\Literature;
+use App\Models\ReadingList;
 use App\Models\Review;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
@@ -56,6 +57,10 @@ class QuickLogTest extends TestCase
             'body' => 'A precise and energetic sports story.',
             'contains_spoiler' => true,
         ]);
+        ReadingList::factory()->for($user)->for($matchingLiterature)->create([
+            'status' => 'completed',
+            'completed_at' => '2026-09-03 00:00:00',
+        ]);
         Review::factory()->for($otherUser)->for($matchingLiterature)->create([
             'rating' => 1,
             'body' => 'This must never be returned.',
@@ -71,6 +76,7 @@ class QuickLogTest extends TestCase
             ->assertJsonPath('data.0.type', 'Manga')
             ->assertJsonPath('data.0.authors.0', 'Haruichi Furudate')
             ->assertJsonPath('data.0.review_url', route('reviews.update', $matchingLiterature))
+            ->assertJsonPath('data.0.completed_at', '2026-09-03')
             ->assertJsonPath('data.0.review.rating', 4.5)
             ->assertJsonPath('data.0.review.body', $ownReview->body)
             ->assertJsonPath('data.0.review.contains_spoiler', true)

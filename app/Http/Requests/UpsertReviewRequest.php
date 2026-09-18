@@ -26,6 +26,7 @@ class UpsertReviewRequest extends FormRequest
             'rating' => ['required', 'numeric', 'between:0.5,5', 'multiple_of:0.5'],
             'body' => ['nullable', 'string', 'max:5000'],
             'contains_spoiler' => ['nullable', 'boolean'],
+            'completed_at' => ['nullable', 'date_format:Y-m-d'],
         ];
     }
 }

@@ -10,6 +10,13 @@ import ReviewDialog from '../../Components/LiteratureDetail/ReviewDialog';
 import ReviewSection from '../../Components/LiteratureDetail/ReviewSection';
 import { SectionHeading, plural } from '../../Components/LiteratureDetail/DetailUi';
 
+const localDateValue = () => {
+    const today = new Date();
+    const offset = today.getTimezoneOffset() * 60_000;
+
+    return new Date(today.getTime() - offset).toISOString().slice(0, 10);
+};
+
 function Summary({ literature, hasDiscovery }) {
     return (
         <SiteContainer as="section" className="py-10 lg:py-12">
@@ -120,11 +127,12 @@ export default function Show({ literature, viewer, ratingSummary, reviews, discu
         rating: viewer.current_review?.rating ?? '',
         body: viewer.current_review?.body ?? '',
         contains_spoiler: viewer.current_review?.contains_spoiler ?? false,
+        completed_at: viewer.completed_at ?? localDateValue(),
     });
 
     useEffect(() => {
-        if (reviewForm.errors.rating || reviewForm.errors.body) setReviewOpen(true);
-    }, [reviewForm.errors.rating, reviewForm.errors.body]);
+        if (reviewForm.errors.rating || reviewForm.errors.body || reviewForm.errors.completed_at) setReviewOpen(true);
+    }, [reviewForm.errors.rating, reviewForm.errors.body, reviewForm.errors.completed_at]);
 
     useLayoutEffect(() => {
         document.body.classList.add('has-literature-hero');

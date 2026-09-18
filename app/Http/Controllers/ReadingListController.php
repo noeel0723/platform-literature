@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateReadingListRequest;
 use App\Models\Literature;
+use App\Services\ActivityRecorder;
 use App\Services\Reading\ReadingManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ReadingListController extends Controller
 {
@@ -26,12 +28,23 @@ class ReadingListController extends Controller
             ->with('success', 'Your reading status and progress have been saved.');
     }
 
-    public function destroy(Request $request, Literature $literature): RedirectResponse
-    {
-        $request->user()->readingLists()
-            ->whereBelongsTo($literature)
-            ->first()
-            ?->delete();
+    public function destroy(
+        Request $request,
+        Literature $literature,
+        ActivityRecorder $activityRecorder,
+    ): RedirectResponse {
+        DB::transaction(function () use ($request, $literature, $activityRecorder): void {
+            $readingList = $request->user()->readingLists()
+                ->whereBelongsTo($literature)
+                ->first();
+
+            if ($readingList === null) {
+                return;
+            }
+
+            $activityRecorder->removeReadingStatus($request->user(), $literature);
+            $readingList->delete();
+        });
 
         return redirect()->route('literatures.show', $literature)
             ->with('success', 'This literature has been removed from your reading activity.');

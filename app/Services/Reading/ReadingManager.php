@@ -7,6 +7,7 @@ use App\Models\ReadingList;
 use App\Models\ReadingLog;
 use App\Models\User;
 use App\Services\ActivityRecorder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class ReadingManager
@@ -24,8 +25,12 @@ class ReadingManager
 
             $isNew = ! $readingList->exists;
             $previousStatus = $readingList->status;
+            $previousCompletedDate = $readingList->completed_at?->toDateString();
             $isReread = (bool) ($data['reread'] ?? false);
             $status = $isReread ? 'reading' : $data['status'];
+            $requestedCompletedAt = filled($data['completed_at'] ?? null)
+                ? Carbon::createFromFormat('Y-m-d', (string) $data['completed_at'], config('app.timezone'))->startOfDay()
+                : null;
 
             $readingList->status = $status;
             $readingList->reread_count ??= 0;
@@ -41,8 +46,8 @@ class ReadingManager
                 $readingList->started_at ??= now();
                 $readingList->completed_at = null;
             } elseif ($status === 'completed') {
-                $readingList->started_at ??= now();
-                $readingList->completed_at ??= now();
+                $readingList->started_at ??= $requestedCompletedAt ?? now();
+                $readingList->completed_at = $requestedCompletedAt ?? $readingList->completed_at ?? now();
             }
 
             $readingList->save();
@@ -73,10 +78,12 @@ class ReadingManager
             $progress = $readingList->progress()->first();
             $note = filled($data['note'] ?? null) ? trim((string) $data['note']) : null;
             $statusChanged = ! $isNew && $previousStatus !== $status;
+            $completionDateChanged = $status === 'completed'
+                && $previousCompletedDate !== $readingList->completed_at?->toDateString();
 
             $eventType = match (true) {
                 $isReread => 'reread',
-                $status === 'completed' && ($isNew || $statusChanged) => 'completed',
+                $status === 'completed' && ($isNew || $statusChanged || $completionDateChanged) => 'completed',
                 $isNew => 'added_to_readlist',
                 $statusChanged && $status === 'reading' => 'started',
                 $statusChanged && $status === 'completed' => 'completed',
@@ -96,7 +103,9 @@ class ReadingManager
                     'progress_total' => $progress?->total_value,
                     'progress_unit' => $progress?->unit,
                     'note' => $note,
-                    'occurred_at' => now(),
+                    'occurred_at' => $eventType === 'completed'
+                        ? $readingList->completed_at ?? now()
+                        : now(),
                 ]);
             }
 
@@ -106,6 +115,7 @@ class ReadingManager
                 $isNew ? null : $previousStatus,
                 $status,
                 $isReread,
+                $status === 'completed' ? $readingList->completed_at : null,
             );
 
             return $readingList->load(['progress', 'logs']);

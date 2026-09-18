@@ -30,7 +30,7 @@ export function StarRating({ rating = 0, size = 'text-lg' }) {
     );
 }
 
-export function RatingInput({ value, onChange, compact = false, onCommit }) {
+export function RatingInput({ value, onChange, compact = false, onCommit, inactiveClassName = 'text-ink-950/45' }) {
     const [hovered, setHovered] = useState(null);
     const preview = hovered ?? Number(value || 0);
 
@@ -52,7 +52,7 @@ export function RatingInput({ value, onChange, compact = false, onCommit }) {
                             key={rating}
                             type="button"
                             data-rating-value={rating}
-                            className={`${compact ? 'h-10 w-4 text-3xl leading-10' : 'h-14 w-6 text-5xl leading-14'} overflow-hidden text-left transition focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-coral ${selected ? 'text-brand-coral' : 'text-ink-950/45'}`}
+                            className={`${compact ? 'h-10 w-4 text-3xl leading-10' : 'h-14 w-6 text-5xl leading-14'} overflow-hidden text-left transition focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-coral ${selected ? 'text-brand-coral' : inactiveClassName}`}
                             role="radio"
                             aria-checked={Number(value) === rating}
                             aria-label={`${rating.toFixed(1)} out of 5 stars`}

@@ -255,6 +255,7 @@ class LiteratureController extends Controller
                 'id' => request()->user()?->id,
                 'is_admin' => request()->user()?->isAdmin() ?? false,
                 'reading_status' => $readingList?->status,
+                'completed_at' => $readingList?->completed_at?->toDateString(),
                 'current_review' => $currentReview === null ? null : [
                     'id' => $currentReview->id,
                     'rating' => $currentReview->rating,

@@ -220,6 +220,7 @@ document.querySelectorAll('[data-star-rating]').forEach((ratingGroup) => {
     const input = document.getElementById(ratingGroup.dataset.ratingInput);
     const output = ratingGroup.parentElement?.querySelector('[data-rating-output]');
     const ratingButtons = Array.from(ratingGroup.querySelectorAll('[data-rating-value]'));
+    const inactiveClass = ratingGroup.dataset.ratingInactiveClass || 'text-ink-950';
 
     if (!(input instanceof HTMLInputElement)) {
         return;
@@ -230,7 +231,7 @@ document.querySelectorAll('[data-star-rating]').forEach((ratingGroup) => {
             const isSelected = Number(button.dataset.ratingValue) <= rating;
 
             button.classList.toggle('text-brand-coral', isSelected);
-            button.classList.toggle('text-ink-950', !isSelected);
+            button.classList.toggle(inactiveClass, !isSelected);
             button.setAttribute('aria-checked', String(Number(button.dataset.ratingValue) === rating));
         });
 
@@ -281,6 +282,7 @@ if (quickLogSearchDialog instanceof HTMLDialogElement && quickLogReviewDialog in
     const ratingError = quickLogReviewDialog.querySelector('[data-quick-log-rating-error]');
     const reviewBody = quickLogReviewDialog.querySelector('[data-quick-log-body]');
     const spoilerInput = quickLogReviewDialog.querySelector('[data-quick-log-spoiler]');
+    const completedAtInput = quickLogReviewDialog.querySelector('[data-quick-log-completed-at]');
     const cover = quickLogReviewDialog.querySelector('[data-quick-log-cover]');
     const coverFallback = quickLogReviewDialog.querySelector('[data-quick-log-cover-fallback]');
     const title = quickLogReviewDialog.querySelector('[data-quick-log-title]');
@@ -289,6 +291,12 @@ if (quickLogSearchDialog instanceof HTMLDialogElement && quickLogReviewDialog in
     const submitButton = quickLogReviewDialog.querySelector('[data-quick-log-submit]');
     let searchTimer;
     let searchRequest;
+    const localDateValue = () => {
+        const today = new Date();
+        const offset = today.getTimezoneOffset() * 60_000;
+
+        return new Date(today.getTime() - offset).toISOString().slice(0, 10);
+    };
 
     const showSearchState = (message) => {
         if (!results) {
@@ -303,7 +311,7 @@ if (quickLogSearchDialog instanceof HTMLDialogElement && quickLogReviewDialog in
     };
 
     const openReview = (literature) => {
-        if (!(reviewForm instanceof HTMLFormElement) || !(ratingInput instanceof HTMLInputElement) || !(reviewBody instanceof HTMLTextAreaElement) || !(spoilerInput instanceof HTMLInputElement)) {
+        if (!(reviewForm instanceof HTMLFormElement) || !(ratingInput instanceof HTMLInputElement) || !(reviewBody instanceof HTMLTextAreaElement) || !(spoilerInput instanceof HTMLInputElement) || !(completedAtInput instanceof HTMLInputElement)) {
             return;
         }
 
@@ -320,6 +328,7 @@ if (quickLogSearchDialog instanceof HTMLDialogElement && quickLogReviewDialog in
         ratingInput.dispatchEvent(new Event('change', { bubbles: true }));
         reviewBody.value = review.body ?? '';
         spoilerInput.checked = Boolean(review.contains_spoiler);
+        completedAtInput.value = literature.completed_at ?? localDateValue();
         ratingError?.classList.add('hidden');
 
         if (title) {
@@ -351,7 +360,7 @@ if (quickLogSearchDialog instanceof HTMLDialogElement && quickLogReviewDialog in
         }
 
         if (submitButton) {
-            submitButton.textContent = literature.review ? 'Update review' : 'Publish review';
+            submitButton.textContent = 'Save';
         }
 
         quickLogSearchDialog.close();
