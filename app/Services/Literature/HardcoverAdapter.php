@@ -50,6 +50,7 @@ final class HardcoverAdapter
                 subtitle
                 release_date
                 cached_image
+                cached_tags
                 contributions {
                   author {
                     name
@@ -61,6 +62,15 @@ final class HardcoverAdapter
                 }
               }
             }
+          }
+        }
+        GRAPHQL;
+
+    private const BOOK_GENRES_QUERY = <<<'GRAPHQL'
+        query BookGenres($bookIds: [Int!]!) {
+          books(where: {id: {_in: $bookIds}}) {
+            id
+            cached_tags
           }
         }
         GRAPHQL;
@@ -81,7 +91,7 @@ final class HardcoverAdapter
         }
 
         $normalizedLimit = max(1, min($limit, 40));
-        $cacheKey = 'literature-source:hardcover:v2:'.hash('sha256', Str::lower($query).":{$normalizedLimit}");
+        $cacheKey = 'literature-source:hardcover:v3:'.hash('sha256', Str::lower($query).":{$normalizedLimit}");
         $items = Cache::remember(
             $cacheKey,
             now()->addMinutes(max(1, (int) config('services.hardcover.cache_minutes', 30))),
@@ -187,12 +197,13 @@ final class HardcoverAdapter
         }
 
         $authors = $this->stringList(Arr::get($item, 'author_names'));
+        $genres = $this->genreNames($item);
         $isbns = $this->stringList(Arr::get($item, 'isbns'));
         $identifier = $this->identifier($isbns) ?? "HARDCOVER:{$externalId}";
 
         if (! $this->novelClassifier->accepts(
             title: $title,
-            categories: [],
+            categories: $genres,
             description: $this->cleanText(Arr::get($item, 'subtitle')),
             authors: $authors,
             publisher: null,
@@ -207,7 +218,7 @@ final class HardcoverAdapter
             title: $title,
             type: 'novel',
             authors: $authors,
-            categories: [],
+            categories: $genres,
             publicationYear: $this->year(Arr::get($item, 'release_year')),
             tagline: $this->cleanText(Arr::get($item, 'subtitle')),
             synopsis: null,
@@ -218,6 +229,61 @@ final class HardcoverAdapter
             coverUrl: $this->coverUrl($item),
             relations: $this->seriesRelations($item, $seriesBooks),
         );
+    }
+
+    /**
+     * @param  list<string>  $externalIds
+     * @return array<string, list<string>>
+     */
+    public function genresForExternalIds(array $externalIds): array
+    {
+        $bookIds = collect($externalIds)
+            ->filter(fn (mixed $id): bool => is_numeric($id) && (int) $id > 0)
+            ->map(fn (mixed $id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($bookIds === []) {
+            return [];
+        }
+
+        $token = trim((string) config('services.hardcover.token'));
+
+        if ($token === '') {
+            throw new LiteratureSourceUnavailable('Hardcover', 'Hardcover API token is not configured.');
+        }
+
+        $genresByExternalId = [];
+
+        foreach (array_chunk($bookIds, 100) as $bookIdChunk) {
+            try {
+                $response = Http::acceptJson()
+                    ->withToken($token)
+                    ->withUserAgent((string) config('services.hardcover.user_agent'))
+                    ->connectTimeout((int) config('services.hardcover.connect_timeout', 3))
+                    ->timeout((int) config('services.hardcover.timeout', 10))
+                    ->post((string) config('services.hardcover.base_url'), [
+                        'query' => self::BOOK_GENRES_QUERY,
+                        'variables' => ['bookIds' => $bookIdChunk],
+                    ]);
+            } catch (ConnectionException $exception) {
+                throw new LiteratureSourceUnavailable('Hardcover', 'Hardcover could not be reached.', $exception);
+            }
+
+            if ($response->failed() || (is_array($response->json('errors')) && $response->json('errors') !== [])) {
+                throw new LiteratureSourceUnavailable('Hardcover', 'Hardcover could not provide genre metadata.');
+            }
+
+            $genresByExternalId += collect($response->json('data.books', []))
+                ->filter(fn (mixed $book): bool => is_array($book) && filled(Arr::get($book, 'id')))
+                ->mapWithKeys(fn (array $book): array => [
+                    (string) Arr::get($book, 'id') => $this->genreNames($book),
+                ])
+                ->all();
+        }
+
+        return $genresByExternalId;
     }
 
     /**
@@ -369,6 +435,7 @@ final class HardcoverAdapter
                 ->values()
                 ->all(),
             'image' => Arr::get($book, 'cached_image'),
+            'cached_tags' => Arr::get($book, 'cached_tags'),
             'isbns' => collect(Arr::get($book, 'editions', []))
                 ->flatMap(fn (mixed $edition): array => is_array($edition)
                     ? [Arr::get($edition, 'isbn_13'), Arr::get($edition, 'isbn_10')]
@@ -377,6 +444,25 @@ final class HardcoverAdapter
                 ->values()
                 ->all(),
         ];
+    }
+
+    /** @param array<string, mixed> $item */
+    private function genreNames(array $item): array
+    {
+        $genres = $this->stringList(Arr::get($item, 'genres'));
+
+        if ($genres !== []) {
+            return $genres;
+        }
+
+        return collect(Arr::get($item, 'cached_tags.Genre', []))
+            ->map(fn (mixed $genre): ?string => $this->cleanText(
+                is_array($genre) ? Arr::get($genre, 'tag') : $genre,
+            ))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
     }
 
     private function featuredSeriesId(mixed $item): ?string

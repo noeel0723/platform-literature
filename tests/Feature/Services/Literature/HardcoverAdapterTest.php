@@ -41,6 +41,7 @@ class HardcoverAdapterTest extends TestCase
                             'subtitle' => 'The Chronicles of Narnia',
                             'release_year' => 1953,
                             'author_names' => ['C. S. Lewis'],
+                            'genres' => ['Fantasy', 'Classics'],
                             'image' => [
                                 'height' => 1200,
                                 'url' => 'http://images.hardcover.app/silver-chair.jpg',
@@ -61,6 +62,7 @@ class HardcoverAdapterTest extends TestCase
         $this->assertSame('93279', $novel->externalId);
         $this->assertSame('The Silver Chair', $novel->title);
         $this->assertSame(['C. S. Lewis'], $novel->authors);
+        $this->assertSame(['Fantasy', 'Classics'], $novel->categories);
         $this->assertSame(1953, $novel->publicationYear);
         $this->assertSame('9780064471091', $novel->identifier);
         $this->assertSame('https://images.hardcover.app/silver-chair.jpg', $novel->coverUrl);
@@ -96,6 +98,32 @@ class HardcoverAdapterTest extends TestCase
 
         $this->assertSame('https://images.hardcover.app/prince-caspian.jpg', $novel->coverUrl);
         Http::assertSentCount(1);
+    }
+
+    public function test_genres_for_external_ids_normalizes_cached_hardcover_genres(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://api.hardcover.app/v1/graphql' => Http::response([
+                'data' => [
+                    'books' => [[
+                        'id' => 93279,
+                        'cached_tags' => [
+                            'Genre' => [
+                                ['tag' => 'Fantasy'],
+                                ['tag' => 'Young Adult'],
+                            ],
+                        ],
+                    ]],
+                ],
+            ]),
+        ]);
+
+        $genres = app(HardcoverAdapter::class)->genresForExternalIds(['93279']);
+
+        $this->assertSame(['Fantasy', 'Young Adult'], $genres['93279']);
+        Http::assertSent(fn (Request $request): bool => str_contains((string) $request['query'], 'query BookGenres')
+            && $request['variables']['bookIds'] === [93279]);
     }
 
     public function test_search_normalizes_featured_series_relations_from_provider_positions(): void
