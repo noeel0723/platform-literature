@@ -66,9 +66,7 @@ export default function HomeIndex({ activities, popularLiteratures, recommendati
                     <section className="mt-6" aria-labelledby="friends-activity-heading">
                         <div className="flex items-end justify-between gap-4 border-b border-ink-950/15 pb-2">
                             <h2 id="friends-activity-heading" className="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">Activity feed</h2>
-                            <span className="text-xs font-bold uppercase tracking-[0.16em] text-ink-950/45">Latest 6</span>
                         </div>
-
                         {activities.length === 0 ? <EmptyActivity viewer={viewer} routes={routes} /> : (
                             <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
                                 {activities.map((activity) => (
@@ -96,7 +94,6 @@ export default function HomeIndex({ activities, popularLiteratures, recommendati
                         <section className="mt-9" aria-labelledby="recommended-heading">
                             <div className="flex items-end justify-between gap-4 border-b border-ink-950/15 pb-2">
                                 <h2 id="recommended-heading" className="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">Recommended For You</h2>
-                                <span className="text-xs font-bold uppercase tracking-[0.16em] text-ink-950/45">Explainable picks</span>
                             </div>
 
                             {recommendations.length === 0 ? (
@@ -121,8 +118,7 @@ export default function HomeIndex({ activities, popularLiteratures, recommendati
 
                     <section className="mt-9" aria-labelledby="popular-friends-heading">
                         <div className="flex items-end justify-between gap-4 border-b border-ink-950/15 pb-2">
-                            <h2 id="popular-friends-heading" className="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">Shared discoveries</h2>
-                            <span className="text-xs font-bold uppercase tracking-[0.16em] text-ink-950/45">Most read</span>
+                            <h2 id="popular-friends-heading" className="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">POPULAR WITH FRIENDS</h2>
                         </div>
 
                         {popularLiteratures.length === 0 ? (
