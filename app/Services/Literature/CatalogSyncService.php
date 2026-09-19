@@ -268,6 +268,43 @@ final class CatalogSyncService
     }
 
     /** @return array{scanned: int, enriched: int} */
+    public function backfillKitsuGenres(int $limit = 500): array
+    {
+        $source = ApiSource::query()->where('key', 'kitsu')->first();
+
+        if ($source === null) {
+            return ['scanned' => 0, 'enriched' => 0];
+        }
+
+        $literatures = Literature::query()
+            ->whereBelongsTo($source)
+            ->whereIn('type', ['manga', 'manhwa'])
+            ->whereDoesntHave('categories')
+            ->oldest('id')
+            ->limit(max(1, min($limit, 500)))
+            ->get();
+        $genresByExternalId = $this->kitsu->genresForExternalIds(
+            $literatures->pluck('external_id')->filter()->values()->all(),
+        );
+        $enriched = 0;
+
+        foreach ($literatures as $literature) {
+            $genres = $genresByExternalId[$literature->external_id] ?? [];
+
+            if ($genres === []) {
+                continue;
+            }
+
+            DB::transaction(function () use ($literature, $genres): void {
+                $this->syncCategories($literature, $genres);
+            });
+            $enriched++;
+        }
+
+        return ['scanned' => $literatures->count(), 'enriched' => $enriched];
+    }
+
+    /** @return array{scanned: int, enriched: int} */
     public function backfillHardcoverGenres(int $limit = 500): array
     {
         $source = ApiSource::query()->where('key', 'hardcover')->first();

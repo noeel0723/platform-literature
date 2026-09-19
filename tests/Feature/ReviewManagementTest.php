@@ -61,7 +61,7 @@ class ReviewManagementTest extends TestCase
         $this->assertDatabaseHas('reading_logs', ['event_type' => 'completed']);
     }
 
-    public function test_review_log_uses_the_selected_read_date_across_detail_diary_and_activity(): void
+    public function test_review_keeps_the_selected_read_date_but_records_new_activity_when_submitted(): void
     {
         Carbon::setTestNow('2026-09-18 12:00:00');
 
@@ -83,8 +83,8 @@ class ReviewManagementTest extends TestCase
                 'occurred_at' => '2026-08-23 00:00:00',
             ]);
             $this->assertSame(
-                '2026-08-23',
-                Activity::query()->where('type', Activity::TYPE_REVIEWED)->sole()->occurred_at?->toDateString(),
+                '2026-09-18T12:00:00+00:00',
+                Activity::query()->where('type', Activity::TYPE_REVIEWED)->sole()->occurred_at?->utc()->toIso8601String(),
             );
 
             $detail = $this->actingAs($user)->get(route('literatures.show', $literature))->assertOk();
@@ -92,6 +92,9 @@ class ReviewManagementTest extends TestCase
 
             $diary = $this->actingAs($user)->get(route('diary.index'))->assertOk();
             $this->assertSame('2026-08-23T00:00:00+00:00', $diary->inertiaProps('activities.0.occurred_at'));
+
+            $activity = $this->actingAs($user)->get(route('activity.index'))->assertOk();
+            $this->assertSame('2026-09-18T12:00:00+00:00', $activity->inertiaProps('activities.data.0.occurred_at'));
         } finally {
             Carbon::setTestNow();
         }

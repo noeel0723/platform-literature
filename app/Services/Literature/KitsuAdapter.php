@@ -32,7 +32,7 @@ final class KitsuAdapter
         }
 
         $normalizedLimit = max(1, min($limit, 20));
-        $cacheKey = 'literature-source:kitsu:'.hash(
+        $cacheKey = 'literature-source:kitsu:v2:'.hash(
             'sha256',
             Str::lower($query).":{$literatureType}:{$normalizedLimit}",
         );
@@ -79,6 +79,46 @@ final class KitsuAdapter
 
     /**
      * @param  list<string>  $externalIds
+     * @return array<string, list<string>>
+     */
+    public function genresForExternalIds(array $externalIds): array
+    {
+        $ids = collect($externalIds)
+            ->map(fn (mixed $externalId): string => trim((string) $externalId))
+            ->filter(fn (string $externalId): bool => preg_match('/^\d+$/', $externalId) === 1)
+            ->unique()
+            ->values();
+
+        if ($ids->isEmpty()) {
+            return [];
+        }
+
+        return $ids
+            ->chunk(20)
+            ->reduce(function (array $genresByExternalId, Collection $chunk): array {
+                $chunkIds = $chunk->values()->all();
+                $cacheKey = 'literature-source:kitsu:genres:v1:'.hash('sha256', implode('|', $chunkIds));
+                $payload = Cache::remember(
+                    $cacheKey,
+                    now()->addMinutes(max(1, (int) config('services.kitsu.cache_minutes', 30))),
+                    fn (): array => $this->requestGenres($chunkIds),
+                );
+                $included = is_array($payload['included'] ?? null) ? $payload['included'] : [];
+
+                foreach ($payload['data'] ?? [] as $item) {
+                    if (! is_array($item) || blank(Arr::get($item, 'id'))) {
+                        continue;
+                    }
+
+                    $genresByExternalId[(string) Arr::get($item, 'id')] = $this->genres($item, $included);
+                }
+
+                return $genresByExternalId;
+            }, []);
+    }
+
+    /**
+     * @param  list<string>  $externalIds
      * @return array<string, list<NormalizedAuthor>>
      */
     public function creatorsForExternalIds(
@@ -117,7 +157,7 @@ final class KitsuAdapter
                 ->get('/manga', [
                     'filter[text]' => $query,
                     'page[limit]' => $limit,
-                    'include' => 'staff.person',
+                    'include' => 'staff.person,genres,categories',
                 ]);
         } catch (ConnectionException $exception) {
             throw new LiteratureSourceUnavailable(
@@ -145,6 +185,48 @@ final class KitsuAdapter
 
         return [
             'data' => array_values($data),
+            'included' => is_array($included) ? array_values($included) : [],
+        ];
+    }
+
+    /**
+     * @param  list<string>  $externalIds
+     * @return array{data: list<mixed>, included: list<mixed>}
+     */
+    private function requestGenres(array $externalIds): array
+    {
+        try {
+            $response = Http::baseUrl(rtrim((string) config('services.kitsu.base_url'), '/'))
+                ->withHeaders(['Accept' => 'application/vnd.api+json'])
+                ->withUserAgent((string) config('services.kitsu.user_agent'))
+                ->connectTimeout((int) config('services.kitsu.connect_timeout', 3))
+                ->timeout((int) config('services.kitsu.timeout', 12))
+                ->get('/manga', [
+                    'filter[id]' => implode(',', $externalIds),
+                    'page[limit]' => count($externalIds),
+                    'include' => 'genres,categories',
+                ]);
+        } catch (ConnectionException $exception) {
+            throw new LiteratureSourceUnavailable(
+                'Kitsu',
+                'Kitsu could not be reached.',
+                $exception,
+            );
+        }
+
+        if ($response->status() === 429) {
+            throw new LiteratureSourceUnavailable('Kitsu', 'Kitsu rate limit was reached.');
+        }
+
+        if ($response->failed()) {
+            throw new LiteratureSourceUnavailable('Kitsu', "Kitsu returned HTTP {$response->status()}.");
+        }
+
+        $data = $response->json('data');
+        $included = $response->json('included');
+
+        return [
+            'data' => is_array($data) ? array_values($data) : [],
             'included' => is_array($included) ? array_values($included) : [],
         ];
     }
@@ -191,7 +273,7 @@ final class KitsuAdapter
             title: $title,
             type: $type,
             authors: collect($authorDetails)->pluck('name')->all(),
-            categories: [],
+            categories: $this->genres($item, $included),
             publicationYear: $this->publicationYear(Arr::get($attributes, 'startDate')),
             tagline: null,
             synopsis: $this->cleanText(
@@ -214,6 +296,54 @@ final class KitsuAdapter
                     ?: Arr::get($attributes, 'coverImage.small'),
             ),
         );
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     * @param  list<mixed>  $included
+     * @return list<string>
+     */
+    private function genres(array $item, array $included): array
+    {
+        $genreIds = collect(Arr::get($item, 'relationships.genres.data', []))
+            ->filter(fn (mixed $genre): bool => is_array($genre) && Arr::get($genre, 'type') === 'genres')
+            ->map(fn (array $genre): ?string => $this->cleanText(Arr::get($genre, 'id')))
+            ->filter()
+            ->all();
+
+        if ($genreIds !== []) {
+            return $this->relationshipNames($included, 'genres', $genreIds, 'attributes.name');
+        }
+
+        $categoryIds = collect(Arr::get($item, 'relationships.categories.data', []))
+            ->filter(fn (mixed $category): bool => is_array($category) && Arr::get($category, 'type') === 'categories')
+            ->map(fn (array $category): ?string => $this->cleanText(Arr::get($category, 'id')))
+            ->filter()
+            ->all();
+
+        return $this->relationshipNames($included, 'categories', $categoryIds, 'attributes.title');
+    }
+
+    /**
+     * @param  list<mixed>  $included
+     * @param  list<string>  $ids
+     * @return list<string>
+     */
+    private function relationshipNames(array $included, string $type, array $ids, string $attribute): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+
+        return collect($included)
+            ->filter(fn (mixed $item): bool => is_array($item)
+                && Arr::get($item, 'type') === $type
+                && in_array((string) Arr::get($item, 'id'), $ids, true))
+            ->map(fn (array $item): ?string => $this->cleanText(Arr::get($item, $attribute)))
+            ->filter()
+            ->unique(fn (string $name): string => Str::lower($name))
+            ->values()
+            ->all();
     }
 
     /**

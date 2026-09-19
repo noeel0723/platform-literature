@@ -14,6 +14,7 @@ use App\Services\Literature\CanonicalLiteratureSearch;
 use App\Services\Literature\CanonicalWorkIdentity;
 use App\Services\Literature\CatalogResultRanker;
 use App\Services\Literature\CatalogSyncService;
+use App\Services\Literature\LiteraturePresenter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -22,6 +23,8 @@ use Inertia\Response;
 
 class LiteratureController extends Controller
 {
+    public function __construct(private LiteraturePresenter $presenter) {}
+
     public function index(
         Request $request,
         CatalogSyncService $catalogSync,
@@ -85,7 +88,7 @@ class LiteratureController extends Controller
             $canExpand = $rankedMatches->count() > $displayLimit;
             $literatures = $rankedMatches
                 ->take($displayLimit)
-                ->map(fn (Literature $literature): array => $this->present($literature));
+                ->map(fn (Literature $literature): array => $this->presenter->present($literature));
         } else {
             $canExpand = $canonicalSearch->query()
                 ->latest('updated_at')
@@ -100,7 +103,7 @@ class LiteratureController extends Controller
                     ->first())
                 ->filter()
                 ->take($displayLimit)
-                ->map(fn (Literature $literature): array => $this->present($literature));
+                ->map(fn (Literature $literature): array => $this->presenter->present($literature));
         }
 
         return Inertia::render('Catalog/Index', [
@@ -130,7 +133,7 @@ class LiteratureController extends Controller
             ->latest('id')
             ->paginate(18)
             ->withQueryString()
-            ->through(fn (Literature $literature): array => $this->present($literature));
+            ->through(fn (Literature $literature): array => $this->presenter->present($literature));
 
         return Inertia::render('Catalog/Latest', [
             'literatures' => $literatures,
@@ -156,6 +159,7 @@ class LiteratureController extends Controller
             'categories',
             'metadataOverride',
             'sourceMapping.canonicalWork.metadataOverride',
+            'sourceMapping.canonicalWork.literatures.categories',
             'outgoingRelations.relatedLiterature.apiSource',
             'outgoingRelations.relatedLiterature.authors',
             'outgoingRelations.relatedLiterature.categories',
@@ -225,7 +229,7 @@ class LiteratureController extends Controller
                     'label' => $label,
                     'items' => $relations->map(function (LiteratureRelation $relation): array {
                         return [
-                            ...$this->present($relation->relatedLiterature),
+                            ...$this->presenter->present($relation->relatedLiterature),
                             'relation_source' => $relation->source ?? 'Internal catalog',
                         ];
                     })->values(),
@@ -246,10 +250,10 @@ class LiteratureController extends Controller
                 ->orderByDesc('publication_year')
                 ->limit(4)
                 ->get()
-                ->map(fn (Literature $candidate): array => $this->present($candidate));
+                ->map(fn (Literature $candidate): array => $this->presenter->present($candidate));
 
         return Inertia::render('Catalog/Show', [
-            'literature' => $this->present($literature),
+            'literature' => $this->presenter->present($literature),
             'viewer' => [
                 'authenticated' => request()->user() !== null,
                 'id' => request()->user()?->id,
@@ -379,89 +383,5 @@ class LiteratureController extends Controller
             'avatar_url' => $user->avatarUrl(),
             'initial' => Str::upper(Str::substr($user->name, 0, 1)),
         ];
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function present(Literature $literature): array
-    {
-        $authorNames = $literature->authors->pluck('name');
-        $displayTitle = $literature->displayTitle();
-        $displayLanguage = $literature->displayLanguage();
-        $metadataOverride = $literature->effectiveMetadataOverride();
-        $hasCuratedSynopsis = filled($metadataOverride?->synopsis);
-        $metadataIsEnglish = $hasCuratedSynopsis
-            || $literature->apiSource->key !== 'google-books'
-            || $displayLanguage === null
-            || $displayLanguage === 'en'
-            || $literature->synopsis_source_name === 'Wikipedia EN';
-        $formatLabels = [
-            'Book' => 'Novel',
-            'Buku' => 'Novel',
-            'Light Novel' => 'Novel',
-            'Light novel' => 'Novel',
-            'Komik Barat' => 'Comic',
-            'Western Comic' => 'Comic',
-            'Manhwa satu bab' => 'One-shot Manhwa',
-        ];
-        $languageLabels = [
-            'en' => 'English',
-            'id' => 'Indonesian',
-            'ja' => 'Japanese',
-            'ko' => 'Korean',
-        ];
-
-        return [
-            'id' => $literature->id,
-            'slug' => $literature->slug,
-            'url' => route('literatures.show', $literature),
-            'title' => $displayTitle,
-            'edition_title' => $literature->alternateTitle(),
-            'alternate_title_label' => in_array($literature->type, ['manga', 'manhwa'], true)
-                ? 'Original title'
-                : 'Edition title',
-            'year' => $literature->displayPublicationYear() === null ? 'Year unavailable' : (string) $literature->displayPublicationYear(),
-            'type' => $literature->type,
-            'type_label' => $literature->typeLabel(),
-            'author' => $authorNames->isEmpty() ? 'Author unavailable' : $authorNames->implode(' & '),
-            'authors' => $authorNames->all(),
-            'author_links' => $literature->authors
-                ->map(fn ($author): array => [
-                    'name' => $author->name,
-                    'url' => route('authors.show', $author),
-                ])
-                ->values()
-                ->all(),
-            'source' => $literature->apiSource->name,
-            'tagline' => $metadataIsEnglish ? $literature->displayTagline() ?? 'Short description unavailable.' : 'Short description unavailable in English.',
-            'synopsis' => $metadataIsEnglish ? $literature->displaySynopsis() ?? 'Synopsis unavailable from the metadata source.' : 'Synopsis unavailable in English.',
-            'synopsis_source_name' => $hasCuratedSynopsis ? 'Literahaven curated metadata' : ($metadataIsEnglish ? $literature->synopsis_source_name : null),
-            'synopsis_source_url' => $hasCuratedSynopsis ? $metadataOverride?->source_url : ($metadataIsEnglish ? $literature->synopsis_source_url : null),
-            'publisher' => $literature->displayPublisher() ?? 'Unavailable',
-            'language' => $languageLabels[$displayLanguage] ?? $displayLanguage ?? 'Unavailable',
-            'format' => $formatLabels[$literature->displayFormat()] ?? $literature->displayFormat() ?? $literature->typeLabel(),
-            'genres' => $literature->categories->pluck('name')->all(),
-            'identifier' => $literature->identifier ?? $literature->external_id,
-            'cover_url' => $literature->displayCoverUrl(),
-            'backdrop_url' => $literature->displayBackdropUrl(),
-            'theme' => $literature->theme,
-            'is_curated' => $literature->hasCuratedMetadata(),
-            'initials' => $this->initials($displayTitle),
-        ];
-    }
-
-    private function initials(string $title): string
-    {
-        $words = Str::of($title)->squish()->explode(' ')->filter();
-
-        if ($words->count() === 1) {
-            return Str::upper(Str::substr((string) $words->first(), 0, 2));
-        }
-
-        return Str::upper(
-            Str::substr((string) $words->first(), 0, 1)
-            .Str::substr((string) $words->last(), 0, 1),
-        );
     }
 }

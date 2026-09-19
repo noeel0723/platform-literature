@@ -46,7 +46,15 @@ function Summary({ literature, hasDiscovery }) {
                     <div id="genres" className="mt-8 scroll-mt-24 border-t border-ink-950/10 pt-7">
                         <SectionHeading as="h3">Genre</SectionHeading>
                         <div className="mt-3 flex flex-wrap gap-2">
-                            {literature.genres.length > 0 ? literature.genres.map((genre) => <span key={genre} className="border border-ink-950/15 px-3 py-2 text-ink-950/70">{genre}</span>) : <span className="text-sm text-ink-950/55">Genre unavailable</span>}
+                            {literature.genre_links.length > 0 ? literature.genre_links.map((genre) => (
+                                <Link
+                                    key={genre.slug}
+                                    href={genre.url}
+                                    className="border border-brand-blue/20 bg-white/55 px-3 py-2 text-sm font-semibold text-brand-blue transition hover:border-brand-coral hover:bg-brand-coral hover:text-brand-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-coral"
+                                >
+                                    {genre.name}
+                                </Link>
+                            )) : <span className="text-sm text-ink-950/55">Genre unavailable</span>}
                         </div>
                     </div>
                 </div>

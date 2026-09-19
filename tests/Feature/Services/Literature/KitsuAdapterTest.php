@@ -44,6 +44,7 @@ class KitsuAdapterTest extends TestCase
         $this->assertSame('A volleyball story.', $manga->synopsis);
         $this->assertSame('ja', $manga->language);
         $this->assertSame('person-id', $manga->authorDetails[0]->externalId);
+        $this->assertSame(['Comedy', 'Sports'], $manga->categories);
 
         Http::assertSent(function (Request $request): bool {
             $data = $request->data();
@@ -51,8 +52,42 @@ class KitsuAdapterTest extends TestCase
             return $request->method() === 'GET'
                 && $data['filter[text]'] === 'Haikyu'
                 && $data['page[limit]'] === 4
-                && $data['include'] === 'staff.person'
+                && $data['include'] === 'staff.person,genres,categories'
                 && $request->hasHeader('Accept', 'application/vnd.api+json');
+        });
+    }
+
+    public function test_genres_can_be_loaded_in_batches_for_existing_kitsu_records(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://kitsu.io/api/edge/manga*' => Http::response([
+                'data' => [[
+                    'id' => '12619',
+                    'type' => 'manga',
+                    'relationships' => [
+                        'genres' => ['data' => [
+                            ['id' => '3', 'type' => 'genres'],
+                            ['id' => '13', 'type' => 'genres'],
+                        ]],
+                    ],
+                ]],
+                'included' => [
+                    ['id' => '3', 'type' => 'genres', 'attributes' => ['name' => 'Comedy']],
+                    ['id' => '13', 'type' => 'genres', 'attributes' => ['name' => 'Sports']],
+                ],
+            ]),
+        ]);
+
+        $genres = app(KitsuAdapter::class)->genresForExternalIds(['12619', 'invalid', '12619']);
+
+        $this->assertSame(['Comedy', 'Sports'], $genres['12619']);
+        Http::assertSent(function (Request $request): bool {
+            $data = $request->data();
+
+            return $data['filter[id]'] === '12619'
+                && $data['page[limit]'] === 1
+                && $data['include'] === 'genres,categories';
         });
     }
 
@@ -123,6 +158,16 @@ class KitsuAdapterTest extends TestCase
             'data' => [$this->manga()],
             'included' => [
                 [
+                    'id' => '3',
+                    'type' => 'genres',
+                    'attributes' => ['name' => 'Comedy'],
+                ],
+                [
+                    'id' => '13',
+                    'type' => 'genres',
+                    'attributes' => ['name' => 'Sports'],
+                ],
+                [
                     'id' => 'staff-id',
                     'type' => 'mediaStaff',
                     'attributes' => ['role' => 'Story & Art'],
@@ -153,6 +198,10 @@ class KitsuAdapterTest extends TestCase
                 'coverImage' => ['original' => 'https://media.kitsu.app/haikyu-hero.jpg'],
             ],
             'relationships' => [
+                'genres' => ['data' => [
+                    ['id' => '3', 'type' => 'genres'],
+                    ['id' => '13', 'type' => 'genres'],
+                ]],
                 'staff' => ['data' => [['id' => 'staff-id', 'type' => 'mediaStaff']]],
             ],
         ];

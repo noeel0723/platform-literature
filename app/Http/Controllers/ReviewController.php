@@ -38,7 +38,7 @@ class ReviewController extends Controller
             if ($review->wasRecentlyCreated
                 || $review->wasChanged(['rating', 'body', 'contains_spoiler'])
                 || $readingList->wasChanged('completed_at')) {
-                $activityRecorder->recordReview($review, $readingList->completed_at);
+                $activityRecorder->recordReview($review);
             }
         });
 
