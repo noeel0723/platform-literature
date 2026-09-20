@@ -164,6 +164,14 @@ class ReviewManagementTest extends TestCase
             $activity = $this->actingAs($user)->get(route('activity.index'))->assertOk();
             $this->assertSame(Activity::TYPE_COMPLETED, $activity->inertiaProps('activities.data.0.type'));
             $this->assertSame('completed', $activity->inertiaProps('activities.data.0.action'));
+            $this->assertSame(4.5, $activity->inertiaProps('activities.data.0.rating'));
+
+            $follower = User::factory()->create();
+            $follower->following()->attach($user);
+
+            $home = $this->actingAs($follower)->get(route('home'))->assertOk();
+            $this->assertSame('Completed', $home->inertiaProps('activities.0.action'));
+            $this->assertSame(4.5, $home->inertiaProps('activities.0.rating'));
         } finally {
             Carbon::setTestNow();
         }

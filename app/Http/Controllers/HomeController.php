@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Activity;
 use App\Models\Literature;
+use App\Services\ActivityRatingLookup;
 use App\Services\Recommendations\PersonalRecommendationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -12,8 +13,11 @@ use Inertia\Response;
 
 class HomeController extends Controller
 {
-    public function __invoke(Request $request, PersonalRecommendationService $recommendations): Response
-    {
+    public function __invoke(
+        Request $request,
+        PersonalRecommendationService $recommendations,
+        ActivityRatingLookup $activityRatings,
+    ): Response {
         $viewer = $request->user();
         $friendIds = $viewer?->following()
             ->whereNull('deactivated_at')
@@ -68,8 +72,13 @@ class HomeController extends Controller
                 ->get();
         }
 
+        $ratings = $activityRatings->forActivities($activities);
+
         return Inertia::render('Home/Index', [
-            'activities' => $activities->map(fn (Activity $activity): array => $this->presentActivity($activity))->all(),
+            'activities' => $activities->map(fn (Activity $activity): array => $this->presentActivity(
+                $activity,
+                $activityRatings->forActivity($activity, $ratings),
+            ))->all(),
             'popularLiteratures' => $popularLiteratures
                 ->map(fn (Literature $literature): array => $this->presentPopularLiterature($literature))
                 ->all(),
@@ -92,7 +101,7 @@ class HomeController extends Controller
     }
 
     /** @return array<string, mixed> */
-    private function presentActivity(Activity $activity): array
+    private function presentActivity(Activity $activity, ?float $rating): array
     {
         $literature = $activity->literature;
 
@@ -104,7 +113,7 @@ class HomeController extends Controller
                 Activity::TYPE_REVIEWED => 'Reviewed',
                 default => 'Updated',
             },
-            'rating' => data_get($activity->metadata, 'rating'),
+            'rating' => $rating,
             'occurred_at' => $activity->occurred_at->utc()->toIso8601String(),
             'reader' => [
                 'name' => $activity->user->name,

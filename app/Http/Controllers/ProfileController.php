@@ -32,6 +32,9 @@ class ProfileController extends Controller
                 'following',
                 'readingLists as literature_count',
                 'readingLists as completed_literature_count' => fn ($query) => $query->where('status', 'completed'),
+                'readingLists as completed_this_year_count' => fn ($query) => $query
+                    ->where('status', 'completed')
+                    ->whereYear('completed_at', now()->year),
                 'readingLists as readlist_count' => fn ($query) => $query->where('status', 'want_to_read'),
             ]);
 
@@ -111,6 +114,7 @@ class ProfileController extends Controller
                 'stats' => [
                     'literature' => $user->literature_count,
                     'completed' => $user->completed_literature_count,
+                    'completed_this_year' => $user->completed_this_year_count,
                     'reviews' => $user->reviews_count,
                     'following' => $user->following_count,
                     'followers' => $user->followers_count,

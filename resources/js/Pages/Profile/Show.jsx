@@ -33,10 +33,10 @@ function SectionHeader({ eyebrow, title, aside, id }) {
 
 function ProfileStats({ profile, routes }) {
     const items = [
-        { key: 'literature', label: 'Literature', value: profile.stats.literature },
         { key: 'completed', label: 'Completed', value: profile.stats.completed },
-        { key: 'following', label: 'Following', value: profile.stats.following, url: routes.following },
+        { key: 'completed-this-year', label: 'This year', value: profile.stats.completed_this_year },
         { key: 'followers', label: 'Followers', value: profile.stats.followers, url: routes.followers },
+        { key: 'following', label: 'Following', value: profile.stats.following, url: routes.following },
     ];
 
     return (

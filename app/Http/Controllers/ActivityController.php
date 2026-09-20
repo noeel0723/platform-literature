@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Activity;
 use App\Models\User;
+use App\Services\ActivityRatingLookup;
 use App\Support\ProfilePagePresenter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -12,6 +13,8 @@ use Inertia\Response;
 
 class ActivityController extends Controller
 {
+    public function __construct(private readonly ActivityRatingLookup $activityRatings) {}
+
     public function __invoke(Request $request, ProfilePagePresenter $presenter): Response
     {
         $viewer = $request->user();
@@ -37,7 +40,11 @@ class ActivityController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        $activities->through(fn (Activity $activity): array => $this->presentActivity($activity));
+        $ratings = $this->activityRatings->forActivities($activities->getCollection());
+        $activities->through(fn (Activity $activity): array => $this->presentActivity(
+            $activity,
+            $this->activityRatings->forActivity($activity, $ratings),
+        ));
 
         return Inertia::render('Activity/Index', [
             'viewer' => $presenter->user($viewer),
@@ -79,7 +86,11 @@ class ActivityController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        $activities->through(fn (Activity $activity): array => $this->presentActivity($activity));
+        $ratings = $this->activityRatings->forActivities($activities->getCollection());
+        $activities->through(fn (Activity $activity): array => $this->presentActivity(
+            $activity,
+            $this->activityRatings->forActivity($activity, $ratings),
+        ));
 
         return Inertia::render('Activity/Index', [
             'viewer' => $presenter->user($user),
@@ -105,10 +116,9 @@ class ActivityController extends Controller
     }
 
     /** @return array<string, mixed> */
-    private function presentActivity(Activity $activity): array
+    private function presentActivity(Activity $activity, ?float $rating): array
     {
         $title = $activity->literature->displayTitle();
-        $rating = data_get($activity->metadata, 'rating');
         $containsSpoiler = (bool) data_get($activity->metadata, 'contains_spoiler', false);
         $excerpt = data_get($activity->metadata, 'review_excerpt') ?? data_get($activity->metadata, 'excerpt');
         $isExpanded = in_array($activity->type, [Activity::TYPE_RATED, Activity::TYPE_REVIEWED, Activity::TYPE_COMPLETED], true);
@@ -127,7 +137,7 @@ class ActivityController extends Controller
                 default => 'updated',
             },
             'is_expanded' => $isExpanded,
-            'rating' => $rating === null ? null : (float) $rating,
+            'rating' => $rating,
             'contains_spoiler' => $containsSpoiler,
             'excerpt' => $excerpt,
             'discussion_title' => data_get($activity->metadata, 'title') ?? data_get($activity->metadata, 'discussion_title'),
