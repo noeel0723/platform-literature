@@ -19,6 +19,27 @@ class ProfileLiteratureController extends Controller
         $genre = $genreSlug === ''
             ? null
             : Category::query()->where('slug', $genreSlug)->first();
+        $genres = Category::query()
+            ->where(function (Builder $categories) use ($user): void {
+                $categories
+                    ->whereHas('literatures.readingLists', fn (Builder $readingLists) => $readingLists
+                        ->whereBelongsTo($user)
+                        ->where('status', 'completed'))
+                    ->orWhereHas(
+                        'literatures.sourceMapping.canonicalWork.literatures.readingLists',
+                        fn (Builder $readingLists) => $readingLists
+                            ->whereBelongsTo($user)
+                            ->where('status', 'completed'),
+                    );
+            })
+            ->orderBy('name')
+            ->get(['name', 'slug'])
+            ->unique('slug')
+            ->values()
+            ->map(fn (Category $category): array => [
+                'name' => $category->name,
+                'slug' => $category->slug,
+            ]);
 
         $completedLiterature = $user->readingLists()
             ->where('status', 'completed')
@@ -70,6 +91,7 @@ class ProfileLiteratureController extends Controller
                 'name' => $genre?->name ?? Str::headline($genreSlug),
                 'slug' => $genreSlug,
             ],
+            'genres' => $genres->all(),
         ]);
     }
 }

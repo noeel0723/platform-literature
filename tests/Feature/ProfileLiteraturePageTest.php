@@ -50,6 +50,8 @@ class ProfileLiteraturePageTest extends TestCase
             ->component('Profile/Literature')
             ->where('profile.name', 'Shelf Reader')
             ->where('navigation.current', 'literature')
+            ->where('activeGenre', null)
+            ->where('genres', [])
             ->where('completedLiterature.total', 2)
             ->where('completedLiterature.data.0.literature.title', 'Completed Story')
             ->where('completedLiterature.data.0.literature.year', 2024)
@@ -139,8 +141,58 @@ class ProfileLiteraturePageTest extends TestCase
         ]));
 
         $response->assertInertia(fn (Assert $page) => $page
+            ->where('genres.0.name', 'Horror')
+            ->where('genres.0.slug', 'horror')
             ->where('completedLiterature.total', 1)
             ->where('completedLiterature.data.0.literature.title', 'Canonical Horror'));
+    }
+
+    public function test_available_genres_only_include_completed_literature_and_are_sorted(): void
+    {
+        $user = User::factory()->create(['username' => 'available_genres_reader']);
+        $action = Category::factory()->create(['name' => 'Action', 'slug' => 'action']);
+        $fantasy = Category::factory()->create(['name' => 'Fantasy', 'slug' => 'fantasy']);
+        $horror = Category::factory()->create(['name' => 'Horror', 'slug' => 'horror']);
+        $completed = Literature::factory()->create(['title' => 'Completed Categories']);
+        $completed->categories()->attach([$fantasy->id, $action->id]);
+        $saved = Literature::factory()->create(['title' => 'Saved Horror']);
+        $saved->categories()->attach($horror);
+        ReadingList::factory()->for($user)->for($completed)->create([
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+        ReadingList::factory()->for($user)->for($saved)->create(['status' => 'want_to_read']);
+
+        $response = $this->get(route('profiles.literature', $user));
+
+        $this->assertSame(
+            [
+                ['name' => 'Action', 'slug' => 'action'],
+                ['name' => 'Fantasy', 'slug' => 'fantasy'],
+            ],
+            $response->inertiaProps('genres'),
+        );
+    }
+
+    public function test_available_genres_do_not_repeat_when_multiple_completed_titles_share_one_genre(): void
+    {
+        $user = User::factory()->create(['username' => 'unique_genres_reader']);
+        $horror = Category::factory()->create(['name' => 'Horror', 'slug' => 'horror']);
+
+        Literature::factory()->count(2)->create()->each(function (Literature $literature) use ($horror, $user): void {
+            $literature->categories()->attach($horror);
+            ReadingList::factory()->for($user)->for($literature)->create([
+                'status' => 'completed',
+                'completed_at' => now(),
+            ]);
+        });
+
+        $response = $this->get(route('profiles.literature', $user));
+
+        $this->assertSame(
+            [['name' => 'Horror', 'slug' => 'horror']],
+            $response->inertiaProps('genres'),
+        );
     }
 
     public function test_genre_filter_is_preserved_in_pagination_links(): void

@@ -61,7 +61,7 @@ class ActivityRecorder
             ->delete();
     }
 
-    public function recordReview(Review $review, ?CarbonInterface $occurredAt = null): Activity
+    public function recordReview(Review $review): Activity
     {
         $body = filled($review->body) ? trim((string) $review->body) : null;
 
@@ -75,7 +75,7 @@ class ActivityRecorder
                 'review_excerpt' => $body === null ? null : Str::limit($body, 280),
                 'contains_spoiler' => (bool) $review->contains_spoiler,
             ],
-            'occurred_at' => $occurredAt ?? now(),
+            'occurred_at' => now(),
         ]);
     }
 

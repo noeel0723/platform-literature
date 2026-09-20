@@ -202,6 +202,53 @@ class ActivityFeedTest extends TestCase
         );
     }
 
+    public function test_new_review_preserves_the_exact_submission_times_of_previous_activities(): void
+    {
+        $viewer = User::factory()->create();
+        $reader = User::factory()->create();
+        $viewer->following()->attach($reader);
+        $first = Literature::factory()->create(['title' => 'First Timed Review']);
+        $second = Literature::factory()->create(['title' => 'Second Timed Review']);
+        $third = Literature::factory()->create(['title' => 'Third Timed Review']);
+
+        $this->travelTo(Carbon::parse('2026-09-20 01:15:00', 'UTC'));
+        $this->actingAs($reader)->put(route('reviews.update', $first), [
+            'rating' => 4,
+            'body' => 'First review.',
+            'completed_at' => '2026-09-20',
+        ]);
+        $firstActivity = Activity::query()->whereBelongsTo($first, 'literature')->where('type', Activity::TYPE_REVIEWED)->sole();
+
+        $this->travelTo(Carbon::parse('2026-09-20 02:30:00', 'UTC'));
+        $this->actingAs($reader)->put(route('reviews.update', $second), [
+            'rating' => 4.5,
+            'body' => 'Second review.',
+            'completed_at' => '2026-09-20',
+        ]);
+        $secondActivity = Activity::query()->whereBelongsTo($second, 'literature')->where('type', Activity::TYPE_REVIEWED)->sole();
+
+        $this->travelTo(Carbon::parse('2026-09-20 03:45:00', 'UTC'));
+        $this->actingAs($reader)->put(route('reviews.update', $third), [
+            'rating' => 5,
+            'body' => 'Third review.',
+            'completed_at' => '2026-09-20',
+        ]);
+
+        $this->assertSame('2026-09-20T01:15:00+00:00', $firstActivity->refresh()->occurred_at->utc()->toIso8601String());
+        $this->assertSame('2026-09-20T02:30:00+00:00', $secondActivity->refresh()->occurred_at->utc()->toIso8601String());
+
+        $response = $this->actingAs($viewer)->get(route('home'));
+
+        $this->assertSame(
+            [
+                '2026-09-20T03:45:00+00:00',
+                '2026-09-20T02:30:00+00:00',
+                '2026-09-20T01:15:00+00:00',
+            ],
+            collect($response->inertiaProps('activities'))->pluck('occurred_at')->all(),
+        );
+    }
+
     public function test_feed_exposes_utc_activity_for_browser_localization(): void
     {
         $viewer = User::factory()->create();
