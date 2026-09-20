@@ -32,7 +32,7 @@ class LiteratureBrowseController extends Controller
         LiteratureBrowseService $browser,
         LiteraturePresenter $presenter,
     ): Response {
-        $filters = $browser->normalizeFilters($request->only(['decade', 'rating', 'genre', 'sort']));
+        $filters = $browser->normalizeFilters($request->only(['q', 'decade', 'rating', 'genre', 'sort']));
         $literatures = $browser->browse($filters)
             ->withQueryString()
             ->through(fn (Literature $literature): array => $this->present($literature, $presenter));

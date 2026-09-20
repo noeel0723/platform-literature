@@ -11,7 +11,7 @@ class ProfileReviewController extends Controller
 {
     public function __invoke(User $user, ProfilePagePresenter $presenter): Response
     {
-        $visibleReviews = $user->reviews()->whereNull('hidden_at');
+        $visibleReviews = $user->reviews()->whereNull('hidden_at')->written();
 
         $reviews = (clone $visibleReviews)
             ->with(['literature.authors', 'literature.metadataOverride', 'literature.sourceMapping.canonicalWork.metadataOverride'])

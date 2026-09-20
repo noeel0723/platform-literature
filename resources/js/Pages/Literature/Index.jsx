@@ -1,6 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 
-import LiteratureBrowseFilters from '../../Components/LiteratureBrowseFilters';
+import LiteratureBrowseFilters, { LiteratureBrowseSearch } from '../../Components/LiteratureBrowseFilters';
 import LiteratureCard from '../../Components/LiteratureCard';
 import SiteContainer from '../../Components/SiteContainer';
 
@@ -10,9 +10,12 @@ export default function LiteratureIndex({ popularLiteratures, options, routes })
             <Head title="Literature" />
 
             <section className="border-b border-ink-950/10 bg-brand-yogurt/20">
-                <SiteContainer className="flex flex-col gap-3 py-5 sm:flex-row sm:items-center">
-                    <span className="shrink-0 text-xs font-bold uppercase tracking-[0.2em] text-ink-950/50">Browse by</span>
-                    <LiteratureBrowseFilters browseUrl={routes.browse} options={options} />
+                <SiteContainer className="flex flex-col gap-3 py-5 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                        <span className="shrink-0 text-xs font-bold uppercase tracking-[0.2em] text-ink-950/50">Browse by</span>
+                        <LiteratureBrowseFilters browseUrl={routes.browse} options={options} />
+                    </div>
+                    <LiteratureBrowseSearch browseUrl={routes.browse} />
                 </SiteContainer>
             </section>
 

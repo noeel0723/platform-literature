@@ -1,4 +1,5 @@
 import { router } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 
 const compactSelect = 'h-9 min-w-28 border border-ink-950/15 bg-white/45 px-2.5 text-[0.68rem] font-bold uppercase tracking-[0.12em] text-ink-950 outline-none transition hover:border-brand-blue focus:border-brand-coral focus:ring-2 focus:ring-brand-coral/20';
 
@@ -39,6 +40,39 @@ function BrowseSelect({ label, name, value = '', onChange, children }) {
     );
 }
 
+export function LiteratureBrowseSearch({ browseUrl, filters = {} }) {
+    const [query, setQuery] = useState(filters.q ?? '');
+
+    useEffect(() => {
+        setQuery(filters.q ?? '');
+    }, [filters.q]);
+
+    const submit = (event) => {
+        event.preventDefault();
+        router.get(destinationUrl(browseUrl, filters, 'q', query.trim()), {}, {
+            preserveScroll: true,
+            preserveState: true,
+        });
+    };
+
+    return (
+        <form onSubmit={submit} className="flex h-9 min-w-0 border border-ink-950/15 bg-white/55 focus-within:border-brand-coral focus-within:ring-2 focus-within:ring-brand-coral/20" role="search">
+            <label htmlFor="global-literature-search" className="sr-only">Search local literature</label>
+            <input
+                id="global-literature-search"
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Find literature"
+                className="min-w-0 w-44 bg-transparent px-3 text-sm text-ink-950 outline-none placeholder:text-ink-950/45 sm:w-52"
+            />
+            <button type="submit" className="shrink-0 border-l border-ink-950/10 px-3 text-[0.68rem] font-bold uppercase tracking-[0.12em] text-brand-blue transition hover:bg-brand-coral hover:text-white">
+                Search
+            </button>
+        </form>
+    );
+}
+
 export default function LiteratureBrowseFilters({ browseUrl, filters = {}, options, includeSort = false }) {
     const navigate = (key, value) => {
         router.get(destinationUrl(browseUrl, filters, key, value), {}, {
@@ -60,7 +94,7 @@ export default function LiteratureBrowseFilters({ browseUrl, filters = {}, optio
                 {options.decades.map((decade) => <option key={decade.value} value={decade.value}>{decade.label}</option>)}
             </BrowseSelect>
 
-            <BrowseSelect label="Minimum average rating" name="rating" value={filters.rating} onChange={(value) => navigate('rating', value)}>
+            <BrowseSelect label="Ratings" name="rating" value={filters.rating} onChange={(value) => navigate('rating', value)}>
                 <option value="">All ratings</option>
                 {options.ratings.map((rating) => <option key={rating.value} value={rating.value}>{rating.label}</option>)}
             </BrowseSelect>

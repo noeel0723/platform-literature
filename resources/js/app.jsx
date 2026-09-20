@@ -5,7 +5,6 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import AppHeader from './Components/AppHeader';
-import ProfileSubNavigation from './Components/ProfileSubNavigation';
 
 const inertiaRoot = document.getElementById('app');
 const inertiaPage = document.querySelector('script[data-page="app"]');
@@ -45,15 +44,3 @@ if (headerRoot && headerProps) {
         </StrictMode>,
     );
 }
-
-document.querySelectorAll('[data-react-profile-subnav]').forEach((element) => {
-    const propsElement = element.previousElementSibling;
-
-    if (propsElement?.matches('[data-react-profile-subnav-props]')) {
-        createRoot(element).render(
-            <StrictMode>
-                <ProfileSubNavigation {...JSON.parse(propsElement.textContent)} />
-            </StrictMode>,
-        );
-    }
-});

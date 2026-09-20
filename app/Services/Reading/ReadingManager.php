@@ -80,10 +80,12 @@ class ReadingManager
             $statusChanged = ! $isNew && $previousStatus !== $status;
             $completionDateChanged = $status === 'completed'
                 && $previousCompletedDate !== $readingList->completed_at?->toDateString();
+            $forceCompletedActivity = $status === 'completed'
+                && (bool) ($data['force_completed_activity'] ?? false);
 
             $eventType = match (true) {
                 $isReread => 'reread',
-                $status === 'completed' && ($isNew || $statusChanged || $completionDateChanged) => 'completed',
+                $status === 'completed' && ($isNew || $statusChanged || $completionDateChanged || $forceCompletedActivity) => 'completed',
                 $isNew => 'added_to_readlist',
                 $statusChanged && $status === 'reading' => 'started',
                 $statusChanged && $status === 'completed' => 'completed',
@@ -115,7 +117,8 @@ class ReadingManager
                 $isNew ? null : $previousStatus,
                 $status,
                 $isReread,
-                $status === 'completed' ? $readingList->completed_at : null,
+                $data['activity_occurred_at'] ?? ($status === 'completed' ? $readingList->completed_at : null),
+                $forceCompletedActivity,
             );
 
             return $readingList->load(['progress', 'logs']);

@@ -64,7 +64,7 @@ class SearchController extends Controller
                         ->orWhere('username', 'like', "%{$query}%");
                 })
                 ->withCount([
-                    'reviews' => fn (Builder $reviews) => $reviews->whereNull('hidden_at'),
+                    'reviews' => fn (Builder $reviews) => $reviews->whereNull('hidden_at')->written(),
                     'readingLists as completed_literature_count' => fn (Builder $readingLists) => $readingLists->where('status', 'completed'),
                 ])
                 ->orderBy('name')

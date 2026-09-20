@@ -20,6 +20,7 @@ class ActivityRecorder
         string $currentStatus,
         bool $isReread = false,
         ?CarbonInterface $occurredAt = null,
+        bool $forceCompletedActivity = false,
     ): ?Activity {
         if (! $isReread && $previousStatus === 'completed' && $currentStatus !== 'completed') {
             Activity::query()
@@ -31,6 +32,7 @@ class ActivityRecorder
 
         $type = match (true) {
             $isReread => Activity::TYPE_STARTED_READING,
+            $forceCompletedActivity && $currentStatus === 'completed' => Activity::TYPE_COMPLETED,
             $previousStatus === $currentStatus => null,
             $currentStatus === 'want_to_read' => Activity::TYPE_ADDED_TO_READLIST,
             $currentStatus === 'reading' => Activity::TYPE_STARTED_READING,
@@ -61,18 +63,27 @@ class ActivityRecorder
             ->delete();
     }
 
-    public function recordReview(Review $review): Activity
+    public function recordReview(Review $review): ?Activity
     {
         $body = filled($review->body) ? trim((string) $review->body) : null;
+
+        if ($body === null) {
+            Activity::query()
+                ->whereBelongsTo($review)
+                ->whereIn('type', [Activity::TYPE_RATED, Activity::TYPE_REVIEWED])
+                ->delete();
+
+            return null;
+        }
 
         return Activity::query()->create([
             'user_id' => $review->user_id,
             'literature_id' => $review->literature_id,
             'review_id' => $review->id,
-            'type' => $body === null ? Activity::TYPE_RATED : Activity::TYPE_REVIEWED,
+            'type' => Activity::TYPE_REVIEWED,
             'metadata' => [
                 'rating' => (float) $review->rating,
-                'review_excerpt' => $body === null ? null : Str::limit($body, 280),
+                'review_excerpt' => Str::limit($body, 280),
                 'contains_spoiler' => (bool) $review->contains_spoiler,
             ],
             'occurred_at' => now(),

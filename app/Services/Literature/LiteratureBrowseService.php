@@ -21,7 +21,11 @@ final class LiteratureBrowseService
         'rating-asc',
     ];
 
-    private const RATINGS = [4.5, 4.0, 3.5, 3.0];
+    private const RATING_FILTERS = [
+        'highest',
+        'lowest',
+        'top-100',
+    ];
 
     public function __construct(
         private readonly CanonicalLiteratureSearch $canonicalSearch,
@@ -29,22 +33,25 @@ final class LiteratureBrowseService
 
     /**
      * @param  array<string, mixed>  $input
-     * @return array{decade: ?int, rating: ?float, genre: ?string, sort: string}
+     * @return array{q: string, decade: ?int, rating: ?string, genre: ?string, sort: string}
      */
     public function normalizeFilters(array $input): array
     {
+        $search = Str::limit(trim((string) ($input['q'] ?? '')), 100, '');
         $decade = filter_var($input['decade'] ?? null, FILTER_VALIDATE_INT);
         $decade = $decade !== false && $decade >= 0 && $decade <= 3000 && $decade % 10 === 0
             ? $decade
             : null;
-        $rating = is_numeric($input['rating'] ?? null) ? (float) $input['rating'] : null;
-        $rating = in_array($rating, self::RATINGS, true) ? $rating : null;
+        $rating = in_array($input['rating'] ?? null, self::RATING_FILTERS, true)
+            ? (string) $input['rating']
+            : null;
         $genre = Str::slug(trim((string) ($input['genre'] ?? '')));
         $sort = in_array($input['sort'] ?? null, self::SORTS, true)
             ? (string) $input['sort']
             : 'popularity';
 
         return [
+            'q' => $search,
             'decade' => $decade,
             'rating' => $rating,
             'genre' => $genre === '' ? null : $genre,
@@ -55,7 +62,7 @@ final class LiteratureBrowseService
     /** @return LengthAwarePaginator<Literature> */
     public function browse(array $filters, int $perPage = 48): LengthAwarePaginator
     {
-        $query = $this->queryWithMetrics();
+        $query = $this->queryWithMetrics($filters['q']);
 
         if ($filters['decade'] !== null) {
             $query->whereBetween('literatures.publication_year', [
@@ -65,10 +72,18 @@ final class LiteratureBrowseService
         }
 
         if ($filters['rating'] !== null) {
-            $query->whereRaw(
-                'browse_ratings.average_rating * 2 >= ?',
-                [(int) round($filters['rating'] * 2)],
-            );
+            $query->whereNotNull('browse_ratings.average_rating');
+
+            if ($filters['rating'] === 'top-100') {
+                $topRatedIds = DB::query()
+                    ->fromSub($this->ratingStats(), 'top_ratings')
+                    ->select('representative_id')
+                    ->orderByDesc('average_rating')
+                    ->orderByDesc('rating_count')
+                    ->limit(100);
+
+                $query->whereIn('literatures.id', $topRatedIds);
+            }
         }
 
         if ($filters['genre'] !== null) {
@@ -88,7 +103,13 @@ final class LiteratureBrowseService
             }
         }
 
-        $this->applySort($query, $filters['sort']);
+        $sort = match ($filters['rating']) {
+            'highest', 'top-100' => 'rating-desc',
+            'lowest' => 'rating-asc',
+            default => $filters['sort'],
+        };
+
+        $this->applySort($query, $sort);
 
         return $query->paginate($perPage);
     }
@@ -105,7 +126,7 @@ final class LiteratureBrowseService
     /**
      * @return array{
      *     decades: list<array{value: int, label: string}>,
-     *     ratings: list<array{value: float, label: string}>,
+     *     ratings: list<array{value: string, label: string}>,
      *     genres: list<array{name: string, slug: string}>,
      *     sorts: list<array{value: string, label: string, group: string}>
      * }
@@ -150,25 +171,24 @@ final class LiteratureBrowseService
 
         return [
             'decades' => $decades,
-            'ratings' => collect(self::RATINGS)->map(fn (float $rating): array => [
-                'value' => $rating,
-                'label' => number_format($rating, 1).'+',
-            ])->all(),
+            'ratings' => [
+                ['value' => 'highest', 'label' => 'Highest First'],
+                ['value' => 'lowest', 'label' => 'Lowest First'],
+                ['value' => 'top-100', 'label' => 'Top 100 Ratings'],
+            ],
             'genres' => $genres,
             'sorts' => [
                 ['value' => 'popularity', 'label' => 'Popularity', 'group' => 'Popularity'],
                 ['value' => 'year-desc', 'label' => 'Newest First', 'group' => 'Release Date'],
                 ['value' => 'year-asc', 'label' => 'Oldest First', 'group' => 'Release Date'],
-                ['value' => 'rating-desc', 'label' => 'Highest First', 'group' => 'Average Rating'],
-                ['value' => 'rating-asc', 'label' => 'Lowest First', 'group' => 'Average Rating'],
             ],
         ];
     }
 
     /** @return Builder<Literature> */
-    private function queryWithMetrics(): Builder
+    private function queryWithMetrics(string $search = ''): Builder
     {
-        $query = $this->canonicalSearch->query()
+        $query = $this->canonicalSearch->query($search)
             ->with('sourceMapping.canonicalWork.literatures.categories');
 
         return $query
@@ -257,13 +277,15 @@ final class LiteratureBrowseService
                     })
                     ->orWhere(function ($reviews): void {
                         $reviews
-                            ->whereIn('browse_activities.type', [Activity::TYPE_RATED, Activity::TYPE_REVIEWED])
+                            ->where('browse_activities.type', Activity::TYPE_REVIEWED)
                             ->whereExists(function ($review): void {
                                 $review
                                     ->selectRaw('1')
                                     ->from('reviews')
                                     ->whereColumn('reviews.id', 'browse_activities.review_id')
-                                    ->whereNull('reviews.hidden_at');
+                                    ->whereNull('reviews.hidden_at')
+                                    ->whereNotNull('reviews.body')
+                                    ->whereRaw("TRIM(reviews.body) <> ''");
                             });
                     });
             })
@@ -275,7 +297,7 @@ final class LiteratureBrowseService
         return DB::query()
             ->fromSub($signals, 'canonical_weekly_signals')
             ->select('representative_id')
-            ->selectRaw("SUM(CASE type WHEN 'reviewed' THEN 4 WHEN 'rated' THEN 3 WHEN 'completed' THEN 2 WHEN 'started_reading' THEN 1 ELSE 0 END) AS score")
+            ->selectRaw("SUM(CASE type WHEN 'reviewed' THEN 4 WHEN 'completed' THEN 2 WHEN 'started_reading' THEN 1 ELSE 0 END) AS score")
             ->groupBy('representative_id');
     }
 

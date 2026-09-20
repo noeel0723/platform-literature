@@ -84,8 +84,10 @@ class Activity extends Model
                     })
                     ->orWhere(function (Builder $reviews): void {
                         $reviews
-                            ->whereIn('type', [self::TYPE_RATED, self::TYPE_REVIEWED])
-                            ->whereHas('review', fn (Builder $review) => $review->whereNull('hidden_at'));
+                            ->where('type', self::TYPE_REVIEWED)
+                            ->whereHas('review', fn (Builder $review) => $review
+                                ->whereNull('hidden_at')
+                                ->written());
                     })
                     ->orWhere(function (Builder $discussions): void {
                         $discussions
@@ -116,7 +118,9 @@ class Activity extends Model
                         ->from('reviews')
                         ->whereColumn('reviews.user_id', 'activities.user_id')
                         ->whereColumn('reviews.literature_id', 'activities.literature_id')
-                        ->whereNull('reviews.hidden_at');
+                        ->whereNull('reviews.hidden_at')
+                        ->whereNotNull('reviews.body')
+                        ->whereRaw("TRIM(reviews.body) <> ''");
                 });
         });
     }

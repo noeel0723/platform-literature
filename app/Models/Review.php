@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Database\Factories\ReviewFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -37,6 +38,14 @@ class Review extends Model
     public function reports(): MorphMany
     {
         return $this->morphMany(Report::class, 'reportable');
+    }
+
+    /** @param Builder<Review> $query */
+    public function scopeWritten(Builder $query): Builder
+    {
+        return $query
+            ->whereNotNull('body')
+            ->whereRaw("TRIM(body) <> ''");
     }
 
     protected static function booted(): void

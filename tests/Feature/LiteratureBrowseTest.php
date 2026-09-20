@@ -111,22 +111,19 @@ class LiteratureBrowseTest extends TestCase
         $this->assertNotContains($other->title, collect($response->inertiaProps('literatures.data'))->pluck('title'));
     }
 
-    public function test_decade_and_minimum_visible_rating_filters_can_be_combined(): void
+    public function test_local_search_and_decade_filter_can_be_combined(): void
     {
-        $match = Literature::factory()->create(['title' => 'Rated 2010s', 'publication_year' => 2016]);
-        $old = Literature::factory()->create(['title' => 'Rated 2000s', 'publication_year' => 2006]);
-        $low = Literature::factory()->create(['title' => 'Low Rated 2010s', 'publication_year' => 2017]);
-        Review::factory()->for($match)->create(['rating' => 4.5]);
-        Review::factory()->for($old)->create(['rating' => 4.5]);
-        Review::factory()->for($low)->create(['rating' => 3.5]);
-        Review::factory()->for($low)->create(['rating' => 5, 'hidden_at' => now()]);
+        Literature::factory()->create(['title' => 'Moonlit Archive', 'publication_year' => 2016]);
+        Literature::factory()->create(['title' => 'Moonlit Classic', 'publication_year' => 2006]);
+        Literature::factory()->create(['title' => 'Sunny Archive', 'publication_year' => 2017]);
 
         $response = $this->get(route('literature.browse', [
+            'q' => 'Moonlit',
             'decade' => 2010,
-            'rating' => 4,
         ]));
 
-        $this->assertSame(['Rated 2010s'], collect($response->inertiaProps('literatures.data'))->pluck('title')->all());
+        $this->assertSame('Moonlit', $response->inertiaProps('filters.q'));
+        $this->assertSame(['Moonlit Archive'], collect($response->inertiaProps('literatures.data'))->pluck('title')->all());
     }
 
     public function test_release_date_sorting_supports_newest_and_oldest_first(): void
@@ -149,8 +146,8 @@ class LiteratureBrowseTest extends TestCase
         Review::factory()->for($high)->create(['rating' => 5]);
         Review::factory()->for($low)->create(['rating' => 2]);
 
-        $highest = $this->get(route('literature.browse', ['sort' => 'rating-desc']));
-        $lowest = $this->get(route('literature.browse', ['sort' => 'rating-asc']));
+        $highest = $this->get(route('literature.browse', ['rating' => 'highest']));
+        $lowest = $this->get(route('literature.browse', ['rating' => 'lowest']));
 
         $this->assertSame(['Highest Rated', 'Lowest Rated'], collect($highest->inertiaProps('literatures.data'))->pluck('title')->all());
         $this->assertSame(['Lowest Rated', 'Highest Rated'], collect($lowest->inertiaProps('literatures.data'))->pluck('title')->all());
@@ -184,8 +181,8 @@ class LiteratureBrowseTest extends TestCase
         $response = $this->get(route('literature.browse', [
             'genre' => 'fantasy',
             'decade' => 2010,
-            'rating' => 4,
-            'sort' => 'rating-desc',
+            'rating' => 'highest',
+            'sort' => 'year-asc',
         ]));
 
         $this->assertSame(['Higher Fantasy', 'Lower Fantasy'], collect($response->inertiaProps('literatures.data'))->pluck('title')->all());
@@ -194,7 +191,8 @@ class LiteratureBrowseTest extends TestCase
     public function test_pagination_preserves_all_browse_query_parameters(): void
     {
         $horror = Category::factory()->create(['name' => 'Horror', 'slug' => 'horror']);
-        Literature::factory()->count(49)->create(['publication_year' => 2015])->each(function (Literature $literature) use ($horror): void {
+        Literature::factory()->count(49)->create(['publication_year' => 2015])->each(function (Literature $literature, int $index) use ($horror): void {
+            $literature->update(['title' => 'Literature '.$index]);
             $literature->categories()->attach($horror);
             Review::factory()->for($literature)->create(['rating' => 4]);
         });
@@ -202,15 +200,48 @@ class LiteratureBrowseTest extends TestCase
         $response = $this->get(route('literature.browse', [
             'genre' => 'horror',
             'decade' => 2010,
-            'rating' => 4,
+            'rating' => 'highest',
             'sort' => 'year-desc',
+            'q' => 'Literature',
         ]));
         $next = $response->inertiaProps('literatures.next_page_url');
 
         $this->assertStringContainsString('genre=horror', $next);
         $this->assertStringContainsString('decade=2010', $next);
-        $this->assertStringContainsString('rating=4', $next);
+        $this->assertStringContainsString('rating=highest', $next);
         $this->assertStringContainsString('sort=year-desc', $next);
+        $this->assertStringContainsString('q=Literature', $next);
+    }
+
+    public function test_top_100_rating_filter_caps_results_to_the_highest_rated_works(): void
+    {
+        Literature::factory()->count(100)->create()->each(
+            fn (Literature $literature) => Review::factory()->for($literature)->create(['rating' => 5]),
+        );
+        $excluded = Literature::factory()->create(['title' => 'Lowest Rated Excluded Work']);
+        Review::factory()->for($excluded)->create(['rating' => 1]);
+
+        $response = $this->get(route('literature.browse', ['rating' => 'top-100']));
+
+        $this->assertSame(100, $response->inertiaProps('literatures.total'));
+        $this->assertNotContains(
+            'Lowest Rated Excluded Work',
+            collect($response->inertiaProps('literatures.data'))->pluck('title'),
+        );
+    }
+
+    public function test_rating_filter_options_only_expose_lowest_highest_and_top_100(): void
+    {
+        $response = $this->get(route('literature.index'));
+
+        $this->assertSame(
+            ['highest', 'lowest', 'top-100'],
+            collect($response->inertiaProps('options.ratings'))->pluck('value')->all(),
+        );
+        $this->assertEqualsCanonicalizing(
+            ['popularity', 'year-desc', 'year-asc'],
+            collect($response->inertiaProps('options.sorts'))->pluck('value')->all(),
+        );
     }
 
     public function test_literature_detail_genre_links_to_global_browse_for_guests(): void

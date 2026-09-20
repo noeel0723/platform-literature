@@ -117,6 +117,58 @@ class ReviewManagementTest extends TestCase
         ]);
     }
 
+    public function test_rating_without_written_review_is_completed_and_not_presented_as_a_review(): void
+    {
+        Carbon::setTestNow('2026-09-20 10:15:00');
+
+        try {
+            $user = User::factory()->create();
+            $literature = Literature::factory()->create(['title' => 'Rating Only Work']);
+
+            $this->actingAs($user)->put(route('reviews.update', $literature), [
+                'rating' => 4.5,
+                'body' => '   ',
+                'completed_at' => '2024-01-02',
+            ])->assertSessionHas('success', 'Your rating has been saved and this literature is marked as completed.');
+
+            $this->assertDatabaseHas('reviews', [
+                'user_id' => $user->id,
+                'literature_id' => $literature->id,
+                'rating' => 4.5,
+                'body' => null,
+            ]);
+            $this->assertDatabaseHas('reading_lists', [
+                'user_id' => $user->id,
+                'literature_id' => $literature->id,
+                'status' => 'completed',
+            ]);
+            $this->assertDatabaseMissing('activities', ['type' => Activity::TYPE_RATED]);
+            $this->assertDatabaseMissing('activities', ['type' => Activity::TYPE_REVIEWED]);
+            $this->assertSame(
+                '2026-09-20T10:15:00+00:00',
+                Activity::query()->where('type', Activity::TYPE_COMPLETED)->sole()->occurred_at?->utc()->toIso8601String(),
+            );
+
+            $detail = $this->get(route('literatures.show', $literature))->assertOk();
+            $this->assertSame(1, $detail->inertiaProps('ratingSummary.count'));
+            $this->assertSame([], $detail->inertiaProps('reviews'));
+
+            $profileReviews = $this->get(route('profiles.reviews', $user))->assertOk();
+            $this->assertSame(0, $profileReviews->inertiaProps('reviews.total'));
+            $this->assertSame(0, $profileReviews->inertiaProps('summary.total_reviews'));
+
+            $profile = $this->get(route('profiles.show', $user))->assertOk();
+            $this->assertSame(0, $profile->inertiaProps('profile.stats.reviews'));
+            $this->assertSame([], $profile->inertiaProps('recentReviews'));
+
+            $activity = $this->actingAs($user)->get(route('activity.index'))->assertOk();
+            $this->assertSame(Activity::TYPE_COMPLETED, $activity->inertiaProps('activities.data.0.type'));
+            $this->assertSame('completed', $activity->inertiaProps('activities.data.0.action'));
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
     public function test_updating_a_review_reuses_the_same_record(): void
     {
         $user = User::factory()->create();

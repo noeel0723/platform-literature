@@ -27,7 +27,7 @@ class ProfileController extends Controller
             'favoriteAuthors',
         ])
             ->loadCount([
-                'reviews' => fn ($query) => $query->whereNull('hidden_at'),
+                'reviews' => fn ($query) => $query->whereNull('hidden_at')->written(),
                 'followers',
                 'following',
                 'readingLists as literature_count',
@@ -44,6 +44,7 @@ class ProfileController extends Controller
 
         $recentReviews = $user->reviews()
             ->whereNull('hidden_at')
+            ->written()
             ->with(['literature.authors', 'literature.metadataOverride', 'literature.sourceMapping.canonicalWork.metadataOverride'])
             ->withCount('likes')
             ->latest('updated_at')

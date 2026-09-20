@@ -38,15 +38,16 @@ final class UserStatsService
             fn (Collection $entries): bool => ! $entries->contains('status', 'completed')
                 && $entries->contains('status', 'want_to_read'),
         );
-        $reviews = $user->reviews
+        $ratings = $user->reviews
             ->sortByDesc('updated_at')
             ->unique(fn (Review $review): string => $this->identity->key($review->literature))
             ->values();
+        $writtenReviews = $ratings->filter(fn (Review $review): bool => filled($review->body));
         $activityDates = $user->readingLists
             ->flatMap(fn (ReadingList $entry): Collection => $entry->logs->pluck('occurred_at'))
             ->merge($user->readingLists->pluck('started_at'))
             ->merge($user->readingLists->pluck('completed_at'))
-            ->merge($reviews->pluck('updated_at'))
+            ->merge($ratings->pluck('updated_at'))
             ->filter()
             ->map(fn ($date): string => Carbon::parse($date)->toDateString())
             ->unique();
@@ -56,20 +57,20 @@ final class UserStatsService
             'summary' => [
                 'completed' => $completed->count(),
                 'readlist' => $readlist->count(),
-                'reviews' => $reviews->count(),
-                'average_rating' => $reviews->isEmpty() ? null : round((float) $reviews->avg('rating'), 2),
+                'reviews' => $writtenReviews->count(),
+                'average_rating' => $ratings->isEmpty() ? null : round((float) $ratings->avg('rating'), 2),
                 'completed_this_year' => $completed->filter(
                     fn (ReadingList $entry): bool => $entry->completed_at?->year === $year,
                 )->count(),
                 'active_days' => $activityDates->count(),
             ],
-            'rating_distribution' => collect(range(1, 10))->map(function (int $halfStar) use ($reviews): array {
+            'rating_distribution' => collect(range(1, 10))->map(function (int $halfStar) use ($ratings): array {
                 $rating = $halfStar / 2;
 
                 return [
                     'rating' => $rating,
                     'label' => number_format($rating, 1),
-                    'count' => $reviews->where('rating', $rating)->count(),
+                    'count' => $ratings->where('rating', $rating)->count(),
                 ];
             })->all(),
             'by_type' => $this->rankedCounts(

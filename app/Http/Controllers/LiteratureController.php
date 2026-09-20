@@ -280,6 +280,7 @@ class LiteratureController extends Controller
                 'count' => $literature->reviews->count(),
             ],
             'reviews' => $literature->reviews
+                ->filter(fn (Review $review): bool => filled($review->body))
                 ->sortByDesc('created_at')
                 ->map(fn (Review $review): array => $this->presentReview($review, $userId))
                 ->values()
