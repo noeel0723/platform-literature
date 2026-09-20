@@ -82,7 +82,13 @@ final class LiteratureBrowseService
                     ->orderByDesc('rating_count')
                     ->limit(100);
 
-                $query->whereIn('literatures.id', $topRatedIds);
+                $query->joinSub(
+                    $topRatedIds,
+                    'top_100_ratings',
+                    'top_100_ratings.representative_id',
+                    '=',
+                    'literatures.id',
+                );
             }
         }
 
