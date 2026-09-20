@@ -69,6 +69,7 @@ class SearchPageTest extends TestCase
         $props = $this->embeddedReactProps($response->getContent(), 'data-react-header-props');
 
         $this->assertSame(route('search.index'), $props['routes']['search']);
+        $this->assertSame(route('literature.index'), $props['routes']['literature']);
     }
 
     public function test_authenticated_header_exposes_the_complete_compact_account_navigation(): void

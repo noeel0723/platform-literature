@@ -252,16 +252,10 @@ class LiteratureController extends Controller
                 ->get()
                 ->map(fn (Literature $candidate): array => $this->presenter->present($candidate));
         $presentedLiterature = $this->presenter->present($literature);
-        $viewer = request()->user();
         $presentedLiterature['genre_links'] = collect($presentedLiterature['genre_links'])
             ->map(fn (array $genre): array => [
                 ...$genre,
-                'url' => $viewer === null
-                    ? null
-                    : route('profiles.literature', [
-                        'user' => $viewer,
-                        'genre' => $genre['slug'],
-                    ]),
+                'url' => route('literature.browse', ['genre' => $genre['slug']]),
             ])
             ->all();
 

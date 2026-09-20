@@ -223,7 +223,7 @@ class ProfileLiteraturePageTest extends TestCase
         );
     }
 
-    public function test_literature_detail_genre_link_targets_authenticated_viewers_literature_page(): void
+    public function test_literature_detail_genre_link_targets_global_literature_browse(): void
     {
         $viewer = User::factory()->create(['username' => 'axel']);
         $horror = Category::factory()->create(['name' => 'Horror', 'slug' => 'horror']);
@@ -245,13 +245,10 @@ class ProfileLiteraturePageTest extends TestCase
             ->component('Catalog/Show')
             ->where('literature.genre_links.0.name', 'Horror')
             ->where('literature.genre_links.0.slug', 'horror')
-            ->where('literature.genre_links.0.url', route('profiles.literature', [
-                'user' => $viewer,
-                'genre' => 'horror',
-            ])));
+            ->where('literature.genre_links.0.url', route('literature.browse', ['genre' => 'horror'])));
     }
 
-    public function test_literature_detail_genre_is_not_clickable_for_guests(): void
+    public function test_literature_detail_genre_links_to_global_browse_for_guests(): void
     {
         $horror = Category::factory()->create(['name' => 'Horror', 'slug' => 'horror']);
         $literature = Literature::factory()->create(['title' => 'Guest Horror']);
@@ -259,7 +256,7 @@ class ProfileLiteraturePageTest extends TestCase
 
         $this->get(route('literatures.show', $literature))
             ->assertInertia(fn (Assert $page) => $page
-                ->where('literature.genre_links.0.url', null));
+                ->where('literature.genre_links.0.url', route('literature.browse', ['genre' => 'horror'])));
     }
 
     public function test_standalone_genre_catalog_route_no_longer_exists(): void

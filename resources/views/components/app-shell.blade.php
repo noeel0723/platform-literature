@@ -26,6 +26,7 @@
             'search_query' => request()->routeIs('search.index') ? request('q') : '',
             'routes' => [
                 'home' => route('home'),
+                'literature' => route('literature.index'),
                 'catalog' => route('literatures.index'),
                 'search' => route('search.index'),
                 'login' => route('login'),
