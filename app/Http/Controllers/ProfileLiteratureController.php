@@ -2,17 +2,47 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Models\User;
 use App\Support\ProfilePagePresenter;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ProfileLiteratureController extends Controller
 {
-    public function __invoke(User $user, ProfilePagePresenter $presenter): Response
+    public function __invoke(User $user, ProfilePagePresenter $presenter, Request $request): Response
     {
+        $genreSlug = Str::slug(trim((string) $request->query('genre', '')));
+        $genre = $genreSlug === ''
+            ? null
+            : Category::query()->where('slug', $genreSlug)->first();
+
         $completedLiterature = $user->readingLists()
             ->where('status', 'completed')
+            ->when($genreSlug !== '', function ($readingLists) use ($genre): void {
+                if ($genre === null) {
+                    $readingLists->whereRaw('1 = 0');
+
+                    return;
+                }
+
+                $readingLists->whereHas('literature', function (Builder $literatures) use ($genre): void {
+                    $literatures->where(function (Builder $genreMatches) use ($genre): void {
+                        $genreMatches
+                            ->whereHas(
+                                'categories',
+                                fn (Builder $categories) => $categories->whereKey($genre->id),
+                            )
+                            ->orWhereHas(
+                                'sourceMapping.canonicalWork.literatures.categories',
+                                fn (Builder $categories) => $categories->whereKey($genre->id),
+                            );
+                    });
+                });
+            })
             ->with([
                 'literature.authors',
                 'literature.metadataOverride',
@@ -22,7 +52,8 @@ class ProfileLiteratureController extends Controller
                     ->whereNull('hidden_at'),
             ])
             ->latest('completed_at')
-            ->paginate(48);
+            ->paginate(48)
+            ->withQueryString();
 
         $completedLiterature->through(fn ($item): array => [
             'id' => $item->id,
@@ -35,6 +66,10 @@ class ProfileLiteratureController extends Controller
             'profile' => $presenter->user($user),
             'navigation' => $presenter->navigation($user, 'literature', request()->user()),
             'completedLiterature' => $completedLiterature,
+            'activeGenre' => $genreSlug === '' ? null : [
+                'name' => $genre?->name ?? Str::headline($genreSlug),
+                'slug' => $genreSlug,
+            ],
         ]);
     }
 }

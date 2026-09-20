@@ -4,19 +4,26 @@ import ProfileSubNavigation from '../../Components/ProfileSubNavigation';
 import { StarRating } from '../../Components/LiteratureDetail/DetailUi';
 import { LiteratureCover, Pagination, ProfileContentContainer, ProfilePageHeading } from '../../Components/ProfilePageUi';
 
-export default function ProfileLiterature({ profile, navigation, completedLiterature }) {
+export default function ProfileLiterature({ profile, navigation, completedLiterature, activeGenre }) {
     return (
         <>
             <Head title={`${profile.name} Literature`} />
             <ProfileSubNavigation navigation={navigation} />
 
             <ProfileContentContainer className="py-7 lg:py-9" aria-labelledby="completed-literature-heading">
-                <ProfilePageHeading
-                />
+                <ProfilePageHeading />
+
+                {activeGenre && (
+                    <p className="mt-2 text-xs font-bold uppercase tracking-[0.16em] text-brand-blue">
+                        Literature · {activeGenre.name}
+                    </p>
+                )}
 
                 {completedLiterature.data.length === 0 ? (
                     <div className="mt-5 border-y border-dashed border-ink-950/20 px-5 py-10 text-center">
-                        <p className="text-lg font-bold text-ink-950">No completed literature yet.</p>
+                        <p className="text-lg font-bold text-ink-950">
+                            {activeGenre ? `No completed ${activeGenre.name} literature yet.` : 'No completed literature yet.'}
+                        </p>
                         <p className="mt-1.5 text-sm text-ink-950/55">Titles marked Completed will appear on this shelf.</p>
                     </div>
                 ) : (

@@ -3,7 +3,6 @@
 namespace App\Services\Literature;
 
 use App\Models\CanonicalWork;
-use App\Models\Category;
 use App\Models\Literature;
 use App\Models\LiteratureSourceMapping;
 use Illuminate\Database\Eloquent\Builder;
@@ -11,14 +10,13 @@ use Illuminate\Database\Eloquent\Builder;
 final class CanonicalLiteratureSearch
 {
     /** @return Builder<Literature> */
-    public function query(string $query = '', string $selectedType = '', ?Category $category = null): Builder
+    public function query(string $query = '', string $selectedType = ''): Builder
     {
         $matchingCanonicalIds = LiteratureSourceMapping::query()
             ->select('canonical_work_id')
-            ->whereHas('literature', function (Builder $literatures) use ($category, $query, $selectedType): void {
+            ->whereHas('literature', function (Builder $literatures) use ($query, $selectedType): void {
                 $this->applySupportedType($literatures, $selectedType);
                 $this->applySearch($literatures, $query);
-                $this->applyCategory($literatures, $category);
             });
         $preferredLiteratureIds = CanonicalWork::query()
             ->select('preferred_literature_id')
@@ -29,13 +27,12 @@ final class CanonicalLiteratureSearch
             ->with(['apiSource', 'authors', 'categories', 'sourceMapping.canonicalWork.metadataOverride', 'metadataOverride'])
             ->whereIn('type', Literature::supportedTypes())
             ->when($selectedType !== '', fn (Builder $literatures) => $literatures->where('type', $selectedType))
-            ->where(function (Builder $literatures) use ($category, $preferredLiteratureIds, $query): void {
+            ->where(function (Builder $literatures) use ($preferredLiteratureIds, $query): void {
                 $literatures
                     ->whereIn('literatures.id', $preferredLiteratureIds)
-                    ->orWhere(function (Builder $legacy) use ($category, $query): void {
+                    ->orWhere(function (Builder $legacy) use ($query): void {
                         $legacy->whereDoesntHave('sourceMapping');
                         $this->applySearch($legacy, $query);
-                        $this->applyCategory($legacy, $category);
                     });
             });
     }
@@ -68,18 +65,5 @@ final class CanonicalLiteratureSearch
                 })
                 ->orWhereHas('categories', fn (Builder $categories) => $categories->where('name', 'like', "%{$query}%"));
         });
-    }
-
-    /** @param Builder<Literature> $builder */
-    private function applyCategory(Builder $builder, ?Category $category): void
-    {
-        if ($category === null) {
-            return;
-        }
-
-        $builder->whereHas(
-            'categories',
-            fn (Builder $categories) => $categories->whereKey($category->id),
-        );
     }
 }

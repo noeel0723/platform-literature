@@ -73,7 +73,6 @@ final class LiteraturePresenter
                 ->map(fn ($category): array => [
                     'name' => $category->name,
                     'slug' => $category->slug,
-                    'url' => route('literatures.genre', $category),
                 ])
                 ->values()
                 ->all(),
