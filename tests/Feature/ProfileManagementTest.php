@@ -181,15 +181,23 @@ class ProfileManagementTest extends TestCase
         $author = Author::factory()->create(['name' => 'Portrait Author', 'image_url' => 'https://example.test/author.jpg']);
         $user->favoriteLiteratures()->attach($literature, ['position' => 1]);
         $user->favoriteAuthors()->attach($author, ['position' => 1]);
+        Literature::factory()->create(['title' => 'Unselected Literature']);
+        Author::factory()->create(['name' => 'Unselected Author']);
 
         $this->actingAs($user)->get(route('profiles.edit'))
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Profile/Edit')
                 ->where('profile.username', $user->username)
-                ->where('literatures.0.cover_url', 'https://example.test/cover.jpg')
-                ->where('authors.0.image_url', 'https://example.test/author.jpg')
+                ->where('favoriteLiteratures.0.cover_url', 'https://example.test/cover.jpg')
+                ->has('favoriteLiteratures', 1)
+                ->where('favoriteAuthors.0.image_url', 'https://example.test/author.jpg')
+                ->has('favoriteAuthors', 1)
+                ->missing('literatures')
+                ->missing('authors')
                 ->has('favoriteLiteratureIds', 4)
                 ->has('favoriteAuthorIds', 4)
+                ->where('routes.favoriteLiteraturesSearch', route('profiles.favorites.literatures'))
+                ->where('routes.favoriteAuthorsSearch', route('profiles.favorites.authors'))
                 ->where('routes.update', route('profiles.update')));
     }
 

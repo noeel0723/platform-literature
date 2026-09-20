@@ -16,6 +16,7 @@ use App\Http\Controllers\LikeController;
 use App\Http\Controllers\LiteratureBrowseController;
 use App\Http\Controllers\LiteratureController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProfileFavoriteSearchController;
 use App\Http\Controllers\ProfileLiteratureController;
 use App\Http\Controllers\ProfileReviewController;
 use App\Http\Controllers\ProfileStatsController;
@@ -84,6 +85,12 @@ Route::middleware('auth')->group(function (): void {
         ->name('discussions.likes.destroy');
     Route::get('/diary', [ReadingDiaryController::class, 'index'])->name('diary.index');
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profiles.edit');
+    Route::get('/profile/favorites/literatures', [ProfileFavoriteSearchController::class, 'literatures'])
+        ->middleware('throttle:60,1')
+        ->name('profiles.favorites.literatures');
+    Route::get('/profile/favorites/authors', [ProfileFavoriteSearchController::class, 'authors'])
+        ->middleware('throttle:60,1')
+        ->name('profiles.favorites.authors');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profiles.update');
     Route::post('/members/{user}/follow', [FollowController::class, 'store'])->name('profiles.follow.store');
     Route::delete('/members/{user}/follow', [FollowController::class, 'destroy'])->name('profiles.follow.destroy');

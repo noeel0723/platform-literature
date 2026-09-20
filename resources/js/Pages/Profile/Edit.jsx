@@ -39,25 +39,24 @@ function AuthorSlot({ index, items, value, onOpen }) {
     );
 }
 
-function FavoritePickerDialog({ picker, items, selectedValues, currentValue, onClose, onSelect }) {
+function FavoritePickerDialog({ picker, searchUrl, selectedValues, currentValue, onClose, onSelect }) {
     const dialogRef = useRef(null);
     const inputRef = useRef(null);
     const [query, setQuery] = useState('');
-    const [debouncedQuery, setDebouncedQuery] = useState('');
+    const [results, setResults] = useState([]);
+    const [searching, setSearching] = useState(false);
+    const [hasSearched, setHasSearched] = useState(false);
     const mode = picker?.mode ?? 'literature';
     const isLiterature = mode === 'literature';
-
-    useEffect(() => {
-        const timer = window.setTimeout(() => setDebouncedQuery(query.trim().toLocaleLowerCase()), 275);
-        return () => window.clearTimeout(timer);
-    }, [query]);
 
     useEffect(() => {
         const dialog = dialogRef.current;
 
         if (picker && dialog && !dialog.open) {
             setQuery('');
-            setDebouncedQuery('');
+            setResults([]);
+            setSearching(false);
+            setHasSearched(false);
             dialog.showModal();
             window.requestAnimationFrame(() => inputRef.current?.focus());
         } else if (!picker && dialog?.open) {
@@ -65,22 +64,60 @@ function FavoritePickerDialog({ picker, items, selectedValues, currentValue, onC
         }
     }, [picker]);
 
-    const results = useMemo(() => items
+    useEffect(() => {
+        const normalizedQuery = query.trim();
+
+        if (!picker || normalizedQuery.length < 2) {
+            setResults([]);
+            setSearching(false);
+            setHasSearched(false);
+            return undefined;
+        }
+
+        const controller = new AbortController();
+        setResults([]);
+        setHasSearched(false);
+
+        const timeout = window.setTimeout(async () => {
+            setSearching(true);
+
+            try {
+                const response = await fetch(`${searchUrl}?${new URLSearchParams({ q: normalizedQuery })}`, {
+                    headers: { Accept: 'application/json' },
+                    credentials: 'same-origin',
+                    signal: controller.signal,
+                });
+                const payload = response.ok ? await response.json() : { results: [] };
+
+                if (!controller.signal.aborted) {
+                    setResults(payload.results ?? []);
+                    setHasSearched(true);
+                }
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    setResults([]);
+                    setHasSearched(true);
+                }
+            } finally {
+                if (!controller.signal.aborted) setSearching(false);
+            }
+        }, 275);
+
+        return () => {
+            window.clearTimeout(timeout);
+            controller.abort();
+        };
+    }, [picker, query, searchUrl]);
+
+    const visibleResults = useMemo(() => results
         .filter((item) => {
             const id = String(item.id);
-            if (selectedValues.includes(id) && id !== String(currentValue ?? '')) return false;
-            if (!debouncedQuery) return true;
-
-            const searchable = isLiterature
-                ? [item.title, item.author, item.year, item.type_label].filter(Boolean).join(' ')
-                : item.name;
-
-            return searchable.toLocaleLowerCase().includes(debouncedQuery);
+            return !selectedValues.includes(id) || id === String(currentValue ?? '');
         })
-        .slice(0, 50), [items, selectedValues, currentValue, debouncedQuery, isLiterature]);
+        .slice(0, 20), [results, selectedValues, currentValue]);
 
-    const choose = (value) => {
-        onSelect(String(value));
+    const choose = (item) => {
+        onSelect(item);
         onClose();
     };
 
@@ -111,8 +148,8 @@ function FavoritePickerDialog({ picker, items, selectedValues, currentValue, onC
             </div>
 
             <div className="max-h-[50vh] overflow-y-auto border-t border-ink-950/10" aria-live="polite">
-                {results.length > 0 ? results.map((item) => (
-                    <button key={item.id} type="button" onClick={() => choose(item.id)} className="flex w-full items-center gap-3 border-b border-ink-950/8 px-5 py-3 text-left transition last:border-b-0 hover:bg-brand-sky/20 focus-visible:bg-brand-sky/20 focus-visible:outline-none">
+                {visibleResults.length > 0 ? visibleResults.map((item) => (
+                    <button key={item.id} type="button" onClick={() => choose(item)} className="flex w-full items-center gap-3 border-b border-ink-950/8 px-5 py-3 text-left transition last:border-b-0 hover:bg-brand-sky/20 focus-visible:bg-brand-sky/20 focus-visible:outline-none">
                         <span className={`shrink-0 overflow-hidden border border-ink-950/10 bg-brand-sky/15 ${isLiterature ? 'h-16 w-11 rounded-sm' : 'size-12 rounded-full'}`}>
                             {(isLiterature ? item.cover_url : item.image_url)
                                 ? <img src={isLiterature ? item.cover_url : item.image_url} alt="" className="size-full object-cover" />
@@ -125,20 +162,26 @@ function FavoritePickerDialog({ picker, items, selectedValues, currentValue, onC
                         {String(item.id) === String(currentValue ?? '') && <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-brand-coral">Current</span>}
                     </button>
                 )) : (
-                    <p className="px-5 py-10 text-center text-sm text-ink-950/55">No {isLiterature ? 'literature' : 'authors'} matched your search.</p>
+                    <p className="px-5 py-10 text-center text-sm text-ink-950/55">
+                        {query.trim().length < 2
+                            ? `Type at least 2 characters to search ${isLiterature ? 'literature' : 'authors'}.`
+                            : searching || !hasSearched
+                                ? 'Searching...'
+                                : `No ${isLiterature ? 'literature' : 'authors'} matched your search.`}
+                    </p>
                 )}
             </div>
 
             {currentValue && (
                 <div className="flex justify-end border-t border-ink-950/10 px-5 py-3">
-                    <button type="button" onClick={() => choose('')} className="text-xs font-bold text-ink-950/55 transition hover:text-brand-coral">Remove current favorite</button>
+                    <button type="button" onClick={() => choose(null)} className="text-xs font-bold text-ink-950/55 transition hover:text-brand-coral">Remove current favorite</button>
                 </div>
             )}
         </dialog>
     );
 }
 
-export default function ProfileEdit({ profile, navigation, literatures, authors, favoriteLiteratureIds, favoriteAuthorIds, routes }) {
+export default function ProfileEdit({ profile, navigation, favoriteLiteratures, favoriteAuthors, favoriteLiteratureIds, favoriteAuthorIds, routes }) {
     const form = useForm({
         _method: 'put',
         name: profile.name,
@@ -152,6 +195,8 @@ export default function ProfileEdit({ profile, navigation, literatures, authors,
     });
     const [avatarPreview, setAvatarPreview] = useState(profile.avatar_url);
     const [picker, setPicker] = useState(null);
+    const [literatureItems, setLiteratureItems] = useState(favoriteLiteratures);
+    const [authorItems, setAuthorItems] = useState(favoriteAuthors);
 
     useEffect(() => {
         if (!form.data.avatar) {
@@ -181,9 +226,20 @@ export default function ProfileEdit({ profile, navigation, literatures, authors,
     const chosenLiteratures = form.data.favorite_literature_ids.filter(Boolean).map(String);
     const chosenAuthors = form.data.favorite_author_ids.filter(Boolean).map(String);
     const pickerKey = picker?.mode === 'author' ? 'favorite_author_ids' : 'favorite_literature_ids';
-    const pickerItems = picker?.mode === 'author' ? authors : literatures;
     const pickerSelectedValues = picker?.mode === 'author' ? chosenAuthors : chosenLiteratures;
     const pickerCurrentValue = picker ? form.data[pickerKey][picker.index] : '';
+    const pickerSearchUrl = picker?.mode === 'author' ? routes.favoriteAuthorsSearch : routes.favoriteLiteraturesSearch;
+
+    const selectFavorite = (item) => {
+        if (item) {
+            const setItems = picker.mode === 'author' ? setAuthorItems : setLiteratureItems;
+            setItems((currentItems) => currentItems.some((current) => String(current.id) === String(item.id))
+                ? currentItems
+                : [...currentItems, item]);
+        }
+
+        updateSlot(pickerKey, picker.index, item ? String(item.id) : '');
+    };
 
     return (
         <>
@@ -216,12 +272,12 @@ export default function ProfileEdit({ profile, navigation, literatures, authors,
                     <div className="grid gap-7">
                         <fieldset className="border border-ink-950/10 bg-white/30 p-4 sm:p-5">
                             <div className="flex items-end justify-between gap-3 border-b border-ink-950/10 pb-2.5"><legend className="text-sm font-semibold uppercase tracking-[0.14em] text-ink-950">Favorite literature</legend><span className="text-[11px] text-ink-950/45">Choose up to 4</span></div>
-                            <div className="mt-4 grid grid-cols-4 gap-2.5 sm:gap-3">{form.data.favorite_literature_ids.map((value, index) => <LiteratureSlot key={index} index={index} items={literatures} value={value} onOpen={() => setPicker({ mode: 'literature', index })} />)}</div>
+                            <div className="mt-4 grid grid-cols-4 gap-2.5 sm:gap-3">{form.data.favorite_literature_ids.map((value, index) => <LiteratureSlot key={index} index={index} items={literatureItems} value={value} onOpen={() => setPicker({ mode: 'literature', index })} />)}</div>
                             <FieldError message={form.errors.favorite_literature_ids ?? form.errors['favorite_literature_ids.0']} />
                         </fieldset>
                         <fieldset className="border border-ink-950/10 bg-white/30 p-4 sm:p-5">
                             <div className="flex items-end justify-between gap-3 border-b border-ink-950/10 pb-2.5"><legend className="text-sm font-semibold uppercase tracking-[0.14em] text-ink-950">Favorite authors</legend><span className="text-[11px] text-ink-950/45">Choose up to 4</span></div>
-                            <div className="mt-4 grid grid-cols-4 gap-2.5 sm:gap-3">{form.data.favorite_author_ids.map((value, index) => <AuthorSlot key={index} index={index} items={authors} value={value} onOpen={() => setPicker({ mode: 'author', index })} />)}</div>
+                            <div className="mt-4 grid grid-cols-4 gap-2.5 sm:gap-3">{form.data.favorite_author_ids.map((value, index) => <AuthorSlot key={index} index={index} items={authorItems} value={value} onOpen={() => setPicker({ mode: 'author', index })} />)}</div>
                             <FieldError message={form.errors.favorite_author_ids ?? form.errors['favorite_author_ids.0']} />
                         </fieldset>
                         <div className="flex flex-wrap items-center justify-end gap-3 border-t border-ink-950/10 pt-5">{form.recentlySuccessful && <span role="status" className="mr-auto text-sm font-semibold text-green-800">Profile saved.</span>}<Link href={routes.profile} className="inline-flex min-h-10 items-center border border-ink-950/15 px-5 text-sm font-bold text-ink-950 hover:border-brand-coral">Cancel</Link><button type="submit" disabled={form.processing} className="min-h-10 bg-ink-950 px-6 text-sm font-bold text-brand-cream transition hover:bg-brand-coral disabled:cursor-wait disabled:opacity-60">{form.processing ? 'Saving…' : 'Save profile'}</button></div>
@@ -230,11 +286,11 @@ export default function ProfileEdit({ profile, navigation, literatures, authors,
             </main>
             <FavoritePickerDialog
                 picker={picker}
-                items={pickerItems}
+                searchUrl={pickerSearchUrl}
                 selectedValues={pickerSelectedValues}
                 currentValue={pickerCurrentValue}
                 onClose={() => setPicker(null)}
-                onSelect={(value) => updateSlot(pickerKey, picker.index, value)}
+                onSelect={selectFavorite}
             />
         </>
     );

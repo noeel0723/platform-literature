@@ -8,7 +8,6 @@ use App\Models\Author;
 use App\Models\Literature;
 use App\Models\Report;
 use App\Models\User;
-use App\Services\Literature\CanonicalLiteratureSearch;
 use App\Support\ProfilePagePresenter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -192,7 +191,6 @@ class ProfileController extends Controller
     public function edit(
         Request $request,
         ProfilePagePresenter $presenter,
-        CanonicalLiteratureSearch $canonicalSearch,
     ): Response {
         $user = $request->user()->load([
             'favoriteLiteratures.authors',
@@ -200,12 +198,6 @@ class ProfileController extends Controller
             'favoriteLiteratures.sourceMapping.canonicalWork.metadataOverride',
             'favoriteAuthors',
         ]);
-        $literatureOptions = $canonicalSearch->query()
-            ->orderByRaw('COALESCE(original_title, title)')
-            ->get()
-            ->concat($user->favoriteLiteratures)
-            ->unique('id')
-            ->sortBy(fn (Literature $literature): string => $literature->displayTitle(), SORT_NATURAL | SORT_FLAG_CASE);
 
         return Inertia::render('Profile/Edit', [
             'profile' => [
@@ -215,13 +207,11 @@ class ProfileController extends Controller
                 'has_avatar' => $user->avatar_path !== null,
             ],
             'navigation' => $presenter->navigation($user, 'profile', $user),
-            'literatures' => $literatureOptions
+            'favoriteLiteratures' => $user->favoriteLiteratures
                 ->map(fn (Literature $literature): array => $presenter->literature($literature))
                 ->values()
                 ->all(),
-            'authors' => Author::query()
-                ->orderBy('name')
-                ->get(['id', 'name', 'slug', 'image_url'])
+            'favoriteAuthors' => $user->favoriteAuthors
                 ->map(fn (Author $author): array => [
                     'id' => $author->id,
                     'name' => $author->name,
@@ -235,6 +225,8 @@ class ProfileController extends Controller
             'routes' => [
                 'profile' => route('profiles.show', $user),
                 'update' => route('profiles.update'),
+                'favoriteLiteraturesSearch' => route('profiles.favorites.literatures'),
+                'favoriteAuthorsSearch' => route('profiles.favorites.authors'),
             ],
         ]);
     }
