@@ -50,6 +50,7 @@ final class CustomListManager
 
     public function add(CustomList $list, Literature $literature): CustomListItem
     {
+        $literature = $this->identity->representative($literature);
         $canonicalWork = $this->identity->canonicalWork($literature);
 
         return DB::transaction(function () use ($list, $literature, $canonicalWork): CustomListItem {
@@ -59,6 +60,10 @@ final class CustomListManager
                 ->first();
 
             if ($existing !== null) {
+                if ($existing->literature_id !== $literature->id) {
+                    $existing->update(['literature_id' => $literature->id]);
+                }
+
                 return $existing;
             }
 
@@ -66,7 +71,7 @@ final class CustomListManager
 
             return $list->items()->create([
                 'canonical_work_id' => $canonicalWork->id,
-                'literature_id' => $canonicalWork->preferred_literature_id ?? $literature->id,
+                'literature_id' => $literature->id,
                 'position' => $position,
             ]);
         });

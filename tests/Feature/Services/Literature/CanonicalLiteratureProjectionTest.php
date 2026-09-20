@@ -218,7 +218,7 @@ class CanonicalLiteratureProjectionTest extends TestCase
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id', $preferred->id)
             ->assertJsonPath('data.0.title', 'Haikyu!!')
-            ->assertJsonPath('data.0.review_url', route('reviews.update', $alternate))
+            ->assertJsonPath('data.0.review_url', route('reviews.update', $preferred))
             ->assertJsonPath('data.0.review.rating', 4.5)
             ->assertJsonPath('data.0.review.body', $review->body);
     }

@@ -8,6 +8,8 @@ use App\Models\Author;
 use App\Models\Literature;
 use App\Models\Report;
 use App\Models\User;
+use App\Services\Literature\CanonicalWorkIdentity;
+use App\Services\Profile\UserStatsService;
 use App\Support\ProfilePagePresenter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,8 +19,11 @@ use Inertia\Response;
 
 class ProfileController extends Controller
 {
-    public function show(User $user, ProfilePagePresenter $presenter): Response
-    {
+    public function show(
+        User $user,
+        ProfilePagePresenter $presenter,
+        UserStatsService $statsService,
+    ): Response {
         $user->load([
             'favoriteLiteratures.authors',
             'favoriteLiteratures.metadataOverride',
@@ -95,6 +100,7 @@ class ProfileController extends Controller
             && $isFollowing
             && $user->isFollowing($viewer);
         $ratingMaximum = max(1, (int) ($ratingDistribution->max() ?? 0));
+        $canonicalStats = $statsService->forUser($user)['summary'];
 
         return Inertia::render('Profile/Show', [
             'profile' => [
@@ -111,13 +117,13 @@ class ProfileController extends Controller
                 'is_friend' => $isFriend,
                 'viewer_authenticated' => $viewer !== null,
                 'stats' => [
-                    'literature' => $user->literature_count,
-                    'completed' => $user->completed_literature_count,
-                    'completed_this_year' => $user->completed_this_year_count,
-                    'reviews' => $user->reviews_count,
+                    'literature' => $canonicalStats['literature'],
+                    'completed' => $canonicalStats['completed'],
+                    'completed_this_year' => $canonicalStats['completed_this_year'],
+                    'reviews' => $canonicalStats['reviews'],
                     'following' => $user->following_count,
                     'followers' => $user->followers_count,
-                    'readlist' => $user->readlist_count,
+                    'readlist' => $canonicalStats['readlist'],
                 ],
             ],
             'navigation' => $presenter->navigation($user, 'profile', $viewer),
@@ -231,7 +237,7 @@ class ProfileController extends Controller
         ]);
     }
 
-    public function update(UpdateProfileRequest $request): RedirectResponse
+    public function update(UpdateProfileRequest $request, CanonicalWorkIdentity $canonicalIdentity): RedirectResponse
     {
         $user = $request->user();
         $profileData = $request->safe()->only(['name', 'username', 'location', 'bio']);
@@ -255,7 +261,21 @@ class ProfileController extends Controller
 
         $user->update($profileData);
 
-        $user->favoriteLiteratures()->sync($this->positionedIds($request->validated('favorite_literature_ids', [])));
+        $favoriteLiteratureIds = Literature::query()
+            ->whereKey($request->validated('favorite_literature_ids', []))
+            ->get()
+            ->keyBy(fn (Literature $literature): int => (int) $literature->getKey());
+        $canonicalFavoriteIds = collect($request->validated('favorite_literature_ids', []))
+            ->map(fn (int $id): ?int => $favoriteLiteratureIds->get($id) === null
+                ? null
+                : (int) $canonicalIdentity->representative($favoriteLiteratureIds->get($id))->getKey())
+            ->filter()
+            ->unique()
+            ->take(4)
+            ->values()
+            ->all();
+
+        $user->favoriteLiteratures()->sync($this->positionedIds($canonicalFavoriteIds));
         $user->favoriteAuthors()->sync($this->positionedIds($request->validated('favorite_author_ids', [])));
 
         return redirect()->route('profiles.show', $user)

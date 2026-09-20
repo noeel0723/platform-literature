@@ -99,6 +99,7 @@ class CustomListManagementTest extends TestCase
 
         $this->assertSame(1, $list->items()->count());
         $this->assertSame($canonical->id, $list->items()->firstOrFail()->canonical_work_id);
+        $this->assertSame($firstEdition->id, $list->items()->firstOrFail()->literature_id);
     }
 
     public function test_owner_can_reorder_items_and_other_users_cannot_modify_the_list(): void

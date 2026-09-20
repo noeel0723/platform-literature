@@ -8,11 +8,14 @@ use App\Models\Discussion;
 use App\Models\Literature;
 use App\Models\Review;
 use App\Models\User;
+use App\Services\Literature\CanonicalWorkIdentity;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Str;
 
 class ActivityRecorder
 {
+    public function __construct(private readonly CanonicalWorkIdentity $canonicalIdentity) {}
+
     public function recordReadingStatus(
         User $user,
         Literature $literature,
@@ -22,10 +25,13 @@ class ActivityRecorder
         ?CarbonInterface $occurredAt = null,
         bool $forceCompletedActivity = false,
     ): ?Activity {
+        $literature = $this->canonicalIdentity->representative($literature);
+        $equivalentIds = $this->canonicalIdentity->equivalentLiteratureIds($literature);
+
         if (! $isReread && $previousStatus === 'completed' && $currentStatus !== 'completed') {
             Activity::query()
                 ->whereBelongsTo($user)
-                ->whereBelongsTo($literature)
+                ->whereIn('literature_id', $equivalentIds)
                 ->where('type', Activity::TYPE_COMPLETED)
                 ->delete();
         }
@@ -52,9 +58,11 @@ class ActivityRecorder
 
     public function removeReadingStatus(User $user, Literature $literature): void
     {
+        $literatureIds = $this->canonicalIdentity->equivalentLiteratureIds($literature);
+
         Activity::query()
             ->whereBelongsTo($user)
-            ->whereBelongsTo($literature)
+            ->whereIn('literature_id', $literatureIds)
             ->whereIn('type', [
                 Activity::TYPE_STARTED_READING,
                 Activity::TYPE_COMPLETED,
@@ -65,6 +73,10 @@ class ActivityRecorder
 
     public function recordReview(Review $review): ?Activity
     {
+        $representative = $this->canonicalIdentity->representative($review->literature);
+        Activity::query()
+            ->whereBelongsTo($review)
+            ->update(['literature_id' => $representative->id]);
         $body = filled($review->body) ? trim((string) $review->body) : null;
 
         if ($body === null) {
@@ -78,7 +90,7 @@ class ActivityRecorder
 
         return Activity::query()->create([
             'user_id' => $review->user_id,
-            'literature_id' => $review->literature_id,
+            'literature_id' => $representative->id,
             'review_id' => $review->id,
             'type' => Activity::TYPE_REVIEWED,
             'metadata' => [
@@ -92,9 +104,11 @@ class ActivityRecorder
 
     public function recordDiscussion(Discussion $discussion): Activity
     {
+        $representative = $this->canonicalIdentity->representative($discussion->literature);
+
         return Activity::query()->create([
             'user_id' => $discussion->user_id,
-            'literature_id' => $discussion->literature_id,
+            'literature_id' => $representative->id,
             'discussion_id' => $discussion->id,
             'type' => Activity::TYPE_DISCUSSION,
             'metadata' => [
@@ -109,10 +123,11 @@ class ActivityRecorder
     public function recordComment(Comment $comment): Activity
     {
         $discussion = $comment->discussion;
+        $representative = $this->canonicalIdentity->representative($discussion->literature);
 
         return Activity::query()->create([
             'user_id' => $comment->user_id,
-            'literature_id' => $discussion->literature_id,
+            'literature_id' => $representative->id,
             'discussion_id' => $discussion->id,
             'comment_id' => $comment->id,
             'type' => Activity::TYPE_COMMENT,

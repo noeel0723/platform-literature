@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Activity;
 use App\Models\Literature;
 use App\Services\ActivityRatingLookup;
+use App\Services\Literature\CanonicalWorkIdentity;
 use App\Services\Recommendations\PersonalRecommendationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -17,6 +18,7 @@ class HomeController extends Controller
         Request $request,
         PersonalRecommendationService $recommendations,
         ActivityRatingLookup $activityRatings,
+        CanonicalWorkIdentity $canonicalIdentity,
     ): Response {
         $viewer = $request->user();
         $friendIds = $viewer?->following()
@@ -44,7 +46,7 @@ class HomeController extends Controller
                 ->orderByDesc('id')
                 ->limit(40)
                 ->get()
-                ->unique(fn (Activity $activity): string => $activity->user_id.'-'.$activity->literature_id)
+                ->unique(fn (Activity $activity): string => $activity->user_id.'-'.$canonicalIdentity->key($activity->literature))
                 ->take(6)
                 ->values();
 

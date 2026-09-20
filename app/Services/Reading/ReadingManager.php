@@ -7,21 +7,39 @@ use App\Models\ReadingList;
 use App\Models\ReadingLog;
 use App\Models\User;
 use App\Services\ActivityRecorder;
+use App\Services\Literature\CanonicalWorkIdentity;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ReadingManager
 {
-    public function __construct(private readonly ActivityRecorder $activityRecorder) {}
+    public function __construct(
+        private readonly ActivityRecorder $activityRecorder,
+        private readonly CanonicalWorkIdentity $canonicalIdentity,
+    ) {}
 
     /** @param array<string, mixed> $data */
     public function update(User $user, Literature $literature, array $data): ReadingList
     {
-        return DB::transaction(function () use ($user, $literature, $data): ReadingList {
-            $readingList = ReadingList::query()->firstOrNew([
-                'user_id' => $user->id,
-                'literature_id' => $literature->id,
-            ]);
+        $literature = $this->canonicalIdentity->representative($literature);
+        $equivalentIds = $this->canonicalIdentity->equivalentLiteratureIds($literature);
+
+        return DB::transaction(function () use ($user, $literature, $equivalentIds, $data): ReadingList {
+            $readingLists = ReadingList::query()
+                ->where('user_id', $user->id)
+                ->whereIn('literature_id', $equivalentIds)
+                ->lockForUpdate()
+                ->get();
+
+            if ($readingLists->count() > 1) {
+                throw ValidationException::withMessages([
+                    'status' => 'This work has conflicting legacy reading entries. Run the interaction audit and resolve them before updating.',
+                ]);
+            }
+
+            $readingList = $readingLists->first() ?? new ReadingList(['user_id' => $user->id]);
+            $readingList->literature()->associate($literature);
 
             $isNew = ! $readingList->exists;
             $previousStatus = $readingList->status;

@@ -163,28 +163,36 @@ class LiteratureController extends Controller
             'outgoingRelations.relatedLiterature.apiSource',
             'outgoingRelations.relatedLiterature.authors',
             'outgoingRelations.relatedLiterature.categories',
-            'reviews' => fn ($reviews) => $reviews
-                ->whereNull('hidden_at')
-                ->with([
-                    'user',
-                    'likes' => fn ($likes) => $likes->where('user_id', $userId),
-                ])
-                ->withCount('likes'),
         ]);
 
+        $equivalentIds = $identity->equivalentLiteratureIds($literature);
+        $canonicalReviews = Review::query()
+            ->whereIn('literature_id', $equivalentIds)
+            ->whereNull('hidden_at')
+            ->with([
+                'user',
+                'likes' => fn ($likes) => $likes->where('user_id', $userId),
+            ])
+            ->withCount('likes')
+            ->latest('updated_at')
+            ->get()
+            ->unique('user_id')
+            ->values();
+
         $readingList = request()->user()?->readingLists()
-            ->whereBelongsTo($literature)
+            ->whereIn('literature_id', $equivalentIds)
             ->with('progress')
+            ->latest('updated_at')
             ->first();
-        $currentReview = request()->user()?->reviews()
-            ->whereBelongsTo($literature)
-            ->first();
+        $currentReview = $canonicalReviews->firstWhere('user_id', request()->user()?->id);
         $viewerLists = collect();
 
         if (request()->user() !== null) {
-            $canonicalWork = $identity->canonicalWork($literature);
+            $canonicalWorkId = $literature->sourceMapping?->canonical_work_id;
             $viewerLists = request()->user()->customLists()
-                ->with(['items' => fn ($items) => $items->where('canonical_work_id', $canonicalWork->id)])
+                ->with(['items' => fn ($items) => $canonicalWorkId === null
+                    ? $items->whereRaw('1 = 0')
+                    : $items->where('canonical_work_id', $canonicalWorkId)])
                 ->orderBy('title')
                 ->get()
                 ->map(fn ($list): array => [
@@ -198,7 +206,8 @@ class LiteratureController extends Controller
                         : route('custom-lists.items.destroy', [$list, $list->items->first()]),
                 ]);
         }
-        $discussions = $literature->discussions()
+        $discussions = Discussion::query()
+            ->whereIn('literature_id', $equivalentIds)
             ->whereNull('hidden_at')
             ->with([
                 'user',
@@ -276,10 +285,10 @@ class LiteratureController extends Controller
                 'custom_lists' => $viewerLists->all(),
             ],
             'ratingSummary' => [
-                'average' => $literature->reviews->avg('rating'),
-                'count' => $literature->reviews->count(),
+                'average' => $canonicalReviews->avg('rating'),
+                'count' => $canonicalReviews->count(),
             ],
-            'reviews' => $literature->reviews
+            'reviews' => $canonicalReviews
                 ->filter(fn (Review $review): bool => filled($review->body))
                 ->sortByDesc('created_at')
                 ->map(fn (Review $review): array => $this->presentReview($review, $userId))
@@ -289,7 +298,10 @@ class LiteratureController extends Controller
                 ->map(fn (Discussion $discussion): array => $this->presentDiscussion($discussion, $userId))
                 ->values()
                 ->all(),
-            'discussionCount' => $literature->discussions()->whereNull('hidden_at')->count(),
+            'discussionCount' => Discussion::query()
+                ->whereIn('literature_id', $equivalentIds)
+                ->whereNull('hidden_at')
+                ->count(),
             'relationshipGroups' => $relationshipGroups->map(fn (array $group): array => [
                 ...$group,
                 'items' => $group['items']->all(),

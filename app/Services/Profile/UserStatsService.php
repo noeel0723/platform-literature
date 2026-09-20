@@ -55,6 +55,7 @@ final class UserStatsService
         return [
             'year' => $year,
             'summary' => [
+                'literature' => $readingByWork->count(),
                 'completed' => $completed->count(),
                 'readlist' => $readlist->count(),
                 'reviews' => $writtenReviews->count(),

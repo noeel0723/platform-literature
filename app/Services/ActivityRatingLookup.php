@@ -3,11 +3,16 @@
 namespace App\Services;
 
 use App\Models\Activity;
+use App\Models\Literature;
 use App\Models\Review;
+use App\Services\Literature\CanonicalWorkIdentity;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 class ActivityRatingLookup
 {
+    public function __construct(private readonly CanonicalWorkIdentity $identity) {}
+
     /**
      * @param  Collection<int, Activity>  $activities
      * @return Collection<string, float>
@@ -18,13 +23,27 @@ class ActivityRatingLookup
             return collect();
         }
 
+        $activities->loadMissing('literature.sourceMapping');
+        $canonicalIds = $activities->pluck('literature.sourceMapping.canonical_work_id')->filter()->unique();
+        $literatureIds = $activities->pluck('literature_id')->unique();
+
         return Review::query()
             ->whereNull('hidden_at')
             ->whereIn('user_id', $activities->pluck('user_id')->unique())
-            ->whereIn('literature_id', $activities->pluck('literature_id')->unique())
-            ->get(['user_id', 'literature_id', 'rating'])
+            ->where(function (Builder $query) use ($literatureIds, $canonicalIds): void {
+                $query->whereIn('literature_id', $literatureIds);
+
+                if ($canonicalIds->isNotEmpty()) {
+                    $query->orWhereHas('literature.sourceMapping', fn (Builder $mapping) => $mapping
+                        ->whereIn('canonical_work_id', $canonicalIds));
+                }
+            })
+            ->with('literature.sourceMapping')
+            ->latest('updated_at')
+            ->get(['id', 'user_id', 'literature_id', 'rating', 'updated_at'])
+            ->unique(fn (Review $review): string => $this->key($review->user_id, $review->literature))
             ->mapWithKeys(fn (Review $review): array => [
-                $this->key($review->user_id, $review->literature_id) => (float) $review->rating,
+                $this->key($review->user_id, $review->literature) => (float) $review->rating,
             ]);
     }
 
@@ -37,13 +56,13 @@ class ActivityRatingLookup
             return (float) $activityRating;
         }
 
-        $rating = $ratings->get($this->key($activity->user_id, $activity->literature_id));
+        $rating = $ratings->get($this->key($activity->user_id, $activity->literature));
 
         return $rating === null ? null : (float) $rating;
     }
 
-    private function key(int $userId, int $literatureId): string
+    private function key(int $userId, Literature $literature): string
     {
-        return $userId.':'.$literatureId;
+        return $userId.':'.$this->identity->key($literature);
     }
 }

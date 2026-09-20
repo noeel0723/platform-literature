@@ -7,6 +7,7 @@ use App\Models\Literature;
 use App\Models\ReadingList;
 use App\Models\Review;
 use App\Services\Literature\CanonicalLiteratureSearch;
+use App\Services\Literature\CanonicalWorkIdentity;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
@@ -16,6 +17,7 @@ class QuickLogController extends Controller
     public function __invoke(
         QuickLogSearchRequest $request,
         CanonicalLiteratureSearch $canonicalSearch,
+        CanonicalWorkIdentity $canonicalIdentity,
     ): JsonResponse {
         $query = Str::squish((string) $request->validated('q', ''));
         $normalizedQuery = Str::lower($query);
@@ -68,10 +70,10 @@ class QuickLogController extends Controller
             ->keyBy(fn (ReadingList $readingList): string => $this->reviewKey($readingList->literature));
 
         $results = $literatures
-            ->map(function (Literature $literature) use ($readingLists, $reviews): array {
+            ->map(function (Literature $literature) use ($readingLists, $reviews, $canonicalIdentity): array {
                 $review = $reviews->get($this->reviewKey($literature));
                 $readingList = $readingLists->get($this->reviewKey($literature));
-                $reviewLiterature = $review?->literature ?? $literature;
+                $reviewLiterature = $canonicalIdentity->representative($review?->literature ?? $literature);
 
                 return [
                     'id' => $literature->id,

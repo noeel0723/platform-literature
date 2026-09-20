@@ -1,5 +1,6 @@
 <?php
 
+use App\Console\Commands\AuditUserInteractions;
 use App\Console\Commands\BackfillComicCreators;
 use App\Console\Commands\BackfillKitsuCreators;
 use App\Http\Middleware\EnsureAccountIsActive;
@@ -17,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withCommands([
+        AuditUserInteractions::class,
         BackfillComicCreators::class,
         BackfillKitsuCreators::class,
     ])

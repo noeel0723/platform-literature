@@ -53,6 +53,7 @@ class UserStatsTest extends TestCase
         Review::factory()->create(['user_id' => $user->id, 'literature_id' => $manga->id, 'rating' => 4, 'updated_at' => now()]);
         $stats = app(UserStatsService::class)->forUser($user);
 
+        $this->assertSame(3, $stats['summary']['literature']);
         $this->assertSame(2, $stats['summary']['completed']);
         $this->assertSame(1, $stats['summary']['readlist']);
         $this->assertSame(2, $stats['summary']['reviews']);
