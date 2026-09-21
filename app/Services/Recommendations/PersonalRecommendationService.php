@@ -12,9 +12,16 @@ use App\Services\Literature\CanonicalWorkIdentity;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 final class PersonalRecommendationService
 {
+    private const CANDIDATES_PER_SOURCE = 100;
+
+    private const TOP_TASTE_GENRES = 5;
+
+    private const TOP_TASTE_AUTHORS = 5;
+
     public function __construct(
         private readonly CanonicalLiteratureSearch $canonicalSearch,
         private readonly CanonicalWorkIdentity $identity,
@@ -38,16 +45,6 @@ final class PersonalRecommendationService
             'favoriteAuthors',
         ]);
 
-        $candidates = $this->canonicalSearch->query()
-            ->latest('updated_at')
-            ->latest('id')
-            ->limit(300)
-            ->get();
-
-        if ($candidates->isEmpty()) {
-            return collect();
-        }
-
         $excludedKeys = $user->readingLists
             ->map(fn (ReadingList $entry): string => $this->identity->key($entry->literature))
             ->merge($user->favoriteLiteratures->map(fn (Literature $literature): string => $this->identity->key($literature)))
@@ -55,11 +52,30 @@ final class PersonalRecommendationService
             ->flip();
         $taste = $this->tasteProfile($user);
         $coldStart = $taste['meaningful_keys']->count() < 2;
-        [$sourceIdsByKey, $keyBySourceId] = $this->sourceIdentities($candidates);
-        $popularity = $this->popularityByKey($keyBySourceId);
         $similarity = $coldStart
             ? collect()
-            : $this->similarReaderPopularity($user, $taste['meaningful_keys'], $sourceIdsByKey, $keyBySourceId);
+            : $this->similarReaderPopularity($user, $taste['meaningful_keys']);
+        $candidateIds = $this->genreCandidateIds($taste['genres'])
+            ->merge($this->authorCandidateIds($taste['authors']))
+            ->merge($this->representativeIdsForKeys($similarity->sortDesc()->keys()->take(self::CANDIDATES_PER_SOURCE)))
+            ->merge($this->popularCandidateIds())
+            ->unique()
+            ->values();
+
+        if ($candidateIds->isEmpty()) {
+            return collect();
+        }
+
+        $candidates = $this->canonicalSearch->query()
+            ->whereKey($candidateIds)
+            ->get();
+
+        if ($candidates->isEmpty()) {
+            return collect();
+        }
+
+        [$sourceIdsByKey, $keyBySourceId] = $this->sourceIdentities($candidates);
+        $popularity = $this->popularityByKey($keyBySourceId);
 
         return $candidates
             ->reject(fn (Literature $literature): bool => $excludedKeys->has($this->identity->key($literature)))
@@ -103,6 +119,119 @@ final class PersonalRecommendationService
             ->sortByDesc(fn (array $item): string => sprintf('%012.4f-%010d', $item['score'], $item['literature']->id))
             ->take(max(1, min($limit, 12)))
             ->values();
+    }
+
+    /** @param array<string, float> $genreScores */
+    private function genreCandidateIds(array $genreScores): Collection
+    {
+        $genres = collect($genreScores)
+            ->sortDesc()
+            ->take(self::TOP_TASTE_GENRES)
+            ->keys();
+
+        if ($genres->isEmpty()) {
+            return collect();
+        }
+
+        $perGenre = max(1, (int) ceil(self::CANDIDATES_PER_SOURCE / $genres->count()));
+
+        return $genres->flatMap(function (string $genre) use ($perGenre): Collection {
+            return $this->canonicalSearch->representativeQuery()
+                ->where(function ($literatures) use ($genre): void {
+                    $literatures
+                        ->whereHas('categories', fn ($categories) => $categories->where('name', $genre))
+                        ->orWhereHas(
+                            'sourceMapping.canonicalWork.literatures.categories',
+                            fn ($categories) => $categories->where('name', $genre),
+                        );
+                })
+                ->orderBy('literatures.id')
+                ->limit($perGenre)
+                ->pluck('literatures.id');
+        })->unique()->take(self::CANDIDATES_PER_SOURCE)->values();
+    }
+
+    /** @param array<int, float> $authorScores */
+    private function authorCandidateIds(array $authorScores): Collection
+    {
+        $authorIds = collect($authorScores)
+            ->sortDesc()
+            ->take(self::TOP_TASTE_AUTHORS)
+            ->keys()
+            ->map(fn ($authorId): int => (int) $authorId);
+
+        if ($authorIds->isEmpty()) {
+            return collect();
+        }
+
+        $perAuthor = max(1, (int) ceil(self::CANDIDATES_PER_SOURCE / $authorIds->count()));
+
+        return $authorIds->flatMap(function (int $authorId) use ($perAuthor): Collection {
+            return $this->canonicalSearch->representativeQuery()
+                ->where(function ($literatures) use ($authorId): void {
+                    $literatures
+                        ->whereHas('authors', fn ($authors) => $authors->whereKey($authorId))
+                        ->orWhereHas(
+                            'sourceMapping.canonicalWork.literatures.authors',
+                            fn ($authors) => $authors->whereKey($authorId),
+                        );
+                })
+                ->orderBy('literatures.id')
+                ->limit($perAuthor)
+                ->pluck('literatures.id');
+        })->unique()->take(self::CANDIDATES_PER_SOURCE)->values();
+    }
+
+    /** @return Collection<int, int> */
+    private function popularCandidateIds(): Collection
+    {
+        $seedLimit = self::CANDIDATES_PER_SOURCE * 2;
+        $sourceIds = ReadingList::query()
+            ->whereIn('status', ['reading', 'completed'])
+            ->selectRaw('literature_id, COUNT(*) as total')
+            ->groupBy('literature_id')
+            ->orderByDesc('total')
+            ->limit($seedLimit)
+            ->pluck('literature_id')
+            ->merge(Review::query()
+                ->whereNull('hidden_at')
+                ->where('rating', '>=', 4)
+                ->selectRaw('literature_id, COUNT(*) as total')
+                ->groupBy('literature_id')
+                ->orderByDesc('total')
+                ->limit($seedLimit)
+                ->pluck('literature_id'))
+            ->merge(DB::table('user_favorite_literatures')
+                ->selectRaw('literature_id, COUNT(*) as total')
+                ->groupBy('literature_id')
+                ->orderByDesc('total')
+                ->limit($seedLimit)
+                ->pluck('literature_id'))
+            ->map(fn ($id): int => (int) $id)
+            ->unique()
+            ->values();
+
+        $representativeIds = $this->representativeIdsForSourceIds($sourceIds);
+        $representativeKeys = $this->keysForSourceIds($representativeIds)->values();
+        $keyBySourceId = $this->keysForSourceIds($this->sourceIdsForKeys($representativeKeys));
+        $rankedIds = $this->popularityByKey($keyBySourceId)
+            ->sortDesc()
+            ->keys()
+            ->take(self::CANDIDATES_PER_SOURCE)
+            ->pipe(fn (Collection $keys): Collection => $this->representativeIdsForKeys($keys))
+            ->values();
+
+        if ($rankedIds->count() >= self::CANDIDATES_PER_SOURCE) {
+            return $rankedIds->values();
+        }
+
+        $fillIds = $this->canonicalSearch->representativeQuery()
+            ->whereNotIn('literatures.id', $rankedIds)
+            ->orderBy('literatures.id')
+            ->limit(self::CANDIDATES_PER_SOURCE - $rankedIds->count())
+            ->pluck('literatures.id');
+
+        return $rankedIds->merge($fillIds)->unique()->values();
     }
 
     /**
@@ -257,21 +386,12 @@ final class PersonalRecommendationService
         return $scores->map(fn (float|int $score): float => log(1 + $score) * 2.5);
     }
 
-    /**
-     * @param  Collection<int, string>  $meaningfulKeys
-     * @param  Collection<string, Collection<int, int>>  $sourceIdsByKey
-     * @param  Collection<int, string>  $keyBySourceId
-     */
+    /** @param Collection<int, string> $meaningfulKeys */
     private function similarReaderPopularity(
         User $user,
         Collection $meaningfulKeys,
-        Collection $sourceIdsByKey,
-        Collection $keyBySourceId,
     ): Collection {
-        $likedSourceIds = $meaningfulKeys
-            ->flatMap(fn (string $key): Collection => $sourceIdsByKey[$key] ?? collect())
-            ->unique()
-            ->values();
+        $likedSourceIds = $this->sourceIdsForKeys($meaningfulKeys);
 
         if ($likedSourceIds->isEmpty()) {
             return collect();
@@ -293,19 +413,97 @@ final class PersonalRecommendationService
 
         $countsBySource = ReadingList::query()
             ->whereIn('user_id', $similarReaderIds)
-            ->whereIn('literature_id', $keyBySourceId->keys())
             ->where('status', 'completed')
             ->selectRaw('literature_id, COUNT(DISTINCT user_id) as total')
             ->groupBy('literature_id')
+            ->orderByDesc('total')
+            ->limit(self::CANDIDATES_PER_SOURCE * 2)
             ->pluck('total', 'literature_id');
+        $keyBySourceId = $this->keysForSourceIds($countsBySource->keys());
         $scores = collect();
 
         foreach ($countsBySource as $literatureId => $count) {
-            $key = $keyBySourceId[(int) $literatureId];
+            $key = $keyBySourceId[(int) $literatureId] ?? null;
+
+            if ($key === null) {
+                continue;
+            }
+
             $scores->put($key, (float) ($scores[$key] ?? 0) + (float) $count);
         }
 
         return $scores;
+    }
+
+    /** @param Collection<int, int|string> $sourceIds */
+    private function representativeIdsForSourceIds(Collection $sourceIds): Collection
+    {
+        $sourceIds = $sourceIds->map(fn ($id): int => (int) $id)->unique()->values();
+        $preferredBySourceId = LiteratureSourceMapping::query()
+            ->join('canonical_works', 'canonical_works.id', '=', 'literature_source_mappings.canonical_work_id')
+            ->whereIn('literature_source_mappings.literature_id', $sourceIds)
+            ->whereNotNull('canonical_works.preferred_literature_id')
+            ->pluck('canonical_works.preferred_literature_id', 'literature_source_mappings.literature_id');
+
+        return $sourceIds
+            ->map(fn (int $id): int => (int) ($preferredBySourceId[$id] ?? $id))
+            ->unique()
+            ->values();
+    }
+
+    /** @param Collection<int, string> $keys */
+    private function representativeIdsForKeys(Collection $keys): Collection
+    {
+        $canonicalIds = $keys
+            ->filter(fn (string $key): bool => str_starts_with($key, 'canonical:'))
+            ->map(fn (string $key): int => (int) Str::after($key, 'canonical:'));
+        $legacyIds = $keys
+            ->filter(fn (string $key): bool => str_starts_with($key, 'literature:'))
+            ->map(fn (string $key): int => (int) Str::after($key, 'literature:'));
+        $preferredIds = DB::table('canonical_works')
+            ->whereIn('id', $canonicalIds)
+            ->whereNotNull('preferred_literature_id')
+            ->pluck('preferred_literature_id');
+
+        return $preferredIds
+            ->merge($legacyIds)
+            ->map(fn ($id): int => (int) $id)
+            ->unique()
+            ->values();
+    }
+
+    /** @param Collection<int, string> $keys */
+    private function sourceIdsForKeys(Collection $keys): Collection
+    {
+        $canonicalIds = $keys
+            ->filter(fn (string $key): bool => str_starts_with($key, 'canonical:'))
+            ->map(fn (string $key): int => (int) Str::after($key, 'canonical:'));
+        $legacyIds = $keys
+            ->filter(fn (string $key): bool => str_starts_with($key, 'literature:'))
+            ->map(fn (string $key): int => (int) Str::after($key, 'literature:'));
+
+        return LiteratureSourceMapping::query()
+            ->whereIn('canonical_work_id', $canonicalIds)
+            ->pluck('literature_id')
+            ->merge($legacyIds)
+            ->map(fn ($id): int => (int) $id)
+            ->unique()
+            ->values();
+    }
+
+    /** @param Collection<int, int|string> $sourceIds */
+    private function keysForSourceIds(Collection $sourceIds): Collection
+    {
+        $sourceIds = $sourceIds->map(fn ($id): int => (int) $id)->unique()->values();
+        $canonicalBySourceId = LiteratureSourceMapping::query()
+            ->whereIn('literature_id', $sourceIds)
+            ->pluck('canonical_work_id', 'literature_id');
+
+        return $sourceIds->mapWithKeys(fn (int $id): array => [
+            $id => isset($canonicalBySourceId[$id])
+                ? 'canonical:'.$canonicalBySourceId[$id]
+                : 'literature:'.$id,
+        ]);
     }
 
     /** @param array<int, string> $authorSources */

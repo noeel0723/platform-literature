@@ -12,6 +12,17 @@ final class CanonicalLiteratureSearch
     /** @return Builder<Literature> */
     public function query(string $query = '', string $selectedType = ''): Builder
     {
+        return $this->representativeQuery($query, $selectedType)
+            ->with(['apiSource', 'authors', 'categories', 'sourceMapping.canonicalWork.metadataOverride', 'metadataOverride']);
+    }
+
+    /**
+     * Build the canonical representative query without eager-loading display data.
+     *
+     * @return Builder<Literature>
+     */
+    public function representativeQuery(string $query = '', string $selectedType = ''): Builder
+    {
         $matchingCanonicalIds = LiteratureSourceMapping::query()
             ->select('canonical_work_id')
             ->whereHas('literature', function (Builder $literatures) use ($query, $selectedType): void {
@@ -24,7 +35,6 @@ final class CanonicalLiteratureSearch
             ->whereNotNull('preferred_literature_id');
 
         return Literature::query()
-            ->with(['apiSource', 'authors', 'categories', 'sourceMapping.canonicalWork.metadataOverride', 'metadataOverride'])
             ->whereIn('type', Literature::supportedTypes())
             ->when($selectedType !== '', fn (Builder $literatures) => $literatures->where('type', $selectedType))
             ->where(function (Builder $literatures) use ($preferredLiteratureIds, $query): void {
