@@ -143,38 +143,40 @@ export default function DiscussionSection({ literature, discussions, discussionC
     return (
         <section id="discussions" className="scroll-mt-24 border-t border-ink-950/10 bg-white/20">
             <SiteContainer className="py-9 lg:py-10">
-                <div className="flex flex-col gap-2 border-b border-ink-950/15 pb-3 sm:flex-row sm:items-center sm:justify-between">
-                    <SectionHeading>Discussions</SectionHeading>
-                    <div className="text-left sm:text-right">
-                        <p className="text-xs font-bold uppercase tracking-wider text-ink-950/50">{plural(discussionCount, 'discussion')}</p>
-                        {discussionCount > discussions.length && <p className="mt-1 text-xs text-ink-950/45">Showing the latest {discussions.length}</p>}
+                <div className="mx-auto max-w-3xl">
+                    <div className="flex flex-col gap-2 border-b border-ink-950/15 pb-3 sm:flex-row sm:items-center sm:justify-between">
+                        <SectionHeading>Discussions</SectionHeading>
+                        <div className="text-left sm:text-right">
+                            <p className="text-xs font-bold uppercase tracking-wider text-ink-950/50">{plural(discussionCount, 'discussion')}</p>
+                            {discussionCount > discussions.length && <p className="mt-1 text-xs text-ink-950/45">Showing the latest {discussions.length}</p>}
+                        </div>
                     </div>
-                </div>
-                <div className="mt-5 grid gap-7 lg:grid-cols-[240px_minmax(0,1fr)]">
-                    <div>
-                        {viewer.authenticated ? (
-                            <form onSubmit={submit} className="grid gap-4 border border-ink-950/12 bg-brand-cream/55 p-4 lg:sticky lg:top-24">
-                                <label className="text-sm font-bold text-ink-950">Discussion title
-                                    <input value={form.data.title} onChange={(event) => form.setData('title', event.target.value)} required minLength="3" maxLength="150" placeholder="What would you like to discuss?" className="mt-1.5 w-full border border-ink-950/20 bg-white/60 px-3 py-2.5 text-sm font-normal outline-none focus:border-brand-coral" />
-                                    {form.errors.title && <span className="mt-2 block text-sm font-semibold text-red-700">{form.errors.title}</span>}
-                                </label>
-                                <label className="text-sm font-bold text-ink-950">Opening post
-                                    <textarea value={form.data.discussion_body} onChange={(event) => form.setData('discussion_body', event.target.value)} rows="5" required minLength="10" maxLength="5000" placeholder="Add context so other readers can join..." className="mt-1.5 w-full resize-y border border-ink-950/20 bg-white/60 px-3 py-2.5 text-sm font-normal leading-6 outline-none focus:border-brand-coral" />
-                                    {form.errors.discussion_body && <span className="mt-2 block text-sm font-semibold text-red-700">{form.errors.discussion_body}</span>}
-                                </label>
-                                <label className="flex items-start gap-2 text-xs leading-5 text-ink-950/60"><input type="checkbox" checked={form.data.discussion_contains_spoiler} onChange={(event) => form.setData('discussion_contains_spoiler', event.target.checked)} className="mt-0.5 size-3.5 accent-brand-coral" />This discussion contains spoilers.</label>
-                                <button disabled={form.processing} className="bg-ink-950 px-4 py-2.5 text-sm font-bold text-brand-cream transition hover:bg-brand-coral disabled:opacity-50">Start discussion</button>
-                            </form>
-                        ) : (
-                            <div className="border border-ink-950/15 bg-brand-cream/70 p-7">
-                                <p className="font-serif text-2xl font-bold text-ink-950">Join the discussion</p>
-                                <p className="mt-3 leading-7 text-ink-950/65">Log in to start a discussion, leave a comment, or reply to another reader.</p>
-                                <Link href={routes.login} className="mt-6 inline-block bg-ink-950 px-5 py-3 font-bold text-brand-cream transition hover:bg-brand-coral">Log in</Link>
-                            </div>
-                        )}
-                    </div>
-                    <div className="grid content-start">
-                        {discussions.length > 0 ? discussions.map((discussion) => <DiscussionThread key={discussion.id} discussion={discussion} viewer={viewer} reportReasons={reportReasons} reportAction={routes.report_store} />) : <div className="border border-dashed border-ink-950/20 p-7 text-ink-950/60">No discussions yet. Start a focused conversation about this work.</div>}
+                    <div className="mt-5 grid gap-7 lg:grid-cols-[minmax(220px,0.75fr)_minmax(0,1.75fr)]">
+                        <div>
+                            {viewer.authenticated ? (
+                                <form onSubmit={submit} className="grid gap-4 border border-ink-950/12 bg-brand-cream/55 p-4 lg:sticky lg:top-24">
+                                    <label className="text-sm font-bold text-ink-950">Discussion title
+                                        <input value={form.data.title} onChange={(event) => form.setData('title', event.target.value)} required minLength="3" maxLength="150" placeholder="What would you like to discuss?" className="mt-1.5 w-full border border-ink-950/20 bg-white/60 px-3 py-2.5 text-sm font-normal outline-none focus:border-brand-coral" />
+                                        {form.errors.title && <span className="mt-2 block text-sm font-semibold text-red-700">{form.errors.title}</span>}
+                                    </label>
+                                    <label className="text-sm font-bold text-ink-950">Opening post
+                                        <textarea value={form.data.discussion_body} onChange={(event) => form.setData('discussion_body', event.target.value)} rows="5" required minLength="10" maxLength="5000" placeholder="Add context so other readers can join..." className="mt-1.5 w-full resize-y border border-ink-950/20 bg-white/60 px-3 py-2.5 text-sm font-normal leading-6 outline-none focus:border-brand-coral" />
+                                        {form.errors.discussion_body && <span className="mt-2 block text-sm font-semibold text-red-700">{form.errors.discussion_body}</span>}
+                                    </label>
+                                    <label className="flex items-start gap-2 text-xs leading-5 text-ink-950/60"><input type="checkbox" checked={form.data.discussion_contains_spoiler} onChange={(event) => form.setData('discussion_contains_spoiler', event.target.checked)} className="mt-0.5 size-3.5 accent-brand-coral" />This discussion contains spoilers.</label>
+                                    <button disabled={form.processing} className="bg-ink-950 px-4 py-2.5 text-sm font-bold text-brand-cream transition hover:bg-brand-coral disabled:opacity-50">Start discussion</button>
+                                </form>
+                            ) : (
+                                <div className="border border-ink-950/15 bg-brand-cream/70 p-7">
+                                    <p className="font-serif text-2xl font-bold text-ink-950">Join the discussion</p>
+                                    <p className="mt-3 leading-7 text-ink-950/65">Log in to start a discussion, leave a comment, or reply to another reader.</p>
+                                    <Link href={routes.login} className="mt-6 inline-block bg-ink-950 px-5 py-3 font-bold text-brand-cream transition hover:bg-brand-coral">Log in</Link>
+                                </div>
+                            )}
+                        </div>
+                        <div className="grid content-start">
+                            {discussions.length > 0 ? discussions.map((discussion) => <DiscussionThread key={discussion.id} discussion={discussion} viewer={viewer} reportReasons={reportReasons} reportAction={routes.report_store} />) : <div className="border border-dashed border-ink-950/20 p-7 text-ink-950/60">No discussions yet. Start a focused conversation about this work.</div>}
+                        </div>
                     </div>
                 </div>
             </SiteContainer>

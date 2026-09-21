@@ -20,49 +20,51 @@ const localDateValue = () => {
 function Summary({ literature, hasDiscovery }) {
     return (
         <SiteContainer as="section" className="py-10 lg:py-12">
-            <nav className="flex gap-6 overflow-x-auto border-b border-ink-950/10 text-sm font-bold uppercase tracking-[0.14em] text-ink-950/60" aria-label="Literature details">
-                <a href="#summary" className="border-b-2 border-brand-coral pb-4 text-ink-950">Summary</a>
-                <a href="#authors" className="pb-4 text-ink-950/70 hover:text-brand-coral">Authors</a>
-                <a href="#genres" className="pb-4 text-ink-950/70 hover:text-brand-coral">Genre</a>
-                {hasDiscovery && <a href="#relationships" className="pb-4 text-ink-950/70 hover:text-brand-coral">Discovery</a>}
-                <a href="#reviews" className="pb-4 text-ink-950/70 hover:text-brand-coral">Reviews</a>
-                <a href="#discussions" className="pb-4 text-ink-950/70 hover:text-brand-coral">Discussions</a>
-            </nav>
-            <div className="mt-7">
-                <div id="summary" className="scroll-mt-24 border border-ink-950/10 bg-white/40 p-5 sm:p-6">
-                    <SectionHeading>Summary</SectionHeading>
-                    <p className="mt-4 max-w-[68ch] text-base leading-7 text-ink-900">{literature.synopsis}</p>
-                    {literature.synopsis_source_name && literature.synopsis_source_url && (
-                        <p className="mt-4 text-xs leading-5 text-ink-950/50">
-                            Supplemental summary from <a href={literature.synopsis_source_url} target="_blank" rel="noopener noreferrer" className="font-semibold underline decoration-brand-coral underline-offset-4">{literature.synopsis_source_name}</a> under the <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">CC BY-SA</a> license.
-                        </p>
-                    )}
-                    <div id="authors" className="mt-10 scroll-mt-24 border-t border-ink-950/10 pt-7">
-                        <SectionHeading as="h3">Authors and creators</SectionHeading>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                            {literature.author_links.length > 0 ? literature.author_links.map((author) => <Link key={author.url} href={author.url} className="bg-brand-sky/25 px-3 py-2 font-semibold text-ink-950 transition hover:bg-brand-coral hover:text-brand-cream">{author.name}</Link>) : <span className="text-sm text-ink-950/55">Author unavailable</span>}
+            <div className="mx-auto max-w-3xl">
+                <nav className="flex gap-6 overflow-x-auto border-b border-ink-950/10 text-sm font-bold uppercase tracking-[0.14em] text-ink-950/60" aria-label="Literature details">
+                    <a href="#summary" className="border-b-2 border-brand-coral pb-4 text-ink-950">Summary</a>
+                    <a href="#authors" className="pb-4 text-ink-950/70 hover:text-brand-coral">Authors</a>
+                    <a href="#genres" className="pb-4 text-ink-950/70 hover:text-brand-coral">Genre</a>
+                    {hasDiscovery && <a href="#relationships" className="pb-4 text-ink-950/70 hover:text-brand-coral">Discovery</a>}
+                    <a href="#reviews" className="pb-4 text-ink-950/70 hover:text-brand-coral">Reviews</a>
+                    <a href="#discussions" className="pb-4 text-ink-950/70 hover:text-brand-coral">Discussions</a>
+                </nav>
+                <div className="mt-7">
+                    <div id="summary" className="scroll-mt-24 border border-ink-950/10 bg-white/40 p-5 sm:p-6">
+                        <SectionHeading>Summary</SectionHeading>
+                        <p className="mt-4 max-w-[68ch] text-base leading-7 text-ink-900">{literature.synopsis}</p>
+                        {literature.synopsis_source_name && literature.synopsis_source_url && (
+                            <p className="mt-4 text-xs leading-5 text-ink-950/50">
+                                Supplemental summary from <a href={literature.synopsis_source_url} target="_blank" rel="noopener noreferrer" className="font-semibold underline decoration-brand-coral underline-offset-4">{literature.synopsis_source_name}</a> under the <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">CC BY-SA</a> license.
+                            </p>
+                        )}
+                        <div id="authors" className="mt-10 scroll-mt-24 border-t border-ink-950/10 pt-7">
+                            <SectionHeading as="h3">Authors and creators</SectionHeading>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                                {literature.author_links.length > 0 ? literature.author_links.map((author) => <Link key={author.url} href={author.url} className="bg-brand-sky/25 px-3 py-2 font-semibold text-ink-950 transition hover:bg-brand-coral hover:text-brand-cream">{author.name}</Link>) : <span className="text-sm text-ink-950/55">Author unavailable</span>}
+                            </div>
                         </div>
-                    </div>
-                    <div id="genres" className="mt-8 scroll-mt-24 border-t border-ink-950/10 pt-7">
-                        <SectionHeading as="h3">Genre</SectionHeading>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                            {literature.genre_links.length > 0 ? literature.genre_links.map((genre) => {
-                                const className = 'border border-brand-blue/20 bg-white/55 px-3 py-2 text-sm font-semibold text-brand-blue';
+                        <div id="genres" className="mt-8 scroll-mt-24 border-t border-ink-950/10 pt-7">
+                            <SectionHeading as="h3">Genre</SectionHeading>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                                {literature.genre_links.length > 0 ? literature.genre_links.map((genre) => {
+                                    const className = 'border border-brand-blue/20 bg-white/55 px-3 py-2 text-sm font-semibold text-brand-blue';
 
-                                return genre.url ? (
-                                    <Link
-                                        key={genre.slug}
-                                        href={genre.url}
-                                        className={`${className} transition hover:border-brand-coral hover:bg-brand-coral hover:text-brand-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-coral`}
-                                    >
-                                        {genre.name}
-                                    </Link>
-                                ) : (
-                                    <span key={genre.slug} className={className}>
-                                        {genre.name}
-                                    </span>
-                                );
-                            }) : <span className="text-sm text-ink-950/55">Genre unavailable</span>}
+                                    return genre.url ? (
+                                        <Link
+                                            key={genre.slug}
+                                            href={genre.url}
+                                            className={`${className} transition hover:border-brand-coral hover:bg-brand-coral hover:text-brand-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-coral`}
+                                        >
+                                            {genre.name}
+                                        </Link>
+                                    ) : (
+                                        <span key={genre.slug} className={className}>
+                                            {genre.name}
+                                        </span>
+                                    );
+                                }) : <span className="text-sm text-ink-950/55">Genre unavailable</span>}
+                            </div>
                         </div>
                     </div>
                 </div>
