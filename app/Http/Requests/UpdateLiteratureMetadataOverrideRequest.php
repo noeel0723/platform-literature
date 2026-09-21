@@ -28,6 +28,8 @@ class UpdateLiteratureMetadataOverrideRequest extends FormRequest
             'publication_year' => ['nullable', 'integer', 'min:1', 'max:'.(now()->year + 5)],
             'tagline' => ['nullable', 'string', 'max:2000'],
             'synopsis' => ['nullable', 'string', 'max:20000'],
+            'cover_upload' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'remove_cover_upload' => ['nullable', 'boolean'],
             'cover_url' => ['nullable', 'url:http,https', 'max:4096'],
             'backdrop_url' => ['nullable', 'url:http,https', 'max:4096'],
             'publisher' => ['nullable', 'string', 'max:255'],

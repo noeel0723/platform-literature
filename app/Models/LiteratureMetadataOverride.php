@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 #[Fillable([
     'literature_id',
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'publication_year',
     'tagline',
     'synopsis',
+    'cover_path',
     'cover_url',
     'backdrop_url',
     'publisher',
@@ -29,6 +31,13 @@ class LiteratureMetadataOverride extends Model
 {
     /** @use HasFactory<LiteratureMetadataOverrideFactory> */
     use HasFactory;
+
+    public function uploadedCoverUrl(): ?string
+    {
+        return filled($this->cover_path)
+            ? Storage::disk('public')->url($this->cover_path)
+            : null;
+    }
 
     /** @return BelongsTo<Literature, $this> */
     public function literature(): BelongsTo

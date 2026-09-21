@@ -6,12 +6,12 @@
             'publication_year' => ['label' => 'Publication year', 'type' => 'number', 'base' => $literature->publication_year],
             'tagline' => ['label' => 'Short description', 'type' => 'textarea', 'base' => $literature->tagline],
             'synopsis' => ['label' => 'Synopsis', 'type' => 'textarea', 'base' => $literature->synopsis],
-            'cover_url' => ['label' => 'Cover URL', 'type' => 'url', 'base' => $literature->cover_url],
             'backdrop_url' => ['label' => 'Hero artwork URL', 'type' => 'url', 'base' => $literature->backdrop_url],
             'publisher' => ['label' => 'Publisher', 'type' => 'text', 'base' => $literature->publisher],
             'language' => ['label' => 'Language code', 'type' => 'text', 'base' => $literature->language],
             'format' => ['label' => 'Format', 'type' => 'text', 'base' => $literature->format],
         ];
+        $uploadedCoverUrl = $override?->uploadedCoverUrl();
     @endphp
 
     <section class="mx-auto max-w-6xl px-5 py-10 sm:px-8 lg:px-10 lg:py-14">
@@ -25,7 +25,7 @@
         </div>
 
         <div class="mt-7 grid gap-7 lg:grid-cols-[minmax(0,1fr)_250px]">
-            <form action="{{ route('admin.literatures.metadata.update', $literature) }}" method="POST" class="space-y-5">
+            <form action="{{ route('admin.literatures.metadata.update', $literature) }}" method="POST" enctype="multipart/form-data" class="space-y-5">
                 @csrf
                 @method('PUT')
 
@@ -33,8 +33,43 @@
                     <p class="text-sm leading-6 text-ink-900">Only filled fields override API metadata. Leave a field empty to inherit its current API value again.</p>
 
                     <div class="mt-6 grid gap-5 sm:grid-cols-2">
+                        <div class="sm:col-span-2">
+                            <h2 class="text-xs font-semibold uppercase tracking-[0.12em] text-ink-950">Cover</h2>
+                            <div class="mt-3 grid gap-4 sm:grid-cols-[minmax(0,1fr)_100px] sm:items-start">
+                                <div>
+                                    <label for="cover_upload" class="text-xs font-semibold text-ink-950">Upload cover</label>
+                                    <input id="cover_upload" name="cover_upload" type="file" accept="image/jpeg,image/png,image/webp" class="mt-2 block w-full border border-ink-950/20 bg-brand-cream/65 px-3 py-2.5 text-sm text-ink-950 file:mr-3 file:border-0 file:bg-brand-sky/30 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-ink-950 focus:border-brand-coral">
+                                    <p class="mt-1.5 text-xs leading-5 text-ink-950/55">JPG, PNG, or WebP. Maximum file size 5 MB.</p>
+                                    @error('cover_upload')<p class="mt-1 text-xs font-semibold text-red-700">{{ $message }}</p>@enderror
+
+                                    @if ($uploadedCoverUrl)
+                                        <label class="mt-3 flex items-center gap-2 text-xs font-semibold text-ink-950/70">
+                                            <input name="remove_cover_upload" type="checkbox" value="1" @checked(old('remove_cover_upload')) class="size-4 accent-brand-coral">
+                                            Remove uploaded cover
+                                        </label>
+                                    @endif
+                                </div>
+
+                                <div id="cover-upload-preview-shell" @class(['hidden' => ! $uploadedCoverUrl, 'overflow-hidden border border-ink-950/15 bg-brand-cream'])>
+                                    <img id="cover-upload-preview" src="{{ $uploadedCoverUrl }}" alt="Current curated upload" class="aspect-[2/3] w-full object-cover">
+                                </div>
+                            </div>
+
+                            <div class="my-4 flex items-center gap-3 text-[0.65rem] font-bold uppercase tracking-[0.16em] text-ink-950/45">
+                                <span class="h-px flex-1 bg-ink-950/10"></span>
+                                <span>Or</span>
+                                <span class="h-px flex-1 bg-ink-950/10"></span>
+                            </div>
+
+                            <label for="cover_url" class="text-xs font-semibold text-ink-950">External Cover URL</label>
+                            <input id="cover_url" name="cover_url" type="url" value="{{ old('cover_url', $override?->cover_url) }}" placeholder="https://..." class="mt-2 w-full border border-ink-950/20 bg-brand-cream/65 px-3 py-2.5 text-sm text-ink-950 outline-none focus:border-brand-coral">
+                            <p class="mt-1.5 text-xs leading-5 text-ink-950/55">Uploaded cover takes priority over an external cover URL.</p>
+                            <p class="mt-1 line-clamp-2 text-xs leading-5 text-ink-950/45">API value: {{ filled($literature->cover_url) ? $literature->cover_url : 'Unavailable' }}</p>
+                            @error('cover_url')<p class="mt-1 text-xs font-semibold text-red-700">{{ $message }}</p>@enderror
+                        </div>
+
                         @foreach ($fields as $name => $field)
-                            <div @class(['sm:col-span-2' => in_array($name, ['tagline', 'synopsis', 'cover_url', 'backdrop_url'], true)])>
+                            <div @class(['sm:col-span-2' => in_array($name, ['tagline', 'synopsis', 'backdrop_url'], true)])>
                                 <label for="{{ $name }}" class="text-xs font-semibold uppercase tracking-[0.12em] text-ink-950">{{ $field['label'] }}</label>
                                 @if ($field['type'] === 'textarea')
                                     <textarea id="{{ $name }}" name="{{ $name }}" rows="{{ $name === 'synopsis' ? 7 : 3 }}" class="mt-2 w-full border border-ink-950/20 bg-brand-cream/65 px-3 py-2.5 text-sm leading-6 text-ink-950 outline-none focus:border-brand-coral">{{ old($name, $override?->{$name}) }}</textarea>
@@ -95,4 +130,37 @@
             </aside>
         </div>
     </section>
+
+    <script>
+        (() => {
+            const input = document.getElementById('cover_upload');
+            const preview = document.getElementById('cover-upload-preview');
+            const previewShell = document.getElementById('cover-upload-preview-shell');
+            let objectUrl = null;
+
+            input?.addEventListener('change', () => {
+                if (objectUrl) {
+                    URL.revokeObjectURL(objectUrl);
+                    objectUrl = null;
+                }
+
+                const [file] = input.files;
+
+                if (! file) {
+                    return;
+                }
+
+                objectUrl = URL.createObjectURL(file);
+                preview.src = objectUrl;
+                preview.alt = 'Selected cover preview';
+                previewShell.classList.remove('hidden');
+            });
+
+            window.addEventListener('beforeunload', () => {
+                if (objectUrl) {
+                    URL.revokeObjectURL(objectUrl);
+                }
+            });
+        })();
+    </script>
 </x-app-shell>
