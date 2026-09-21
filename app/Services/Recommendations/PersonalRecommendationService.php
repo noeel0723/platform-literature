@@ -22,6 +22,12 @@ final class PersonalRecommendationService
 
     private const TOP_TASTE_AUTHORS = 5;
 
+    private const SIMILAR_READER_LIMIT = 50;
+
+    private const MAX_WORKS_PER_AUTHOR = 2;
+
+    private const MAX_WORKS_PER_GENRE = 3;
+
     public function __construct(
         private readonly CanonicalLiteratureSearch $canonicalSearch,
         private readonly CanonicalWorkIdentity $identity,
@@ -77,7 +83,7 @@ final class PersonalRecommendationService
         [$sourceIdsByKey, $keyBySourceId] = $this->sourceIdentities($candidates);
         $popularity = $this->popularityByKey($keyBySourceId);
 
-        return $candidates
+        $ranked = $candidates
             ->reject(fn (Literature $literature): bool => $excludedKeys->has($this->identity->key($literature)))
             ->map(function (Literature $literature) use ($taste, $popularity, $similarity, $coldStart): array {
                 $key = $this->identity->key($literature);
@@ -117,8 +123,13 @@ final class PersonalRecommendationService
                 ];
             })
             ->sortByDesc(fn (array $item): string => sprintf('%012.4f-%010d', $item['score'], $item['literature']->id))
-            ->take(max(1, min($limit, 12)))
             ->values();
+
+        return $this->diversify(
+            $ranked,
+            $taste['genres'],
+            max(1, min($limit, 12)),
+        );
     }
 
     /** @param array<string, float> $genreScores */
@@ -391,48 +402,162 @@ final class PersonalRecommendationService
         User $user,
         Collection $meaningfulKeys,
     ): Collection {
+        $meaningfulKeys = $meaningfulKeys->unique()->values();
         $likedSourceIds = $this->sourceIdsForKeys($meaningfulKeys);
 
-        if ($likedSourceIds->isEmpty()) {
+        if ($likedSourceIds->isEmpty() || $meaningfulKeys->isEmpty()) {
             return collect();
         }
 
-        $similarReaderIds = ReadingList::query()
+        $candidateReaderIds = ReadingList::query()
             ->where('user_id', '!=', $user->id)
             ->whereIn('literature_id', $likedSourceIds)
             ->where('status', 'completed')
-            ->selectRaw('user_id, COUNT(DISTINCT literature_id) as overlap')
-            ->groupBy('user_id')
-            ->orderByDesc('overlap')
-            ->limit(50)
+            ->distinct()
             ->pluck('user_id');
 
-        if ($similarReaderIds->isEmpty()) {
+        if ($candidateReaderIds->isEmpty()) {
             return collect();
         }
 
-        $countsBySource = ReadingList::query()
-            ->whereIn('user_id', $similarReaderIds)
+        $meaningfulLookup = $meaningfulKeys->flip();
+        $readerSimilarities = collect();
+
+        foreach ($candidateReaderIds->chunk(500) as $readerIdChunk) {
+            $completedRows = ReadingList::query()
+                ->whereIn('user_id', $readerIdChunk)
+                ->where('status', 'completed')
+                ->get(['user_id', 'literature_id']);
+            $keyBySourceId = $this->keysForSourceIds($completedRows->pluck('literature_id'));
+
+            foreach ($completedRows->groupBy('user_id') as $readerId => $readerRows) {
+                $readerKeys = $readerRows
+                    ->map(fn (ReadingList $entry): ?string => $keyBySourceId[(int) $entry->literature_id] ?? null)
+                    ->filter()
+                    ->unique()
+                    ->values();
+                $overlap = $readerKeys
+                    ->filter(fn (string $key): bool => $meaningfulLookup->has($key))
+                    ->count();
+
+                if ($overlap === 0) {
+                    continue;
+                }
+
+                $union = $meaningfulKeys->count() + $readerKeys->count() - $overlap;
+
+                if ($union === 0) {
+                    continue;
+                }
+
+                $readerSimilarities->put((int) $readerId, [
+                    'similarity' => $overlap / $union,
+                    'overlap' => $overlap,
+                ]);
+            }
+        }
+
+        $readerSimilarities = $readerSimilarities
+            ->sort(function (array $left, array $right): int {
+                $similarityOrder = $right['similarity'] <=> $left['similarity'];
+
+                return $similarityOrder !== 0
+                    ? $similarityOrder
+                    : $right['overlap'] <=> $left['overlap'];
+            })
+            ->take(self::SIMILAR_READER_LIMIT);
+
+        if ($readerSimilarities->isEmpty()) {
+            return collect();
+        }
+
+        $completedRows = ReadingList::query()
+            ->whereIn('user_id', $readerSimilarities->keys())
             ->where('status', 'completed')
-            ->selectRaw('literature_id, COUNT(DISTINCT user_id) as total')
-            ->groupBy('literature_id')
-            ->orderByDesc('total')
-            ->limit(self::CANDIDATES_PER_SOURCE * 2)
-            ->pluck('total', 'literature_id');
-        $keyBySourceId = $this->keysForSourceIds($countsBySource->keys());
+            ->get(['user_id', 'literature_id']);
+        $keyBySourceId = $this->keysForSourceIds($completedRows->pluck('literature_id'));
         $scores = collect();
 
-        foreach ($countsBySource as $literatureId => $count) {
-            $key = $keyBySourceId[(int) $literatureId] ?? null;
+        foreach ($completedRows->groupBy('user_id') as $readerId => $readerRows) {
+            $similarity = (float) $readerSimilarities[(int) $readerId]['similarity'];
+            $readerKeys = $readerRows
+                ->map(fn (ReadingList $entry): ?string => $keyBySourceId[(int) $entry->literature_id] ?? null)
+                ->filter()
+                ->unique();
 
-            if ($key === null) {
-                continue;
+            foreach ($readerKeys as $key) {
+                if ($meaningfulLookup->has($key)) {
+                    continue;
+                }
+
+                $scores->put($key, (float) ($scores[$key] ?? 0) + $similarity);
             }
-
-            $scores->put($key, (float) ($scores[$key] ?? 0) + (float) $count);
         }
 
         return $scores;
+    }
+
+    /**
+     * @param  Collection<int, array{literature: Literature, score: float, reason: string, cold_start: bool}>  $ranked
+     * @param  array<string, float>  $genreTaste
+     * @return Collection<int, array{literature: Literature, score: float, reason: string, cold_start: bool}>
+     */
+    private function diversify(Collection $ranked, array $genreTaste, int $limit): Collection
+    {
+        $selected = collect();
+        $selectedIds = collect();
+        $authorCounts = [];
+        $genreCounts = [];
+
+        foreach ($ranked as $item) {
+            $literature = $item['literature'];
+            $authorId = $literature->authors->first()?->id;
+            $genre = $this->dominantGenre($literature, $genreTaste);
+            $authorLimitReached = $authorId !== null
+                && ($authorCounts[$authorId] ?? 0) >= self::MAX_WORKS_PER_AUTHOR;
+            $genreLimitReached = $genre !== null
+                && ($genreCounts[$genre] ?? 0) >= self::MAX_WORKS_PER_GENRE;
+
+            if ($authorLimitReached || $genreLimitReached) {
+                continue;
+            }
+
+            $selected->push($item);
+            $selectedIds->push((int) $literature->id);
+
+            if ($authorId !== null) {
+                $authorCounts[$authorId] = ($authorCounts[$authorId] ?? 0) + 1;
+            }
+
+            if ($genre !== null) {
+                $genreCounts[$genre] = ($genreCounts[$genre] ?? 0) + 1;
+            }
+
+            if ($selected->count() === $limit) {
+                return $selected->values();
+            }
+        }
+
+        if ($selected->count() < $limit) {
+            $ranked
+                ->reject(fn (array $item): bool => $selectedIds->contains((int) $item['literature']->id))
+                ->take($limit - $selected->count())
+                ->each(fn (array $item) => $selected->push($item));
+        }
+
+        return $selected->values();
+    }
+
+    /** @param array<string, float> $genreTaste */
+    private function dominantGenre(Literature $literature, array $genreTaste): ?string
+    {
+        $tasteMatches = $literature->categories
+            ->mapWithKeys(fn ($category): array => [$category->name => (float) ($genreTaste[$category->name] ?? 0)])
+            ->filter(fn (float $score): bool => $score > 0)
+            ->sortDesc();
+
+        return $tasteMatches->keys()->first()
+            ?? $literature->categories->first()?->name;
     }
 
     /** @param Collection<int, int|string> $sourceIds */

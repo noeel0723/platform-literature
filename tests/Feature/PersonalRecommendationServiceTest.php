@@ -11,8 +11,11 @@ use App\Models\LiteratureSourceMapping;
 use App\Models\ReadingList;
 use App\Models\Review;
 use App\Models\User;
+use App\Services\Literature\CanonicalWorkIdentity;
 use App\Services\Recommendations\PersonalRecommendationService;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Support\Collection;
+use ReflectionMethod;
 use Tests\TestCase;
 
 class PersonalRecommendationServiceTest extends TestCase
@@ -238,5 +241,307 @@ class PersonalRecommendationServiceTest extends TestCase
         $this->assertTrue($ids->contains($preferred->id));
         $this->assertFalse($ids->contains($sibling->id));
         $this->assertSame($ids->unique()->count(), $ids->count());
+    }
+
+    public function test_a_tracked_source_sibling_excludes_its_canonical_representative(): void
+    {
+        $user = User::factory()->create();
+        $fantasy = Category::factory()->create(['name' => 'Fantasy']);
+        $tasteSeed = Literature::factory()->create(['title' => 'Fantasy Taste Seed']);
+        $tasteSeed->categories()->attach($fantasy);
+        Review::factory()->create(['user_id' => $user->id, 'literature_id' => $tasteSeed->id, 'rating' => 5]);
+        ReadingList::factory()->create([
+            'user_id' => $user->id,
+            'literature_id' => $tasteSeed->id,
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+
+        $preferred = Literature::factory()->create(['title' => 'Preferred Edition']);
+        $sibling = Literature::factory()->create(['title' => 'Tracked Source Edition']);
+        $preferred->categories()->attach($fantasy);
+        $sibling->categories()->attach($fantasy);
+        $canonical = CanonicalWork::factory()->create(['preferred_literature_id' => $preferred->id]);
+
+        foreach ([$preferred, $sibling] as $literature) {
+            LiteratureSourceMapping::factory()->create([
+                'canonical_work_id' => $canonical->id,
+                'literature_id' => $literature->id,
+                'api_source_id' => $literature->api_source_id,
+            ]);
+        }
+
+        ReadingList::factory()->create([
+            'user_id' => $user->id,
+            'literature_id' => $sibling->id,
+            'status' => 'want_to_read',
+        ]);
+
+        $ids = app(PersonalRecommendationService::class)
+            ->recommend($user)
+            ->pluck('literature.id');
+
+        $this->assertFalse($ids->contains($preferred->id));
+        $this->assertFalse($ids->contains($sibling->id));
+    }
+
+    public function test_jaccard_prefers_proportional_overlap_over_larger_raw_overlap(): void
+    {
+        $user = User::factory()->create();
+        $proportionalReader = User::factory()->create();
+        $rawOverlapReader = User::factory()->create();
+        $currentWorks = Literature::factory()->count(4)->create();
+
+        foreach ($currentWorks as $work) {
+            ReadingList::factory()->create([
+                'user_id' => $user->id,
+                'literature_id' => $work->id,
+                'status' => 'completed',
+                'completed_at' => now(),
+            ]);
+        }
+
+        foreach ($currentWorks->take(2) as $work) {
+            ReadingList::factory()->create([
+                'user_id' => $proportionalReader->id,
+                'literature_id' => $work->id,
+                'status' => 'completed',
+                'completed_at' => now(),
+            ]);
+        }
+
+        foreach ($currentWorks->take(3) as $work) {
+            ReadingList::factory()->create([
+                'user_id' => $rawOverlapReader->id,
+                'literature_id' => $work->id,
+                'status' => 'completed',
+                'completed_at' => now(),
+            ]);
+        }
+
+        Literature::factory()->count(10)->create()->each(function (Literature $work) use ($rawOverlapReader): void {
+            ReadingList::factory()->create([
+                'user_id' => $rawOverlapReader->id,
+                'literature_id' => $work->id,
+                'status' => 'completed',
+                'completed_at' => now(),
+            ]);
+        });
+
+        $proportionalChoice = Literature::factory()->create(['title' => 'Proportional Choice']);
+        $rawOverlapChoice = Literature::factory()->create(['title' => 'Raw Overlap Choice']);
+        ReadingList::factory()->create([
+            'user_id' => $proportionalReader->id,
+            'literature_id' => $proportionalChoice->id,
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+        ReadingList::factory()->create([
+            'user_id' => $rawOverlapReader->id,
+            'literature_id' => $rawOverlapChoice->id,
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+
+        $scores = $this->similarityScores($user, $currentWorks);
+
+        $this->assertEqualsWithDelta(0.4, $scores['literature:'.$proportionalChoice->id], 0.0001);
+        $this->assertEqualsWithDelta(0.2, $scores['literature:'.$rawOverlapChoice->id], 0.0001);
+        $this->assertGreaterThan(
+            $scores['literature:'.$rawOverlapChoice->id],
+            $scores['literature:'.$proportionalChoice->id],
+        );
+    }
+
+    public function test_jaccard_similarity_is_canonical_aware_and_counts_siblings_once(): void
+    {
+        $user = User::factory()->create();
+        $reader = User::factory()->create();
+        $currentWorks = collect();
+
+        for ($index = 0; $index < 2; $index++) {
+            $preferred = Literature::factory()->create(['title' => 'Preferred '.$index]);
+            $sibling = Literature::factory()->create(['title' => 'Sibling '.$index]);
+            $canonical = CanonicalWork::factory()->create(['preferred_literature_id' => $preferred->id]);
+
+            foreach ([$preferred, $sibling] as $literature) {
+                LiteratureSourceMapping::factory()->create([
+                    'canonical_work_id' => $canonical->id,
+                    'literature_id' => $literature->id,
+                    'api_source_id' => $literature->api_source_id,
+                ]);
+            }
+
+            ReadingList::factory()->create([
+                'user_id' => $user->id,
+                'literature_id' => $preferred->id,
+                'status' => 'completed',
+                'completed_at' => now(),
+            ]);
+            ReadingList::factory()->create([
+                'user_id' => $reader->id,
+                'literature_id' => $sibling->id,
+                'status' => 'completed',
+                'completed_at' => now(),
+            ]);
+
+            if ($index === 0) {
+                ReadingList::factory()->create([
+                    'user_id' => $reader->id,
+                    'literature_id' => $preferred->id,
+                    'status' => 'completed',
+                    'completed_at' => now(),
+                ]);
+            }
+
+            $currentWorks->push($preferred);
+        }
+
+        $candidate = Literature::factory()->create(['title' => 'Canonical Reader Choice']);
+        ReadingList::factory()->create([
+            'user_id' => $reader->id,
+            'literature_id' => $candidate->id,
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+
+        $scores = $this->similarityScores($user, $currentWorks);
+
+        $this->assertEqualsWithDelta(2 / 3, $scores['literature:'.$candidate->id], 0.0001);
+    }
+
+    public function test_current_user_and_readers_without_overlap_do_not_create_similarity_scores(): void
+    {
+        $user = User::factory()->create();
+        $seed = Literature::factory()->create(['title' => 'Current Seed']);
+        $selfChoice = Literature::factory()->create(['title' => 'Self Choice']);
+
+        foreach ([$seed, $selfChoice] as $work) {
+            ReadingList::factory()->create([
+                'user_id' => $user->id,
+                'literature_id' => $work->id,
+                'status' => 'completed',
+                'completed_at' => now(),
+            ]);
+        }
+
+        $this->assertTrue($this->similarityScores($user, collect([$seed]))->isEmpty());
+
+        $unrelatedReader = User::factory()->create();
+        Literature::factory()->count(2)->create()->each(function (Literature $work) use ($unrelatedReader): void {
+            ReadingList::factory()->create([
+                'user_id' => $unrelatedReader->id,
+                'literature_id' => $work->id,
+                'status' => 'completed',
+                'completed_at' => now(),
+            ]);
+        });
+
+        $this->assertTrue($this->similarityScores($user, collect([$seed]))->isEmpty());
+    }
+
+    public function test_diversity_limits_an_author_when_alternatives_exist(): void
+    {
+        $dominantAuthor = Author::factory()->create(['name' => 'Dominant Author']);
+        $alternatives = Author::factory()->count(2)->create();
+        $ranked = collect();
+
+        Literature::factory()->count(4)->create()->each(function (Literature $work, int $index) use ($dominantAuthor, $ranked): void {
+            $work->authors()->attach($dominantAuthor, ['role' => 'author', 'position' => 0]);
+            $ranked->push($this->recommendationItem($work, 100 - $index));
+        });
+
+        foreach ($alternatives as $index => $author) {
+            $work = Literature::factory()->create();
+            $work->authors()->attach($author, ['role' => 'author', 'position' => 0]);
+            $ranked->push($this->recommendationItem($work, 96 - $index));
+        }
+
+        $results = $this->diversified($ranked, [], 4);
+        $dominantCount = $results->filter(
+            fn (array $item): bool => $item['literature']->authors->first()?->is($dominantAuthor) === true,
+        )->count();
+
+        $this->assertSame(2, $dominantCount);
+        $this->assertCount(4, $results);
+    }
+
+    public function test_diversity_limits_dominant_genre_and_preserves_valid_score_order(): void
+    {
+        $action = Category::factory()->create(['name' => 'Action']);
+        $drama = Category::factory()->create(['name' => 'Drama']);
+        $ranked = collect();
+
+        Literature::factory()->count(5)->create()->each(function (Literature $work, int $index) use ($action, $ranked): void {
+            $work->categories()->attach($action);
+            $ranked->push($this->recommendationItem($work, 100 - $index));
+        });
+
+        Literature::factory()->count(2)->create()->each(function (Literature $work, int $index) use ($drama, $ranked): void {
+            $work->categories()->attach($drama);
+            $ranked->push($this->recommendationItem($work, 95 - $index));
+        });
+
+        $results = $this->diversified($ranked, ['Action' => 5.0], 5);
+
+        $this->assertSame(3, $results->filter(
+            fn (array $item): bool => $item['literature']->categories->contains('name', 'Action'),
+        )->count());
+        $this->assertSame([100.0, 99.0, 98.0, 95.0, 94.0], $results->pluck('score')->all());
+    }
+
+    public function test_diversity_second_pass_fills_the_requested_limit(): void
+    {
+        $author = Author::factory()->create(['name' => 'Only Available Author']);
+        $genre = Category::factory()->create(['name' => 'Only Available Genre']);
+        $ranked = collect();
+
+        Literature::factory()->count(5)->create()->each(function (Literature $work, int $index) use ($author, $genre, $ranked): void {
+            $work->authors()->attach($author, ['role' => 'author', 'position' => 0]);
+            $work->categories()->attach($genre);
+            $ranked->push($this->recommendationItem($work, 100 - $index));
+        });
+
+        $results = $this->diversified($ranked, [], 5);
+
+        $this->assertCount(5, $results);
+        $this->assertSame($ranked->pluck('literature.id')->all(), $results->pluck('literature.id')->all());
+    }
+
+    /** @param Collection<int, Literature> $meaningfulWorks */
+    private function similarityScores(User $user, Collection $meaningfulWorks): Collection
+    {
+        $identity = app(CanonicalWorkIdentity::class);
+        $keys = $meaningfulWorks
+            ->map(fn (Literature $literature): string => $identity->key($literature))
+            ->unique()
+            ->values();
+        $method = new ReflectionMethod(PersonalRecommendationService::class, 'similarReaderPopularity');
+
+        return $method->invoke(app(PersonalRecommendationService::class), $user, $keys);
+    }
+
+    /**
+     * @param  Collection<int, array{literature: Literature, score: float, reason: string, cold_start: bool}>  $ranked
+     * @param  array<string, float>  $genreTaste
+     */
+    private function diversified(Collection $ranked, array $genreTaste, int $limit): Collection
+    {
+        $method = new ReflectionMethod(PersonalRecommendationService::class, 'diversify');
+
+        return $method->invoke(app(PersonalRecommendationService::class), $ranked, $genreTaste, $limit);
+    }
+
+    /** @return array{literature: Literature, score: float, reason: string, cold_start: bool} */
+    private function recommendationItem(Literature $literature, float $score): array
+    {
+        $literature->load(['authors', 'categories', 'sourceMapping']);
+
+        return [
+            'literature' => $literature,
+            'score' => $score,
+            'reason' => 'Test reason',
+            'cold_start' => false,
+        ];
     }
 }
