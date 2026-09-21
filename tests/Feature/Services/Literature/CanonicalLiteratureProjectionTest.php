@@ -17,7 +17,7 @@ class CanonicalLiteratureProjectionTest extends TestCase
 {
     use LazilyRefreshDatabase;
 
-    public function test_source_ranking_selects_one_preferred_record_without_deleting_provenance(): void
+    public function test_anilist_is_preferred_over_kitsu_without_deleting_provenance(): void
     {
         $author = Author::factory()->create(['name' => 'Haruichi Furudate']);
         $work = CanonicalWork::factory()->for($author, 'primaryAuthor')->create([
@@ -27,21 +27,21 @@ class CanonicalLiteratureProjectionTest extends TestCase
             'publication_year' => 2012,
         ]);
         $aniList = ApiSource::factory()->create(['key' => 'anilist', 'name' => 'AniList']);
-        $mangaDex = ApiSource::factory()->create(['key' => 'mangadex', 'name' => 'MangaDex']);
+        $kitsu = ApiSource::factory()->create(['key' => 'kitsu', 'name' => 'Kitsu']);
         $aniListLiterature = Literature::factory()->for($aniList)->create([
             'title' => 'Haikyu!!',
             'type' => 'manga',
             'cover_url' => 'https://images.example.test/anilist-haikyu.jpg',
         ]);
-        $mangaDexLiterature = Literature::factory()->for($mangaDex)->create([
+        $kitsuLiterature = Literature::factory()->for($kitsu)->create([
             'title' => 'Haikyuu',
             'type' => 'manga',
-            'cover_url' => 'https://images.example.test/mangadex-haikyu.jpg',
+            'cover_url' => 'https://images.example.test/kitsu-haikyu.jpg',
         ]);
         $aniListLiterature->authors()->attach($author, ['role' => 'author', 'position' => 0]);
-        $mangaDexLiterature->authors()->attach($author, ['role' => 'author', 'position' => 0]);
+        $kitsuLiterature->authors()->attach($author, ['role' => 'author', 'position' => 0]);
         $this->map($work, $aniListLiterature);
-        $this->map($work, $mangaDexLiterature);
+        $this->map($work, $kitsuLiterature);
 
         $preferred = app(CanonicalLiteratureProjector::class)->refresh($work);
 
@@ -53,7 +53,7 @@ class CanonicalLiteratureProjectionTest extends TestCase
             'preferred_literature_id' => $aniListLiterature->id,
         ]);
         $this->assertGreaterThan(
-            $mangaDexLiterature->sourceMapping()->value('quality_score'),
+            $kitsuLiterature->sourceMapping()->value('quality_score'),
             $aniListLiterature->sourceMapping()->value('quality_score'),
         );
     }
@@ -76,7 +76,7 @@ class CanonicalLiteratureProjectionTest extends TestCase
         $author = Author::factory()->create();
         $work = CanonicalWork::factory()->for($author, 'primaryAuthor')->create(['type' => 'manga']);
         $aniList = ApiSource::factory()->create(['key' => 'anilist']);
-        $mangaDex = ApiSource::factory()->create(['key' => 'mangadex']);
+        $kitsu = ApiSource::factory()->create(['key' => 'kitsu']);
         $incompletePrimary = Literature::factory()->for($aniList)->create([
             'type' => 'manga',
             'identifier' => null,
@@ -85,7 +85,7 @@ class CanonicalLiteratureProjectionTest extends TestCase
             'publisher' => null,
             'publication_year' => null,
         ]);
-        $completeFallback = Literature::factory()->for($mangaDex)->create([
+        $completeFallback = Literature::factory()->for($kitsu)->create([
             'type' => 'manga',
             'cover_url' => 'https://images.example.test/complete.jpg',
         ]);
@@ -147,7 +147,7 @@ class CanonicalLiteratureProjectionTest extends TestCase
         $this->assertSame('google-books', $primaryMapping->fresh()->field_provenance['cover_url']);
     }
 
-    public function test_manual_curation_then_hardcover_are_the_preferred_novel_sources(): void
+    public function test_manual_curation_then_hardcover_then_google_books_are_the_preferred_novel_sources(): void
     {
         $author = Author::factory()->create(['name' => 'Andrea Hirata']);
         $work = CanonicalWork::factory()->for($author, 'primaryAuthor')->create([
@@ -172,9 +172,55 @@ class CanonicalLiteratureProjectionTest extends TestCase
         $preferredWithCuration = app(CanonicalLiteratureProjector::class)->refresh($work);
         $records->get('manual-curated')->sourceMapping()->delete();
         $preferredWithoutCuration = app(CanonicalLiteratureProjector::class)->refresh($work->fresh());
+        $records->get('hardcover')->sourceMapping()->delete();
+        $preferredWithGoogleBooksOnly = app(CanonicalLiteratureProjector::class)->refresh($work->fresh());
 
         $this->assertTrue($preferredWithCuration->is($records->get('manual-curated')));
         $this->assertTrue($preferredWithoutCuration->is($records->get('hardcover')));
+        $this->assertTrue($preferredWithGoogleBooksOnly->is($records->get('google-books')));
+    }
+
+    public function test_comic_vine_is_the_preferred_western_comic_source(): void
+    {
+        $author = Author::factory()->create();
+        $work = CanonicalWork::factory()->for($author, 'primaryAuthor')->create(['type' => 'western-comic']);
+        $comicVine = ApiSource::factory()->create(['key' => 'comic-vine']);
+        $legacySource = ApiSource::factory()->create(['key' => 'legacy-comics']);
+        $comicVineLiterature = Literature::factory()->for($comicVine)->create([
+            'title' => 'Kingdom Come',
+            'type' => 'western-comic',
+        ]);
+        $legacyLiterature = Literature::factory()->for($legacySource)->create([
+            'title' => 'Kingdom Come',
+            'type' => 'western-comic',
+        ]);
+        $comicVineLiterature->authors()->attach($author, ['role' => 'author', 'position' => 0]);
+        $legacyLiterature->authors()->attach($author, ['role' => 'author', 'position' => 0]);
+        $this->map($work, $comicVineLiterature);
+        $this->map($work, $legacyLiterature);
+
+        $preferred = app(CanonicalLiteratureProjector::class)->refresh($work);
+
+        $this->assertTrue($preferred->is($comicVineLiterature));
+    }
+
+    public function test_unknown_legacy_source_uses_the_default_priority_without_an_exception(): void
+    {
+        $author = Author::factory()->create();
+        $work = CanonicalWork::factory()->for($author, 'primaryAuthor')->create(['type' => 'novel']);
+        $googleBooks = ApiSource::factory()->create(['key' => 'google-books']);
+        $legacySource = ApiSource::factory()->create(['key' => 'legacy-books']);
+        $googleBooksLiterature = Literature::factory()->for($googleBooks)->create(['title' => 'The Same Edition']);
+        $legacyLiterature = Literature::factory()->for($legacySource)->create(['title' => 'The Same Edition']);
+        $googleBooksLiterature->authors()->attach($author, ['role' => 'author', 'position' => 0]);
+        $legacyLiterature->authors()->attach($author, ['role' => 'author', 'position' => 0]);
+        $googleBooksMapping = $this->map($work, $googleBooksLiterature);
+        $legacyMapping = $this->map($work, $legacyLiterature);
+
+        $preferred = app(CanonicalLiteratureProjector::class)->refresh($work);
+
+        $this->assertTrue($preferred->is($googleBooksLiterature));
+        $this->assertSame(30, $googleBooksMapping->fresh()->quality_score - $legacyMapping->fresh()->quality_score);
     }
 
     public function test_latest_catalog_paginates_canonical_works_and_keeps_unmapped_legacy_records(): void
@@ -234,18 +280,18 @@ class CanonicalLiteratureProjectionTest extends TestCase
             'publication_year' => 2012,
         ]);
         $aniList = ApiSource::factory()->create(['key' => 'anilist', 'name' => 'AniList']);
-        $mangaDex = ApiSource::factory()->create(['key' => 'mangadex', 'name' => 'MangaDex']);
+        $kitsu = ApiSource::factory()->create(['key' => 'kitsu', 'name' => 'Kitsu']);
         $preferred = Literature::factory()->for($aniList)->create([
             'title' => 'Haikyu!!',
             'slug' => 'haikyu-anilist',
             'type' => 'manga',
             'cover_url' => 'https://images.example.test/anilist-haikyu.jpg',
         ]);
-        $alternate = Literature::factory()->for($mangaDex)->create([
+        $alternate = Literature::factory()->for($kitsu)->create([
             'title' => 'Haikyuu',
-            'slug' => 'haikyuu-mangadex',
+            'slug' => 'haikyuu-kitsu',
             'type' => 'manga',
-            'cover_url' => 'https://images.example.test/mangadex-haikyu.jpg',
+            'cover_url' => 'https://images.example.test/kitsu-haikyu.jpg',
         ]);
         $preferred->authors()->attach($author, ['role' => 'author', 'position' => 0]);
         $alternate->authors()->attach($author, ['role' => 'author', 'position' => 0]);

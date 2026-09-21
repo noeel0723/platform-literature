@@ -19,17 +19,14 @@ final class CanonicalLiteratureProjector
         ],
         'manga' => [
             'anilist' => 60,
-            'mangadex' => 45,
             'kitsu' => 35,
         ],
         'manhwa' => [
             'anilist' => 60,
-            'mangadex' => 45,
             'kitsu' => 35,
         ],
         'western-comic' => [
             'comic-vine' => 60,
-            'metron' => 45,
         ],
     ];
 
