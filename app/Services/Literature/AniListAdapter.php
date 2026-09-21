@@ -88,6 +88,56 @@ final class AniListAdapter
             ->values();
     }
 
+    public function findById(string|int $externalId): ?NormalizedLiterature
+    {
+        $externalId = filter_var($externalId, FILTER_VALIDATE_INT, [
+            'options' => ['min_range' => 1],
+        ]);
+
+        if ($externalId === false) {
+            return null;
+        }
+
+        try {
+            $response = Http::acceptJson()
+                ->connectTimeout((int) config('services.anilist.connect_timeout', 3))
+                ->timeout((int) config('services.anilist.timeout', 8))
+                ->post((string) config('services.anilist.base_url'), [
+                    'query' => $this->mediaByIdQuery(),
+                    'variables' => ['id' => $externalId],
+                ]);
+        } catch (ConnectionException $exception) {
+            throw new LiteratureSourceUnavailable(
+                'AniList',
+                'AniList could not be reached.',
+                $exception,
+            );
+        }
+
+        if ($response->status() === 429) {
+            throw new LiteratureSourceUnavailable(
+                'AniList',
+                'AniList rate limit was reached.',
+            );
+        }
+
+        if ($response->failed()) {
+            throw new LiteratureSourceUnavailable(
+                'AniList',
+                "AniList returned HTTP {$response->status()}.",
+            );
+        }
+
+        if (is_array($response->json('errors')) && $response->json('errors') !== []) {
+            throw new LiteratureSourceUnavailable(
+                'AniList',
+                'AniList returned a GraphQL error.',
+            );
+        }
+
+        return $this->normalize($response->json('data.Media'), false);
+    }
+
     private function normalize(mixed $item, bool $includeRelations = true): ?NormalizedLiterature
     {
         if (! is_array($item)) {
@@ -416,6 +466,57 @@ final class AniListAdapter
                         bannerImage
                         format
                       }
+                    }
+                  }
+                }
+              }
+            }
+            GRAPHQL;
+    }
+
+    private function mediaByIdQuery(): string
+    {
+        return <<<'GRAPHQL'
+            query LiteratureById($id: Int!) {
+              Media(id: $id, type: MANGA, isAdult: false) {
+                id
+                title {
+                  romaji
+                  english
+                  native
+                }
+                description(asHtml: false)
+                startDate {
+                  year
+                }
+                genres
+                countryOfOrigin
+                coverImage {
+                  extraLarge
+                  large
+                  medium
+                }
+                bannerImage
+                externalLinks {
+                  site
+                  url
+                  type
+                }
+                format
+                staff(perPage: 10) {
+                  edges {
+                    role
+                    node {
+                      id
+                      name {
+                        full
+                      }
+                      image {
+                        large
+                        medium
+                      }
+                      description(asHtml: false)
+                      siteUrl
                     }
                   }
                 }

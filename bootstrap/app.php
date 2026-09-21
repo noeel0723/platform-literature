@@ -3,6 +3,7 @@
 use App\Console\Commands\AuditUserInteractions;
 use App\Console\Commands\BackfillComicCreators;
 use App\Console\Commands\BackfillKitsuCreators;
+use App\Console\Commands\BackfillWhereToRead;
 use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -21,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         AuditUserInteractions::class,
         BackfillComicCreators::class,
         BackfillKitsuCreators::class,
+        BackfillWhereToRead::class,
     ])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [

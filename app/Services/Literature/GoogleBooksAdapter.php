@@ -4,6 +4,7 @@ namespace App\Services\Literature;
 
 use App\Exceptions\LiteratureSourceUnavailable;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
@@ -88,7 +89,110 @@ final class GoogleBooksAdapter
             ->values();
     }
 
-    private function normalize(mixed $item, string $query): ?NormalizedLiterature
+    /** @return Collection<int, NormalizedLiterature> */
+    public function findByIsbn(string $isbn, int $limit = 5): Collection
+    {
+        return $this->lookup('isbn:'.preg_replace('/[^0-9X]/i', '', $isbn), $limit);
+    }
+
+    public function findById(string $externalId): ?NormalizedLiterature
+    {
+        $externalId = trim($externalId);
+
+        if ($externalId === '') {
+            return null;
+        }
+
+        $response = $this->request('/volumes/'.rawurlencode($externalId));
+        $item = $response->json();
+
+        if (! is_array($item)) {
+            return null;
+        }
+
+        return $this->normalize($item, (string) Arr::get($item, 'volumeInfo.title', ''), false);
+    }
+
+    /** @return Collection<int, NormalizedLiterature> */
+    public function findByTitleAndAuthor(string $title, string $author, int $limit = 5): Collection
+    {
+        $title = str_replace('"', '', trim($title));
+        $author = str_replace('"', '', trim($author));
+
+        if ($title === '' || $author === '') {
+            return collect();
+        }
+
+        return $this->lookup("intitle:\"{$title}\" inauthor:\"{$author}\"", $limit);
+    }
+
+    /** @return Collection<int, NormalizedLiterature> */
+    private function lookup(string $query, int $limit): Collection
+    {
+        $response = $this->request('/volumes', [
+            'q' => $query,
+            'maxResults' => max(1, min($limit, 40)),
+            'printType' => 'books',
+            'projection' => 'full',
+        ]);
+        $items = $response->json('items');
+
+        if (! is_array($items)) {
+            return collect();
+        }
+
+        return collect($items)
+            ->map(fn (mixed $item): ?NormalizedLiterature => is_array($item)
+                ? $this->normalize($item, (string) Arr::get($item, 'volumeInfo.title', ''), false)
+                : null)
+            ->filter()
+            ->values();
+    }
+
+    /** @param array<string, mixed> $query */
+    private function request(string $path, array $query = []): Response
+    {
+        $apiKey = trim((string) config('services.google_books.key'));
+
+        if ($apiKey === '') {
+            throw new LiteratureSourceUnavailable(
+                'Google Books',
+                'Google Books API key is not configured.',
+            );
+        }
+
+        try {
+            $response = Http::baseUrl(rtrim((string) config('services.google_books.base_url'), '/'))
+                ->acceptJson()
+                ->connectTimeout((int) config('services.google_books.connect_timeout', 3))
+                ->timeout((int) config('services.google_books.timeout', 8))
+                ->get($path, [...$query, 'key' => $apiKey]);
+        } catch (ConnectionException $exception) {
+            throw new LiteratureSourceUnavailable(
+                'Google Books',
+                'Google Books could not be reached.',
+                $exception,
+            );
+        }
+
+        if ($response->status() === 429) {
+            throw new LiteratureSourceUnavailable(
+                'Google Books',
+                'Google Books rate limit was reached.',
+            );
+        }
+
+        if ($response->failed()) {
+            throw new LiteratureSourceUnavailable(
+                'Google Books',
+                "Google Books returned HTTP {$response->status()}.",
+            );
+        }
+
+        return $response;
+    }
+
+    private function normalize(mixed $item, string $query, bool $enrichMetadata = true): ?NormalizedLiterature
     {
         if (! is_array($item)) {
             return null;
@@ -115,7 +219,7 @@ final class GoogleBooksAdapter
         $sourceSynopsis = $this->cleanText(Arr::get($item, 'volumeInfo.description'));
         $contentLanguage = (string) config('services.work_metadata.content_language', 'en');
         $sourceUsesContentLanguage = $language === null || $language === $contentLanguage;
-        $enrichment = $sourceSynopsis === null || ! $sourceUsesContentLanguage
+        $enrichment = $enrichMetadata && ($sourceSynopsis === null || ! $sourceUsesContentLanguage)
             ? $this->metadataEnricher->find($title, $authors, $language, $sourceSynopsis === null || ! $sourceUsesContentLanguage)
             : new WorkMetadata;
         $tagline = $sourceUsesContentLanguage ? $sourceTagline ?? $enrichment->tagline : $enrichment->tagline;
