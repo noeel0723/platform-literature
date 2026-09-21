@@ -37,7 +37,7 @@ export default function ReviewSection({ reviews, ratingSummary, viewer, reportRe
 
                                         {review.body ? (
                                             <div className="mt-3">
-                                                {review.contains_spoiler ? <SpoilerContent body={review.body} kind="review" className="font-serif text-lg leading-relaxed text-ink-950/85" /> : <p className="whitespace-pre-line font-serif text-lg leading-relaxed text-ink-950/85">{review.body}</p>}
+                                                {review.contains_spoiler ? <SpoilerContent body={review.body} kind="review" className="font-serif text-base leading-6 text-ink-950/85" /> : <p className="whitespace-pre-line font-serif text-base leading-6 text-ink-950/85">{review.body}</p>}
                                             </div>
                                         ) : <p className="mt-3 text-sm italic text-ink-950/60">Rating only.</p>}
 
