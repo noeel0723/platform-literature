@@ -47,6 +47,15 @@ class AniListAdapterTest extends TestCase
         $this->assertSame('Hiromu Arakawa', $manga->authorDetails[0]->name);
         $this->assertSame('https://s4.anilist.co/hiromu-arakawa.jpg', $manga->authorDetails[0]->imageUrl);
         $this->assertSame('96879', $manga->authorDetails[0]->externalId);
+        $this->assertSame(
+            [
+                ['MANGA Plus', 'https://mangaplus.shueisha.co.jp/title/100001'],
+                ['VIZ', 'https://www.viz.com/fullmetal-alchemist'],
+            ],
+            collect($manga->links)
+                ->map(fn ($link): array => [$link->provider, $link->url])
+                ->all(),
+        );
 
         Http::assertSent(function (Request $request): bool {
             $data = $request->data();
@@ -235,6 +244,12 @@ class AniListAdapterTest extends TestCase
             ],
             'bannerImage' => 'https://s4.anilist.co/file/anilistcdn/media/manga/banner.jpg',
             'format' => 'MANGA',
+            'externalLinks' => [
+                ['site' => 'MANGA Plus', 'url' => 'https://mangaplus.shueisha.co.jp/title/100001', 'type' => 'STREAMING'],
+                ['site' => 'VIZ Media', 'url' => 'https://www.viz.com/fullmetal-alchemist', 'type' => 'INFO'],
+                ['site' => 'MyAnimeList', 'url' => 'https://myanimelist.net/manga/25', 'type' => 'INFO'],
+                ['site' => 'Twitter', 'url' => 'https://x.com/example', 'type' => 'SOCIAL'],
+            ],
             'staff' => [
                 'edges' => [
                     [

@@ -132,7 +132,53 @@ final class AniListAdapter
             relations: $includeRelations ? $this->relations(Arr::get($item, 'relations.edges')) : [],
             authorDetails: $authorDetails,
             backdropUrl: $this->cleanUrl(Arr::get($item, 'bannerImage')),
+            links: $this->availabilityLinks(Arr::get($item, 'externalLinks')),
         );
+    }
+
+    /** @return list<NormalizedLiteratureLink> */
+    private function availabilityLinks(mixed $externalLinks): array
+    {
+        if (! is_array($externalLinks)) {
+            return [];
+        }
+
+        $providers = [
+            'manga plus' => 'MANGA Plus',
+            'webtoon' => 'WEBTOON',
+            'webtoons' => 'WEBTOON',
+            'viz' => 'VIZ',
+            'viz media' => 'VIZ',
+            'kodansha' => 'Kodansha',
+            'marvel unlimited' => 'Marvel Unlimited',
+            'dc universe infinite' => 'DC Universe Infinite',
+        ];
+
+        return collect($externalLinks)
+            ->map(function (mixed $link) use ($providers): ?NormalizedLiteratureLink {
+                if (! is_array($link)) {
+                    return null;
+                }
+
+                $site = Str::lower(trim((string) Arr::get($link, 'site', '')));
+                $provider = $providers[$site] ?? null;
+                $url = $this->cleanUrl(Arr::get($link, 'url'));
+
+                if ($provider === null || $url === null) {
+                    return null;
+                }
+
+                return new NormalizedLiteratureLink(
+                    provider: $provider,
+                    url: $url,
+                    type: 'read',
+                    source: 'anilist',
+                );
+            })
+            ->filter()
+            ->unique(fn (NormalizedLiteratureLink $link): string => $link->provider.'|'.$link->url)
+            ->values()
+            ->all();
     }
 
     /** @return list<NormalizedLiteratureRelation> */
@@ -322,6 +368,11 @@ final class AniListAdapter
                     medium
                   }
                   bannerImage
+                  externalLinks {
+                    site
+                    url
+                    type
+                  }
                   format
                   staff(perPage: 10) {
                     edges {

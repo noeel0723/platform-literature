@@ -41,6 +41,16 @@ class GoogleBooksAdapterTest extends TestCase
         $this->assertSame('https://books.google.com/large-cover.jpg', $book->coverUrl);
         $this->assertSame('A science fiction classic.', $book->synopsis);
         $this->assertSame('Novel', $book->format);
+        $this->assertSame(
+            [
+                ['Google Play Books', 'buy', 'https://play.google.com/store/books/details?id=google-volume-1'],
+                ['Google Books', 'read', 'https://books.google.com/books/reader?id=google-volume-1'],
+                ['Google Books', 'preview', 'https://books.google.com/books?id=google-volume-1'],
+            ],
+            collect($book->links)
+                ->map(fn ($link): array => [$link->provider, $link->type, $link->url])
+                ->all(),
+        );
 
         Http::assertSent(fn (Request $request): bool => $request->method() === 'GET'
             && $request['q'] === 'Dune'
@@ -328,6 +338,14 @@ class GoogleBooksAdapterTest extends TestCase
                 ],
                 'language' => 'en',
                 'printType' => 'BOOK',
+                'previewLink' => 'http://books.google.com/books?id=google-volume-1',
+            ],
+            'saleInfo' => [
+                'buyLink' => 'http://play.google.com/store/books/details?id=google-volume-1',
+            ],
+            'accessInfo' => [
+                'viewability' => 'ALL_PAGES',
+                'webReaderLink' => 'http://books.google.com/books/reader?id=google-volume-1',
             ],
         ];
     }

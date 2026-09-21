@@ -139,7 +139,7 @@ function Discovery({ relationshipGroups, authorDiscoveries }) {
     );
 }
 
-export default function Show({ literature, viewer, ratingSummary, reviews, discussions, discussionCount, relationshipGroups, authorDiscoveries, reportReasons, successMessage, routes }) {
+export default function Show({ literature, whereToRead, viewer, ratingSummary, reviews, discussions, discussionCount, relationshipGroups, authorDiscoveries, reportReasons, successMessage, routes }) {
     const [reviewOpen, setReviewOpen] = useState(false);
     const backdropUrl = literature.backdrop_url || literature.cover_url;
     const hasDedicatedBackdrop = Boolean(literature.backdrop_url);
@@ -177,16 +177,11 @@ export default function Show({ literature, viewer, ratingSummary, reviews, discu
                         <div className="absolute inset-0 -z-10 bg-linear-to-r from-ink-950/45 via-transparent to-ink-950/35" aria-hidden="true" />
                     </>
                 ) : <div className="catalog-grid absolute inset-0 -z-10 opacity-70" aria-hidden="true" />}
-                {routes.admin_edit_metadata && <SiteContainer className="relative pt-20 sm:pt-24 lg:pt-28">
-                    <div className="flex justify-end">
-                        {routes.admin_edit_metadata && <Link href={routes.admin_edit_metadata} className="rounded-full border border-brand-cream/40 bg-ink-950/65 px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] text-brand-cream backdrop-blur transition hover:border-brand-coral hover:bg-brand-coral">Edit metadata</Link>}
-                    </div>
-                </SiteContainer>}
             </section>
 
             <section className="border-b border-ink-950/10 bg-brand-cream">
                 <SiteContainer data-literature-detail-grid className="relative grid items-start gap-6 py-9 md:grid-cols-[180px_minmax(0,1fr)] lg:grid-cols-[190px_minmax(0,1fr)_240px] lg:gap-7 lg:py-11">
-                    <LiteratureDetailHero literature={literature} />
+                    <LiteratureDetailHero literature={literature} whereToRead={whereToRead} />
                     <ActionPanel literature={literature} viewer={viewer} ratingSummary={ratingSummary} routes={routes} onOpenReview={() => setReviewOpen(true)} onChooseRating={chooseRating} />
                 </SiteContainer>
             </section>

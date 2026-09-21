@@ -4,6 +4,8 @@ namespace App\Services\Literature;
 
 use App\Exceptions\LiteratureSourceUnavailable;
 use App\Models\ApiSource;
+use App\Models\CanonicalWork;
+use App\Models\CanonicalWorkLink;
 use App\Models\Category;
 use App\Models\Literature;
 use App\Models\LiteratureRelation;
@@ -14,6 +16,18 @@ use InvalidArgumentException;
 
 final class CatalogSyncService
 {
+    /** @var list<string> */
+    private const OFFICIAL_LINK_PROVIDERS = [
+        'Google Books',
+        'Google Play Books',
+        'MANGA Plus',
+        'WEBTOON',
+        'VIZ',
+        'Kodansha',
+        'Marvel Unlimited',
+        'DC Universe Infinite',
+    ];
+
     public function __construct(
         private GoogleBooksAdapter $googleBooks,
         private HardcoverAdapter $hardcover,
@@ -487,9 +501,46 @@ final class CatalogSyncService
         $this->syncAuthors($source, $literature, $item->authors, $item->authorDetails, $authorEntities);
         $this->syncCategories($literature, $item->categories);
         $this->syncRelations($source, $literature, $item->relations);
-        $this->semanticResolver->resolve($literature);
+        $mapping = $this->semanticResolver->resolve($literature);
+        $this->syncAvailabilityLinks(
+            $mapping->canonicalWork()->firstOrFail(),
+            $item->links,
+        );
 
         return $literature;
+    }
+
+    /** @param list<NormalizedLiteratureLink> $links */
+    private function syncAvailabilityLinks(CanonicalWork $canonicalWork, array $links): void
+    {
+        foreach ($links as $link) {
+            if (
+                ! $link->isOfficial
+                || ! in_array($link->provider, self::OFFICIAL_LINK_PROVIDERS, true)
+                || ! array_key_exists($link->type, CanonicalWorkLink::TYPE_LABELS)
+                || filter_var($link->url, FILTER_VALIDATE_URL) === false
+                || ! in_array(parse_url($link->url, PHP_URL_SCHEME), ['http', 'https'], true)
+            ) {
+                continue;
+            }
+
+            CanonicalWorkLink::query()->updateOrCreate(
+                [
+                    'canonical_work_id' => $canonicalWork->id,
+                    'provider' => $link->provider,
+                    'url' => $link->url,
+                    'link_type' => $link->type,
+                ],
+                [
+                    'region' => $link->region,
+                    'language' => $link->language,
+                    'source' => $link->source,
+                    'is_official' => true,
+                    'is_active' => true,
+                    'verified_at' => now(),
+                ],
+            );
+        }
     }
 
     /** @param list<NormalizedLiteratureRelation> $relations */

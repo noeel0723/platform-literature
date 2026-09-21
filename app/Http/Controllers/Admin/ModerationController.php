@@ -8,16 +8,18 @@ use App\Models\Discussion;
 use App\Models\Report;
 use App\Models\Review;
 use App\Models\User;
-use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class ModerationController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request): Response
     {
         $status = (string) $request->query('status', 'pending');
 
@@ -31,18 +33,115 @@ class ModerationController extends Controller
             ->latest()
             ->paginate(20)
             ->withQueryString();
+        $reports->getCollection()->loadMorph('reportable', [
+            Review::class => ['user', 'literature'],
+            Discussion::class => ['user', 'literature'],
+            Comment::class => ['user', 'discussion.literature'],
+        ]);
+        $reports->through(fn (Report $report): array => $this->presentReport($report));
+
         $statusCounts = Report::query()
             ->selectRaw('status, count(*) as aggregate')
             ->groupBy('status')
-            ->pluck('aggregate', 'status');
+            ->pluck('aggregate', 'status')
+            ->all();
 
-        return view('admin.moderation.index', [
+        return Inertia::render('Admin/Moderation/Index', [
             'reports' => $reports,
             'status' => $status,
-            'statusCounts' => $statusCounts,
+            'statusCounts' => collect(Report::STATUS_LABELS)
+                ->mapWithKeys(fn (string $label, string $value): array => [$value => (int) ($statusCounts[$value] ?? 0)])
+                ->all(),
             'statusLabels' => Report::STATUS_LABELS,
             'reasonLabels' => Report::REASON_LABELS,
+            'routes' => [
+                'index' => route('admin.moderation.index'),
+            ],
+            'viewer' => [
+                'name' => $request->user()->name,
+                'username' => $request->user()->username,
+            ],
+            'successMessage' => $request->session()->get('success'),
         ]);
+    }
+
+    /** @return array<string, mixed> */
+    private function presentReport(Report $report): array
+    {
+        $target = $report->reportable;
+        $targetOwner = match (true) {
+            $target instanceof User => $target,
+            $target instanceof Review, $target instanceof Discussion, $target instanceof Comment => $target->user,
+            default => null,
+        };
+
+        $targetSummary = match (true) {
+            $target instanceof User => $target->name.' (@'.$target->username.')',
+            $target instanceof Review => filled($target->body)
+                ? $target->body
+                : 'Rating: '.number_format((float) $target->rating, 1).' / 5',
+            $target instanceof Discussion => $target->title.' - '.$target->body,
+            $target instanceof Comment => $target->body,
+            default => 'The reported item is no longer available.',
+        };
+
+        $targetUrl = match (true) {
+            $target instanceof User => route('profiles.show', $target),
+            $target instanceof Review => route('literatures.show', $target->literature).'#review-'.$target->id,
+            $target instanceof Discussion => route('literatures.show', $target->literature).'#discussion-'.$target->id,
+            $target instanceof Comment => route('literatures.show', $target->discussion->literature).'#discussion-'.$target->discussion_id,
+            default => null,
+        };
+
+        $availableActions = [];
+        $targetState = null;
+
+        if ($report->status === 'pending') {
+            if ($target instanceof Review || $target instanceof Discussion || $target instanceof Comment) {
+                if ($target->hidden_at === null) {
+                    $availableActions[] = 'hide';
+                } else {
+                    $targetState = 'This content is already hidden.';
+                }
+            } elseif ($target instanceof User) {
+                if ($target->deactivated_at !== null) {
+                    $targetState = 'This account is already deactivated.';
+                } elseif (! $target->isAdmin()) {
+                    $availableActions[] = 'deactivate';
+                }
+            }
+
+            $availableActions[] = 'dismiss';
+        }
+
+        return [
+            'id' => $report->id,
+            'reason' => $report->reason,
+            'reason_label' => Report::REASON_LABELS[$report->reason] ?? Str::headline($report->reason),
+            'status' => $report->status,
+            'status_label' => Report::STATUS_LABELS[$report->status] ?? Str::headline($report->status),
+            'target_type' => $target ? class_basename($target) : 'Removed content',
+            'target_summary' => $targetSummary,
+            'target_url' => $targetUrl,
+            'target_state' => $targetState,
+            'reporter' => [
+                'name' => $report->reporter->name,
+                'username' => $report->reporter->username,
+            ],
+            'target_owner' => $targetOwner ? [
+                'name' => $targetOwner->name,
+                'username' => $targetOwner->username,
+            ] : null,
+            'created_at' => $report->created_at->utc()->toIso8601String(),
+            'details' => $report->details,
+            'resolver' => $report->resolver ? [
+                'name' => $report->resolver->name,
+                'username' => $report->resolver->username,
+            ] : null,
+            'resolution_note' => $report->resolution_note,
+            'update_url' => route('admin.moderation.update', $report),
+            'available_actions' => $availableActions,
+        ];
     }
 
     public function update(Request $request, Report $report): RedirectResponse

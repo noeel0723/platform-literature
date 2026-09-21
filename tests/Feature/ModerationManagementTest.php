@@ -7,6 +7,7 @@ use App\Models\Report;
 use App\Models\Review;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class ModerationManagementTest extends TestCase
@@ -77,10 +78,50 @@ class ModerationManagementTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.moderation.index'))
             ->assertOk()
-            ->assertSee('Moderation queue')
-            ->assertSee('Reported review body')
-            ->assertSee('Harassment or bullying')
-            ->assertSee('Please review this message.');
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Admin/Moderation/Index')
+                ->where('status', 'pending')
+                ->where('statusCounts.pending', 1)
+                ->where('reports.data.0.target_summary', 'Reported review body')
+                ->where('reports.data.0.reason_label', 'Harassment or bullying')
+                ->where('reports.data.0.details', 'Please review this message.')
+                ->where('reports.data.0.available_actions', ['hide', 'dismiss'])
+            );
+    }
+
+    public function test_admin_can_filter_pending_resolved_and_dismissed_reports(): void
+    {
+        $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+        $pending = Report::factory()->create(['status' => 'pending']);
+        $resolved = Report::factory()->create([
+            'status' => 'resolved',
+            'resolved_by' => $admin->id,
+            'resolved_at' => now(),
+        ]);
+        $dismissed = Report::factory()->create([
+            'status' => 'dismissed',
+            'resolved_by' => $admin->id,
+            'resolved_at' => now(),
+        ]);
+
+        foreach ([
+            'pending' => $pending,
+            'resolved' => $resolved,
+            'dismissed' => $dismissed,
+        ] as $status => $report) {
+            $this->actingAs($admin)
+                ->get(route('admin.moderation.index', ['status' => $status]))
+                ->assertInertia(fn (Assert $page) => $page
+                    ->component('Admin/Moderation/Index')
+                    ->where('status', $status)
+                    ->where('statusCounts.pending', 1)
+                    ->where('statusCounts.resolved', 1)
+                    ->where('statusCounts.dismissed', 1)
+                    ->has('reports.data', 1)
+                    ->where('reports.data.0.id', $report->id)
+                    ->where('reports.data.0.status', $status)
+                );
+        }
     }
 
     public function test_admin_can_hide_reported_review_and_resolve_the_report(): void
@@ -143,6 +184,29 @@ class ModerationManagementTest extends TestCase
             ->get(route('profiles.edit'))
             ->assertRedirect(route('login'));
         $this->assertGuest();
+    }
+
+    public function test_admin_can_dismiss_a_report_without_hiding_its_target(): void
+    {
+        $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+        $review = Review::factory()->create();
+        $report = Report::factory()->create([
+            'reportable_type' => Review::class,
+            'reportable_id' => $review->id,
+        ]);
+
+        $this->actingAs($admin)->patch(route('admin.moderation.update', $report), [
+            'action' => 'dismiss',
+            'resolution_note' => 'No policy violation.',
+        ])->assertRedirect()->assertSessionHas('success');
+
+        $this->assertNull($review->refresh()->hidden_at);
+        $this->assertDatabaseHas('reports', [
+            'id' => $report->id,
+            'status' => 'dismissed',
+            'resolved_by' => $admin->id,
+            'resolution_note' => 'No policy violation.',
+        ]);
     }
 
     public function test_promotion_command_grants_the_admin_role(): void

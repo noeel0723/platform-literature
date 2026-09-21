@@ -1,5 +1,7 @@
 import { Link } from '@inertiajs/react';
 
+import WhereToReadCard from './LiteratureDetail/WhereToReadCard';
+
 const coverThemes = {
     coral: 'from-brand-coral via-brand-cream to-brand-sky text-ink-950',
     sky: 'from-brand-sky via-brand-cream to-ink-950 text-ink-950',
@@ -8,41 +10,44 @@ const coverThemes = {
     mixed: 'from-brand-cream via-brand-coral to-brand-sky text-ink-950',
 };
 
-export default function LiteratureDetailHero({ literature }) {
+export default function LiteratureDetailHero({ literature, whereToRead = [] }) {
     const coverTheme = coverThemes[literature.theme]
         ?? 'from-brand-cream via-brand-sky to-brand-coral text-ink-950';
 
     return (
         <>
-            <div className={`relative aspect-[2/3] w-full max-w-[190px] justify-self-center overflow-hidden border border-ink-950/20 bg-linear-to-br md:justify-self-start ${coverTheme} shadow-[0_14px_36px_rgba(47,58,85,0.12)]`}>
-                {literature.cover_url ? (
-                    <>
-                        <img
-                            src={literature.cover_url}
-                            alt={`Cover of ${literature.title}`}
-                            className="absolute inset-0 size-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-linear-to-t from-ink-950/80 via-transparent to-ink-950/25" />
-                    </>
-                ) : (
-                    <div className="absolute inset-0 opacity-30 [background-image:linear-gradient(115deg,transparent_20%,rgba(255,255,255,.35)_50%,transparent_80%)]" />
-                )}
-
-                <div className={`absolute inset-x-0 top-0 flex justify-between p-4 text-xs font-bold uppercase tracking-wider ${literature.cover_url ? 'text-brand-cream' : ''}`}>
-                    <span>{literature.type_label}</span>
-                    <span>{literature.year}</span>
-                </div>
-
-                <div className={`absolute inset-x-0 bottom-0 p-6 ${literature.cover_url ? 'text-brand-cream' : ''}`}>
-                    {!literature.cover_url && (
-                        <span className="font-serif text-6xl font-bold leading-none">
-                            {literature.initials}
-                        </span>
+            <div className="w-full max-w-[190px] justify-self-center md:justify-self-start">
+                <div className={`relative aspect-[2/3] w-full overflow-hidden border border-ink-950/20 bg-linear-to-br ${coverTheme} shadow-[0_14px_36px_rgba(47,58,85,0.12)]`}>
+                    {literature.cover_url ? (
+                        <>
+                            <img
+                                src={literature.cover_url}
+                                alt={`Cover of ${literature.title}`}
+                                className="absolute inset-0 size-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-linear-to-t from-ink-950/80 via-transparent to-ink-950/25" />
+                        </>
+                    ) : (
+                        <div className="absolute inset-0 opacity-30 [background-image:linear-gradient(115deg,transparent_20%,rgba(255,255,255,.35)_50%,transparent_80%)]" />
                     )}
-                    <p className="mt-4 border-t border-current/40 pt-4 text-xs font-bold uppercase tracking-[0.18em]">
-                        {literature.source}
-                    </p>
+
+                    <div className={`absolute inset-x-0 top-0 flex justify-between p-4 text-xs font-bold uppercase tracking-wider ${literature.cover_url ? 'text-brand-cream' : ''}`}>
+                        <span>{literature.type_label}</span>
+                        <span>{literature.year}</span>
+                    </div>
+
+                    <div className={`absolute inset-x-0 bottom-0 p-6 ${literature.cover_url ? 'text-brand-cream' : ''}`}>
+                        {!literature.cover_url && (
+                            <span className="font-serif text-6xl font-bold leading-none">
+                                {literature.initials}
+                            </span>
+                        )}
+                        <p className="mt-4 border-t border-current/40 pt-4 text-xs font-bold uppercase tracking-[0.18em]">
+                            {literature.source}
+                        </p>
+                    </div>
                 </div>
+                <WhereToReadCard links={whereToRead} />
             </div>
 
             <div className="min-w-0 self-start">

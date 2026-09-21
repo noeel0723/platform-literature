@@ -51,6 +51,15 @@ class CatalogSyncServiceTest extends TestCase
         $this->assertDatabaseCount('category_literature', 2);
         $this->assertDatabaseCount('canonical_works', 1);
         $this->assertDatabaseCount('literature_source_mappings', 1);
+        $this->assertDatabaseCount('canonical_work_links', 3);
+        $this->assertDatabaseHas('canonical_work_links', [
+            'provider' => 'Google Play Books',
+            'link_type' => 'buy',
+            'url' => 'https://play.google.com/store/books/details?id=google-volume-1',
+            'source' => 'google_books',
+            'is_official' => true,
+            'is_active' => true,
+        ]);
         $this->assertDatabaseHas('literatures', [
             'external_id' => 'google-volume-1',
             'title' => 'Dune',
@@ -499,6 +508,14 @@ class CatalogSyncServiceTest extends TestCase
                 'imageLinks' => ['thumbnail' => 'https://books.google.com/cover.jpg'],
                 'language' => 'en',
                 'printType' => 'BOOK',
+                'previewLink' => 'https://books.google.com/books?id=google-volume-1',
+            ],
+            'saleInfo' => [
+                'buyLink' => 'https://play.google.com/store/books/details?id=google-volume-1',
+            ],
+            'accessInfo' => [
+                'viewability' => 'PARTIAL',
+                'webReaderLink' => 'https://books.google.com/books/reader?id=google-volume-1',
             ],
         ];
     }

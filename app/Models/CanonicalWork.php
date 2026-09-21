@@ -41,6 +41,12 @@ class CanonicalWork extends Model
         return $this->hasMany(LiteratureSourceMapping::class);
     }
 
+    /** @return HasMany<CanonicalWorkLink, $this> */
+    public function links(): HasMany
+    {
+        return $this->hasMany(CanonicalWorkLink::class);
+    }
+
     /** @return HasMany<CustomListItem, $this> */
     public function customListItems(): HasMany
     {

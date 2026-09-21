@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\LiteratureSourceUnavailable;
+use App\Models\CanonicalWorkLink;
 use App\Models\Comment;
 use App\Models\Discussion;
 use App\Models\Literature;
@@ -159,6 +160,11 @@ class LiteratureController extends Controller
             'categories',
             'metadataOverride',
             'sourceMapping.canonicalWork.metadataOverride',
+            'sourceMapping.canonicalWork.links' => fn ($links) => $links
+                ->where('is_official', true)
+                ->where('is_active', true)
+                ->whereIn('link_type', array_keys(CanonicalWorkLink::TYPE_LABELS))
+                ->whereNotNull('verified_at'),
             'sourceMapping.canonicalWork.literatures.categories',
             'outgoingRelations.relatedLiterature.apiSource',
             'outgoingRelations.relatedLiterature.authors',
@@ -267,9 +273,29 @@ class LiteratureController extends Controller
                 'url' => route('literature.browse', ['genre' => $genre['slug']]),
             ])
             ->all();
+        $whereToRead = $literature->sourceMapping?->canonicalWork?->links
+            ?->filter(fn (CanonicalWorkLink $link): bool => filter_var($link->url, FILTER_VALIDATE_URL) !== false
+                && in_array(parse_url($link->url, PHP_URL_SCHEME), ['http', 'https'], true))
+            ?->sortBy(fn (CanonicalWorkLink $link): string => sprintf(
+                '%02d-%s',
+                array_search($link->link_type, array_keys(CanonicalWorkLink::TYPE_LABELS), true),
+                $link->provider,
+            ))
+            ->map(fn (CanonicalWorkLink $link): array => [
+                'id' => $link->id,
+                'provider' => $link->provider,
+                'url' => $link->url,
+                'link_type' => $link->link_type,
+                'link_type_label' => CanonicalWorkLink::TYPE_LABELS[$link->link_type],
+                'region' => $link->region,
+                'language' => $link->language,
+            ])
+            ->values()
+            ->all() ?? [];
 
         return Inertia::render('Catalog/Show', [
             'literature' => $presentedLiterature,
+            'whereToRead' => $whereToRead,
             'viewer' => [
                 'authenticated' => request()->user() !== null,
                 'id' => request()->user()?->id,

@@ -9,6 +9,7 @@ final readonly class NormalizedLiterature
      * @param  list<string>  $categories
      * @param  list<NormalizedLiteratureRelation>  $relations
      * @param  list<NormalizedAuthor>  $authorDetails
+     * @param  list<NormalizedLiteratureLink>  $links
      */
     public function __construct(
         public string $externalId,
@@ -30,5 +31,6 @@ final readonly class NormalizedLiterature
         public array $relations = [],
         public array $authorDetails = [],
         public ?string $backdropUrl = null,
+        public array $links = [],
     ) {}
 }

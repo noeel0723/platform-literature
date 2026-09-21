@@ -153,7 +153,53 @@ final class GoogleBooksAdapter
             originalTitle: $enrichment->originalTitle,
             synopsisSourceName: $usedEnrichmentSynopsis ? $enrichment->synopsisSourceName : null,
             synopsisSourceUrl: $usedEnrichmentSynopsis ? $enrichment->synopsisSourceUrl : null,
+            links: $this->availabilityLinks($item, $language),
         );
+    }
+
+    /** @return list<NormalizedLiteratureLink> */
+    private function availabilityLinks(array $item, ?string $language): array
+    {
+        $links = collect();
+        $buyUrl = $this->cleanUrl(Arr::get($item, 'saleInfo.buyLink'));
+        $readerUrl = $this->cleanUrl(Arr::get($item, 'accessInfo.webReaderLink'));
+        $previewUrl = $this->cleanUrl(Arr::get($item, 'volumeInfo.previewLink'));
+        $viewability = Str::upper((string) Arr::get($item, 'accessInfo.viewability', ''));
+
+        if ($buyUrl !== null) {
+            $links->push(new NormalizedLiteratureLink(
+                provider: 'Google Play Books',
+                url: $buyUrl,
+                type: 'buy',
+                source: 'google_books',
+                language: $language,
+            ));
+        }
+
+        if ($readerUrl !== null) {
+            $links->push(new NormalizedLiteratureLink(
+                provider: 'Google Books',
+                url: $readerUrl,
+                type: $viewability === 'ALL_PAGES' ? 'read' : 'preview',
+                source: 'google_books',
+                language: $language,
+            ));
+        }
+
+        if ($previewUrl !== null) {
+            $links->push(new NormalizedLiteratureLink(
+                provider: 'Google Books',
+                url: $previewUrl,
+                type: 'preview',
+                source: 'google_books',
+                language: $language,
+            ));
+        }
+
+        return $links
+            ->unique(fn (NormalizedLiteratureLink $link): string => $link->type.'|'.$link->url)
+            ->values()
+            ->all();
     }
 
     /** @return list<string> */
@@ -229,6 +275,17 @@ final class GoogleBooksAdapter
         $upgraded = preg_replace('/([?&])w=\d+/', '$1w=900', $upgraded) ?? $upgraded;
 
         return preg_replace('/([?&])edge=curl(?:&|$)/', '$1', $upgraded) ?? $upgraded;
+    }
+
+    private function cleanUrl(mixed $value): ?string
+    {
+        $url = $this->cleanText($value);
+
+        if ($url === null || filter_var($url, FILTER_VALIDATE_URL) === false) {
+            return null;
+        }
+
+        return preg_replace('#^http://#', 'https://', $url) ?? $url;
     }
 
     private function format(mixed $printType): string
