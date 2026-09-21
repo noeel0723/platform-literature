@@ -30,7 +30,7 @@ function Summary({ literature, hasDiscovery }) {
             </nav>
             <div className="mt-7">
                 <div id="summary" className="scroll-mt-24 border border-ink-950/10 bg-white/40 p-5 sm:p-6">
-                    <SectionHeading>Metadata summary</SectionHeading>
+                    <SectionHeading>Summary</SectionHeading>
                     <p className="mt-4 max-w-[68ch] text-base leading-7 text-ink-900">{literature.synopsis}</p>
                     {literature.synopsis_source_name && literature.synopsis_source_url && (
                         <p className="mt-4 text-xs leading-5 text-ink-950/50">

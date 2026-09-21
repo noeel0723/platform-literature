@@ -68,7 +68,7 @@ function ProfileOverview({ profile, routes, reportReasons }) {
                             {profile.avatar_url ? <img src={profile.avatar_url} alt={`${profile.name}'s profile photo`} className="size-full object-cover" /> : profile.initials}
                         </div>
                         <div className="min-w-0 flex-1">
-                            <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-brand-coral">Reader profile</p>
+                            <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-brand-coral">Profile</p>
                             <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5">
                                 <h1 className="max-w-full truncate text-2xl font-bold leading-none text-ink-950 sm:text-3xl">{profile.name}</h1>
                                 {profile.is_owner && <a href={routes.edit} className="rounded-sm border border-ink-950/15 bg-brand-cream/65 px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-wider text-ink-950 transition hover:border-brand-coral hover:bg-brand-coral hover:text-white">Edit profile</a>}
