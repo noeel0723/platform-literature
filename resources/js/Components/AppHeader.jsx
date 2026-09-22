@@ -177,7 +177,7 @@ export default function AppHeader({ routes, user, csrf_token: csrfToken, search_
                         <div className="ml-auto flex min-w-0 items-center gap-2 md:gap-3 lg:gap-4">
                             {user && <div className="hidden md:block"><AccountMenu user={user} csrfToken={csrfToken} /></div>}
                             <nav className="hidden items-center gap-5 text-xs font-semibold uppercase tracking-[0.14em] text-brand-plate/85 lg:flex" aria-label="Main navigation">
-                                {!user && isGuestLanding && (
+                                {!user && (
                                     <a href={routes.login} onClick={(event) => { event.preventDefault(); toggleLogin(); }} aria-expanded={loginOpen} className="whitespace-nowrap transition hover:text-white">
                                         Log in
                                     </a>
@@ -188,7 +188,7 @@ export default function AppHeader({ routes, user, csrf_token: csrfToken, search_
                             </nav>
                             <Search action={routes.search} initialQuery={searchQuery} />
                             {user && <button type="button" data-quick-log-open className="inline-flex h-8 shrink-0 items-center gap-1 rounded-sm bg-[#00c030] px-3 text-[0.7rem] font-extrabold uppercase tracking-[0.08em] text-white shadow-sm transition-colors hover:bg-[#00a628] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00c030]" aria-label="Log a rating or review" onClick={openQuickLog}><span className="text-base leading-none" aria-hidden="true">+</span><span>Log</span></button>}
-                            {!user && <a href={routes.login} onClick={(event) => { event.preventDefault(); toggleLogin(); }} aria-expanded={loginOpen} className={`shrink-0 whitespace-nowrap text-xs font-bold uppercase tracking-wider text-brand-plate/85 hover:text-white ${isGuestLanding ? 'lg:hidden' : ''}`}>Log in</a>}
+                            {!user && <a href={routes.login} onClick={(event) => { event.preventDefault(); toggleLogin(); }} aria-expanded={loginOpen} className="shrink-0 whitespace-nowrap text-xs font-bold uppercase tracking-wider text-brand-plate/85 hover:text-white lg:hidden">Log in</a>}
                             <button type="button" className="grid size-10 shrink-0 place-items-center rounded-full border border-brand-plate/35 bg-transparent text-brand-plate transition hover:bg-brand-plate hover:text-brand-stem lg:hidden" aria-expanded={mobileOpen} aria-controls="mobile-menu" onClick={() => setMobileOpen((value) => !value)}><span className="sr-only">Open navigation</span><svg aria-hidden="true" className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 7h16M4 12h16M4 17h16" /></svg></button>
                         </div>
                     )}
