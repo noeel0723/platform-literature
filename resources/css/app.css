@@ -68,8 +68,8 @@
         inset-inline: 0;
         top: 0;
         width: 100%;
-        border-color: transparent !important;
-        background: linear-gradient(180deg, rgb(16 47 98 / 0.48), rgb(16 47 98 / 0.12) 72%, transparent) !important;
+        border-bottom: 0 !important;
+        background: linear-gradient(180deg, rgb(0 0 0 / 0.24), rgb(0 0 0 / 0.06) 68%, transparent) !important;
         box-shadow: none !important;
         backdrop-filter: none !important;
     }

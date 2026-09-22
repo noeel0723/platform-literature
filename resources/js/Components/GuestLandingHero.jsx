@@ -29,8 +29,7 @@ export default function GuestLandingHero({ literature, routes }) {
 
             <SiteContainer className="relative z-10 flex min-h-[420px] items-center py-12 sm:min-h-[450px] sm:py-14 lg:min-h-[480px] lg:py-16">
                 <div className="max-w-xl lg:max-w-2xl">
-                    <p className="text-xs font-bold uppercase tracking-[0.24em] text-brand-coral">The reading haven</p>
-                    <h1 className="mt-5 font-serif text-4xl font-bold leading-[1.02] tracking-[-0.045em] text-brand-plate/90 sm:text-5xl lg:text-6xl">
+                    <h1 className="font-serif text-4xl font-bold leading-[1.02] tracking-[-0.045em] text-brand-plate/90 sm:text-5xl lg:text-6xl">
                         <span className="block sm:whitespace-nowrap">Track every story</span>
                         <span className="block">you read.</span>
                     </h1>

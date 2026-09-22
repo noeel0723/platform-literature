@@ -171,12 +171,11 @@ export default function Show({ literature, whereToRead, viewer, ratingSummary, r
             {successMessage && <div role="status" className="border-b border-brand-sky/50 bg-brand-sky/20 px-5 py-3 text-center text-sm font-semibold text-ink-950">{successMessage}</div>}
             <section data-literature-backdrop className="relative isolate min-h-[360px] overflow-hidden bg-ink-950 sm:min-h-[430px] lg:min-h-[520px]">
                 {backdropUrl ? (
-                    <>
-                        <div className="absolute inset-0 -z-20 overflow-hidden" aria-hidden="true"><img src={backdropUrl} alt="" className={`size-full object-cover object-center ${hasDedicatedBackdrop ? 'scale-[1.02] opacity-90' : 'scale-110 opacity-62 blur-[3px]'}`} /></div>
-                        <div className="absolute inset-0 -z-10 bg-linear-to-t from-brand-cream via-ink-950/5 to-ink-950/25" aria-hidden="true" />
-                        <div className="absolute inset-0 -z-10 bg-linear-to-r from-ink-950/45 via-transparent to-ink-950/35" aria-hidden="true" />
-                    </>
-                ) : <div className="catalog-grid absolute inset-0 -z-10 opacity-70" aria-hidden="true" />}
+                    <div className="absolute inset-0 -z-20 overflow-hidden" aria-hidden="true"><img src={backdropUrl} alt="" className={`size-full object-cover object-center ${hasDedicatedBackdrop ? 'scale-[1.02] opacity-95' : 'scale-110 opacity-65 blur-[3px]'}`} /></div>
+                ) : <div className="catalog-grid absolute inset-0 -z-20 opacity-70" aria-hidden="true" />}
+                <div className="absolute inset-0 -z-10 bg-black/10" aria-hidden="true" />
+                <div className="absolute inset-0 -z-10 bg-linear-to-r from-black/30 via-transparent to-black/15" aria-hidden="true" />
+                <div className="absolute inset-x-0 bottom-0 -z-10 h-[62%] bg-linear-to-b from-transparent via-brand-cream/30 to-brand-cream" aria-hidden="true" />
             </section>
 
             <section className="border-b border-ink-950/10 bg-brand-cream">
