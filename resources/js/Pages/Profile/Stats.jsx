@@ -126,12 +126,8 @@ export default function ProfileStats({ profile, navigation, stats }) {
             <ProfileSubNavigation navigation={navigation} />
             <ProfileContentContainer className="max-w-6xl py-7 lg:py-9">
                 <div className="mx-auto max-w-6xl">
-                    <header className="flex items-center gap-3">
-                        <span className="h-7 w-1.5 rounded-full bg-brand-coral" aria-hidden="true" />
-                        <h1 className="text-xl font-bold tracking-tight text-ink-950 sm:text-2xl">My Reading Stats</h1>
-                    </header>
 
-                    <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                    <div className="grid grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
                         <Metric label="Completed" value={summary.completed} />
                         <Metric label="Readlist" value={summary.readlist} />
                         <Metric label="Reviews" value={summary.reviews} />
