@@ -1,20 +1,22 @@
 import { Link } from '@inertiajs/react';
 
 export function FieldError({ message }) {
-    return message ? <p className="mt-2 text-sm font-semibold text-red-700">{message}</p> : null;
+    return message ? <p className="mt-1 text-xs font-semibold text-red-200" role="alert">{message}</p> : null;
 }
 
-export default function AuthPageShell({ eyebrow, title, description, footer, children }) {
+export default function AuthPageShell({ title, closeUrl, footer, children }) {
     return (
-        <section className="catalog-grid min-h-[70vh] border-b border-ink-950/10 px-5 py-14 sm:px-8 lg:py-20">
-            <div className="mx-auto max-w-md border border-ink-950/15 bg-white/45 p-7 shadow-[0_12px_32px_rgba(47,58,85,0.08)] sm:p-9">
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">{eyebrow}</p>
-                <h1 className="mt-3 text-4xl font-bold text-ink-950">{title}</h1>
-                <p className="mt-3 leading-7 text-ink-950/65">{description}</p>
+        <section className="catalog-grid relative isolate flex min-h-[calc(100vh-8rem)] items-center justify-center overflow-hidden px-4 py-8 sm:px-8 sm:py-12">
+            <div className="absolute inset-0 -z-10 bg-ink-950/85" aria-hidden="true" />
+            <div className="w-full max-w-lg border border-brand-sky/15 bg-ink-900 p-5 text-brand-plate shadow-[0_20px_55px_rgba(7,17,32,0.28)] sm:p-7">
+                <div className="flex items-start justify-between gap-4">
+                    <h1 className="pt-1 text-sm font-bold uppercase tracking-[0.16em] text-brand-plate sm:text-base">{title}</h1>
+                    <Link href={closeUrl} aria-label="Close create account" className="grid size-8 shrink-0 place-items-center text-2xl leading-none text-brand-plate/60 transition hover:text-brand-plate focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-coral">×</Link>
+                </div>
                 {children}
-                <p className="mt-6 text-sm text-ink-950/65">
+                <p className="mt-5 text-center text-xs text-brand-plate/70 sm:text-sm">
                     {footer.label}{' '}
-                    <Link href={footer.url} className="font-bold text-ink-950 underline decoration-brand-coral decoration-2 underline-offset-4">
+                    <Link href={footer.url} className="font-bold text-brand-plate underline decoration-brand-coral decoration-2 underline-offset-4 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-coral">
                         {footer.action}
                     </Link>
                 </p>
