@@ -197,7 +197,9 @@ class Literature extends Model
 
     public function displayBackdropUrl(): ?string
     {
-        return $this->effectiveMetadataOverride()?->backdrop_url ?? $this->backdrop_url;
+        $override = $this->effectiveMetadataOverride();
+
+        return $override?->uploadedBackdropUrl() ?? $override?->backdrop_url ?? $this->backdrop_url;
     }
 
     public function displayPublisher(): ?string

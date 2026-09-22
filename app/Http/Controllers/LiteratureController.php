@@ -300,6 +300,7 @@ class LiteratureController extends Controller
                 'authenticated' => request()->user() !== null,
                 'id' => request()->user()?->id,
                 'is_admin' => request()->user()?->isAdmin() ?? false,
+                'user' => request()->user() === null ? null : $this->presentUser(request()->user()),
                 'reading_status' => $readingList?->status,
                 'completed_at' => $readingList?->completed_at?->toDateString(),
                 'current_review' => $currentReview === null ? null : [

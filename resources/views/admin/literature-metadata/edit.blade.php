@@ -6,12 +6,12 @@
             'publication_year' => ['label' => 'Publication year', 'type' => 'number', 'base' => $literature->publication_year],
             'tagline' => ['label' => 'Short description', 'type' => 'textarea', 'base' => $literature->tagline],
             'synopsis' => ['label' => 'Synopsis', 'type' => 'textarea', 'base' => $literature->synopsis],
-            'backdrop_url' => ['label' => 'Hero artwork URL', 'type' => 'url', 'base' => $literature->backdrop_url],
             'publisher' => ['label' => 'Publisher', 'type' => 'text', 'base' => $literature->publisher],
             'language' => ['label' => 'Language code', 'type' => 'text', 'base' => $literature->language],
             'format' => ['label' => 'Format', 'type' => 'text', 'base' => $literature->format],
         ];
         $uploadedCoverUrl = $override?->uploadedCoverUrl();
+        $uploadedBackdropUrl = $override?->uploadedBackdropUrl();
     @endphp
 
     <section class="mx-auto max-w-6xl px-5 py-10 sm:px-8 lg:px-10 lg:py-14">
@@ -79,8 +79,43 @@
                             @error('cover_url')<p class="mt-1 text-xs font-semibold text-red-700">{{ $message }}</p>@enderror
                         </div>
 
+                        <div class="border-t border-ink-950/10 pt-5 sm:col-span-2">
+                            <h2 class="text-xs font-semibold uppercase tracking-[0.12em] text-ink-950">Hero artwork</h2>
+                            <div class="mt-3 grid gap-4 sm:grid-cols-[minmax(0,1fr)_180px] sm:items-start">
+                                <div>
+                                    <label for="backdrop_upload" class="text-xs font-semibold text-ink-950">Upload hero artwork</label>
+                                    <input id="backdrop_upload" name="backdrop_upload" type="file" accept="image/jpeg,image/png,image/webp" class="mt-2 block w-full border border-ink-950/20 bg-brand-cream/65 px-3 py-2.5 text-sm text-ink-950 file:mr-3 file:border-0 file:bg-brand-sky/30 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-ink-950 focus:border-brand-coral">
+                                    <p class="mt-1.5 text-xs leading-5 text-ink-950/55">JPG, PNG, or WebP. A wide landscape image works best. Maximum file size 5 MB.</p>
+                                    @error('backdrop_upload')<p class="mt-1 text-xs font-semibold text-red-700">{{ $message }}</p>@enderror
+
+                                    @if ($uploadedBackdropUrl)
+                                        <label class="mt-3 flex items-center gap-2 text-xs font-semibold text-ink-950/70">
+                                            <input name="remove_backdrop_upload" type="checkbox" value="1" @checked(old('remove_backdrop_upload')) class="size-4 accent-brand-coral">
+                                            Remove uploaded hero artwork
+                                        </label>
+                                    @endif
+                                </div>
+
+                                <div id="backdrop-upload-preview-shell" @class(['hidden' => ! $uploadedBackdropUrl, 'overflow-hidden border border-ink-950/15 bg-brand-cream'])>
+                                    <img id="backdrop-upload-preview" src="{{ $uploadedBackdropUrl }}" alt="Current curated hero artwork" class="aspect-video w-full object-cover">
+                                </div>
+                            </div>
+
+                            <div class="my-4 flex items-center gap-3 text-[0.65rem] font-bold uppercase tracking-[0.16em] text-ink-950/45">
+                                <span class="h-px flex-1 bg-ink-950/10"></span>
+                                <span>Or</span>
+                                <span class="h-px flex-1 bg-ink-950/10"></span>
+                            </div>
+
+                            <label for="backdrop_url" class="text-xs font-semibold text-ink-950">External Hero Artwork URL</label>
+                            <input id="backdrop_url" name="backdrop_url" type="url" value="{{ old('backdrop_url', $override?->backdrop_url) }}" placeholder="https://..." class="mt-2 w-full border border-ink-950/20 bg-brand-cream/65 px-3 py-2.5 text-sm text-ink-950 outline-none focus:border-brand-coral">
+                            <p class="mt-1.5 text-xs leading-5 text-ink-950/55">Uploaded hero artwork takes priority over an external hero URL.</p>
+                            <p class="mt-1 line-clamp-2 text-xs leading-5 text-ink-950/45">API value: {{ filled($literature->backdrop_url) ? $literature->backdrop_url : 'Unavailable' }}</p>
+                            @error('backdrop_url')<p class="mt-1 text-xs font-semibold text-red-700">{{ $message }}</p>@enderror
+                        </div>
+
                         @foreach ($fields as $name => $field)
-                            <div @class(['sm:col-span-2' => in_array($name, ['tagline', 'synopsis', 'backdrop_url'], true)])>
+                            <div @class(['sm:col-span-2' => in_array($name, ['tagline', 'synopsis'], true)])>
                                 <label for="{{ $name }}" class="text-xs font-semibold uppercase tracking-[0.12em] text-ink-950">{{ $field['label'] }}</label>
                                 @if ($field['type'] === 'textarea')
                                     <textarea id="{{ $name }}" name="{{ $name }}" rows="{{ $name === 'synopsis' ? 7 : 3 }}" class="mt-2 w-full border border-ink-950/20 bg-brand-cream/65 px-3 py-2.5 text-sm leading-6 text-ink-950 outline-none focus:border-brand-coral">{{ old($name, $override?->{$name}) }}</textarea>
@@ -144,13 +179,45 @@
 
     <script>
         (() => {
-            const input = document.getElementById('cover_upload');
-            const preview = document.getElementById('cover-upload-preview');
-            const previewShell = document.getElementById('cover-upload-preview-shell');
             const form = document.getElementById('literature-metadata-form');
             const saveButton = form?.querySelector('[data-metadata-save]');
             const validationErrors = document.getElementById('metadata-validation-errors');
-            let objectUrl = null;
+            const previewCleanups = [];
+
+            const bindUploadPreview = (inputId, previewId, shellId, alt) => {
+                const input = document.getElementById(inputId);
+                const preview = document.getElementById(previewId);
+                const previewShell = document.getElementById(shellId);
+                let objectUrl = null;
+
+                if (! (input instanceof HTMLInputElement) || ! (preview instanceof HTMLImageElement) || ! previewShell) {
+                    return;
+                }
+
+                input.addEventListener('change', () => {
+                    if (objectUrl) {
+                        URL.revokeObjectURL(objectUrl);
+                        objectUrl = null;
+                    }
+
+                    const [file] = input.files;
+
+                    if (! file) {
+                        return;
+                    }
+
+                    objectUrl = URL.createObjectURL(file);
+                    preview.src = objectUrl;
+                    preview.alt = alt;
+                    previewShell.classList.remove('hidden');
+                });
+
+                previewCleanups.push(() => {
+                    if (objectUrl) {
+                        URL.revokeObjectURL(objectUrl);
+                    }
+                });
+            };
 
             validationErrors?.focus();
 
@@ -163,28 +230,11 @@
                 saveButton.textContent = 'Saving…';
             });
 
-            input?.addEventListener('change', () => {
-                if (objectUrl) {
-                    URL.revokeObjectURL(objectUrl);
-                    objectUrl = null;
-                }
-
-                const [file] = input.files;
-
-                if (! file) {
-                    return;
-                }
-
-                objectUrl = URL.createObjectURL(file);
-                preview.src = objectUrl;
-                preview.alt = 'Selected cover preview';
-                previewShell.classList.remove('hidden');
-            });
+            bindUploadPreview('cover_upload', 'cover-upload-preview', 'cover-upload-preview-shell', 'Selected cover preview');
+            bindUploadPreview('backdrop_upload', 'backdrop-upload-preview', 'backdrop-upload-preview-shell', 'Selected hero artwork preview');
 
             window.addEventListener('beforeunload', () => {
-                if (objectUrl) {
-                    URL.revokeObjectURL(objectUrl);
-                }
+                previewCleanups.forEach((cleanup) => cleanup());
             });
         })();
     </script>

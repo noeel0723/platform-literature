@@ -114,6 +114,7 @@ class DiscussionManagementTest extends TestCase
 
     public function test_detail_page_shows_discussions_comments_replies_and_spoiler_controls(): void
     {
+        $viewer = User::factory()->create(['name' => 'Viewing Reader']);
         $literature = Literature::factory()->create(['title' => 'A Discussed Story']);
         $discussion = Discussion::factory()->for($literature)->for(User::factory()->create(['name' => 'Thread Starter']))->spoiler()->create([
             'title' => 'Discussing the final scene',
@@ -127,10 +128,11 @@ class DiscussionManagementTest extends TestCase
             'body' => 'The narrator confirms it in the epilogue.',
         ]);
 
-        $response = $this->get(route('literatures.show', $literature));
+        $response = $this->actingAs($viewer)->get(route('literatures.show', $literature));
 
         $response->assertOk();
         $this->assertSame(1, $response->inertiaProps('discussionCount'));
+        $this->assertSame('Viewing Reader', $response->inertiaProps('viewer.user.name'));
         $this->assertSame($discussion->id, $response->inertiaProps('discussions.0.id'));
         $this->assertSame('Discussing the final scene', $response->inertiaProps('discussions.0.title'));
         $this->assertTrue($response->inertiaProps('discussions.0.contains_spoiler'));

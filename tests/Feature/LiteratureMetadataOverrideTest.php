@@ -29,6 +29,7 @@ class LiteratureMetadataOverrideTest extends TestCase
         $this->actingAs($user)
             ->put(route('admin.literatures.metadata.update', $literature), [
                 'cover_upload' => UploadedFile::fake()->image('cover.jpg', 400, 600),
+                'backdrop_upload' => UploadedFile::fake()->image('hero.jpg', 1200, 675),
             ])
             ->assertForbidden();
 
@@ -104,6 +105,9 @@ class LiteratureMetadataOverrideTest extends TestCase
             ->assertSeeText('External Cover URL')
             ->assertSeeText('Remove uploaded cover')
             ->assertSeeText('Uploaded cover takes priority over an external cover URL.')
+            ->assertSeeText('Upload hero artwork')
+            ->assertSeeText('External Hero Artwork URL')
+            ->assertSeeText('Uploaded hero artwork takes priority over an external hero URL.')
             ->assertSee('URL.createObjectURL', false);
     }
 
@@ -136,11 +140,14 @@ class LiteratureMetadataOverrideTest extends TestCase
             'cover_url' => 'https://images.example.test/api-cover.jpg',
         ]);
         $coverPath = "literature-covers/literature-{$literature->id}/old-cover.jpg";
+        $backdropPath = "literature-backdrops/literature-{$literature->id}/old-hero.jpg";
         Storage::disk('public')->put($coverPath, 'old cover');
+        Storage::disk('public')->put($backdropPath, 'old hero');
         LiteratureMetadataOverride::factory()->for($literature)->create([
             'edited_by' => $admin->id,
             'title' => 'Curated Title',
             'cover_path' => $coverPath,
+            'backdrop_path' => $backdropPath,
         ]);
 
         $this->actingAs($admin)
@@ -153,6 +160,7 @@ class LiteratureMetadataOverrideTest extends TestCase
         $this->assertSame('API Title', $literature->fresh()->displayTitle());
         $this->assertSame('https://images.example.test/api-cover.jpg', $literature->fresh()->displayCoverUrl());
         Storage::disk('public')->assertMissing($coverPath);
+        Storage::disk('public')->assertMissing($backdropPath);
     }
 
     public function test_curated_metadata_follows_the_canonical_work_across_api_records(): void
@@ -178,6 +186,7 @@ class LiteratureMetadataOverrideTest extends TestCase
             ->put(route('admin.literatures.metadata.update', $hardcover), [
                 'title' => 'Stable Curated Title',
                 'cover_upload' => UploadedFile::fake()->image('canonical-cover.jpg', 400, 600),
+                'backdrop_upload' => UploadedFile::fake()->image('canonical-hero.jpg', 1200, 675),
             ])
             ->assertRedirect(route('literatures.show', $hardcover));
 
@@ -191,9 +200,14 @@ class LiteratureMetadataOverrideTest extends TestCase
         );
         $canonicalOverride = $canonicalWork->fresh()->metadataOverride;
         Storage::disk('public')->assertExists($canonicalOverride->cover_path);
+        Storage::disk('public')->assertExists($canonicalOverride->backdrop_path);
         $this->assertSame(
             Storage::disk('public')->url($canonicalOverride->cover_path),
             $googleBooks->fresh()->load('sourceMapping.canonicalWork.metadataOverride')->displayCoverUrl(),
+        );
+        $this->assertSame(
+            Storage::disk('public')->url($canonicalOverride->backdrop_path),
+            $googleBooks->fresh()->load('sourceMapping.canonicalWork.metadataOverride')->displayBackdropUrl(),
         );
     }
 
@@ -334,5 +348,95 @@ class LiteratureMetadataOverrideTest extends TestCase
         $this->assertNull($override->cover_path);
         $this->assertSame('https://images.example.test/curated-cover.jpg', $literature->displayCoverUrl());
         Storage::disk('public')->assertMissing($coverPath);
+    }
+
+    public function test_admin_can_upload_hero_artwork_without_changing_the_api_backdrop(): void
+    {
+        Storage::fake('public');
+        $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+        $literature = Literature::factory()->create([
+            'backdrop_url' => 'https://images.example.test/api-hero.jpg',
+        ]);
+
+        $this->actingAs($admin)
+            ->put(route('admin.literatures.metadata.update', $literature), [
+                'backdrop_upload' => UploadedFile::fake()->image('hero.jpg', 1200, 675),
+                'backdrop_url' => 'https://images.example.test/curated-hero.jpg',
+            ])
+            ->assertRedirect(route('literatures.show', $literature));
+
+        $override = $literature->fresh()->metadataOverride;
+        $this->assertNotNull($override);
+        $this->assertStringStartsWith("literature-backdrops/literature-{$literature->id}/", $override->backdrop_path);
+        Storage::disk('public')->assertExists($override->backdrop_path);
+        $this->assertSame(Storage::disk('public')->url($override->backdrop_path), $literature->displayBackdropUrl());
+        $this->assertSame('https://images.example.test/api-hero.jpg', $literature->getRawOriginal('backdrop_url'));
+    }
+
+    public function test_replacing_uploaded_hero_artwork_deletes_the_old_managed_file(): void
+    {
+        Storage::fake('public');
+        $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+        $literature = Literature::factory()->create();
+        $oldBackdropPath = "literature-backdrops/literature-{$literature->id}/old-hero.jpg";
+        Storage::disk('public')->put($oldBackdropPath, 'old hero');
+        LiteratureMetadataOverride::factory()->for($literature)->create([
+            'backdrop_path' => $oldBackdropPath,
+        ]);
+
+        $this->actingAs($admin)
+            ->put(route('admin.literatures.metadata.update', $literature), [
+                'backdrop_upload' => UploadedFile::fake()->image('replacement-hero.jpg', 1200, 675),
+            ])
+            ->assertRedirect(route('literatures.show', $literature));
+
+        $newBackdropPath = $literature->fresh()->metadataOverride->backdrop_path;
+        $this->assertNotSame($oldBackdropPath, $newBackdropPath);
+        Storage::disk('public')->assertMissing($oldBackdropPath);
+        Storage::disk('public')->assertExists($newBackdropPath);
+    }
+
+    public function test_removing_uploaded_hero_artwork_falls_back_to_the_curated_url(): void
+    {
+        Storage::fake('public');
+        $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+        $literature = Literature::factory()->create([
+            'backdrop_url' => 'https://images.example.test/api-hero.jpg',
+        ]);
+        $backdropPath = "literature-backdrops/literature-{$literature->id}/uploaded-hero.jpg";
+        Storage::disk('public')->put($backdropPath, 'uploaded hero');
+        LiteratureMetadataOverride::factory()->for($literature)->create([
+            'backdrop_path' => $backdropPath,
+            'backdrop_url' => 'https://images.example.test/curated-hero.jpg',
+        ]);
+
+        $this->actingAs($admin)
+            ->put(route('admin.literatures.metadata.update', $literature), [
+                'remove_backdrop_upload' => '1',
+                'backdrop_url' => 'https://images.example.test/curated-hero.jpg',
+            ])
+            ->assertRedirect(route('literatures.show', $literature));
+
+        $override = $literature->fresh()->metadataOverride;
+        $this->assertNull($override->backdrop_path);
+        $this->assertSame('https://images.example.test/curated-hero.jpg', $literature->displayBackdropUrl());
+        Storage::disk('public')->assertMissing($backdropPath);
+    }
+
+    public function test_invalid_hero_artwork_upload_is_rejected(): void
+    {
+        Storage::fake('public');
+        $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+        $literature = Literature::factory()->create();
+
+        $this->actingAs($admin)
+            ->from(route('admin.literatures.metadata.edit', $literature))
+            ->put(route('admin.literatures.metadata.update', $literature), [
+                'backdrop_upload' => UploadedFile::fake()->create('hero.svg', 10, 'image/svg+xml'),
+            ])
+            ->assertSessionHasErrors('backdrop_upload');
+
+        $this->assertDatabaseMissing('literature_metadata_overrides', ['literature_id' => $literature->id]);
+        $this->assertSame([], Storage::disk('public')->allFiles());
     }
 }

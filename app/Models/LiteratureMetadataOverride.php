@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Storage;
     'synopsis',
     'cover_path',
     'cover_url',
+    'backdrop_path',
     'backdrop_url',
     'publisher',
     'language',
@@ -36,6 +37,13 @@ class LiteratureMetadataOverride extends Model
     {
         return filled($this->cover_path)
             ? Storage::disk('public')->url($this->cover_path)
+            : null;
+    }
+
+    public function uploadedBackdropUrl(): ?string
+    {
+        return filled($this->backdrop_path)
+            ? Storage::disk('public')->url($this->backdrop_path)
             : null;
     }
 

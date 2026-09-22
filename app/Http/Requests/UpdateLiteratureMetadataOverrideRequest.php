@@ -31,6 +31,8 @@ class UpdateLiteratureMetadataOverrideRequest extends FormRequest
             'cover_upload' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'remove_cover_upload' => ['nullable', 'boolean'],
             'cover_url' => ['nullable', 'url:http,https', 'max:4096'],
+            'backdrop_upload' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'remove_backdrop_upload' => ['nullable', 'boolean'],
             'backdrop_url' => ['nullable', 'url:http,https', 'max:4096'],
             'publisher' => ['nullable', 'string', 'max:255'],
             'language' => ['nullable', 'string', 'max:30'],

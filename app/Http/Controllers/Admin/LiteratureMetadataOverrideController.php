@@ -27,6 +27,7 @@ class LiteratureMetadataOverrideController extends Controller
         'synopsis',
         'cover_path',
         'cover_url',
+        'backdrop_path',
         'backdrop_url',
         'publisher',
         'language',
@@ -55,12 +56,14 @@ class LiteratureMetadataOverrideController extends Controller
         $validated = $request->validated();
         $override = $literature->effectiveMetadataOverride();
         $oldCoverPath = $override?->cover_path;
+        $oldBackdropPath = $override?->backdrop_path;
 
         if ($request->boolean('reset')) {
             DB::transaction(function () use ($override): void {
                 $override?->delete();
             });
-            $this->deleteManagedCover($oldCoverPath);
+            $this->deleteManagedImage($oldCoverPath, 'literature-covers');
+            $this->deleteManagedImage($oldBackdropPath, 'literature-backdrops');
 
             return redirect()
                 ->route('literatures.show', $literature)
@@ -68,20 +71,48 @@ class LiteratureMetadataOverrideController extends Controller
         }
 
         $canonicalWorkId = $literature->sourceMapping?->canonical_work_id;
-        $newCoverPath = $request->hasFile('cover_upload')
-            ? $this->storeUploadedCover($request->file('cover_upload'), $literature, $canonicalWorkId)
-            : null;
-        $values = collect($validated)
-            ->except(['cover_upload', 'remove_cover_upload', 'reset'])
-            ->map(fn (mixed $value): mixed => is_string($value) ? trim($value) : $value)
-            ->map(fn (mixed $value): mixed => $value === '' ? null : $value)
-            ->all();
-        $values['cover_path'] = $newCoverPath
-            ?? ($request->boolean('remove_cover_upload') ? null : $oldCoverPath);
-        $hasMetadataOverride = collect(self::METADATA_FIELDS)
-            ->contains(fn (string $field): bool => filled($values[$field] ?? null));
+        $newCoverPath = null;
+        $newBackdropPath = null;
 
         try {
+            $newCoverPath = $request->hasFile('cover_upload')
+                ? $this->storeUploadedImage(
+                    $request->file('cover_upload'),
+                    $literature,
+                    $canonicalWorkId,
+                    'literature-covers',
+                    'cover_upload',
+                    'cover',
+                )
+                : null;
+            $newBackdropPath = $request->hasFile('backdrop_upload')
+                ? $this->storeUploadedImage(
+                    $request->file('backdrop_upload'),
+                    $literature,
+                    $canonicalWorkId,
+                    'literature-backdrops',
+                    'backdrop_upload',
+                    'hero artwork',
+                )
+                : null;
+            $values = collect($validated)
+                ->except([
+                    'cover_upload',
+                    'remove_cover_upload',
+                    'backdrop_upload',
+                    'remove_backdrop_upload',
+                    'reset',
+                ])
+                ->map(fn (mixed $value): mixed => is_string($value) ? trim($value) : $value)
+                ->map(fn (mixed $value): mixed => $value === '' ? null : $value)
+                ->all();
+            $values['cover_path'] = $newCoverPath
+                ?? ($request->boolean('remove_cover_upload') ? null : $oldCoverPath);
+            $values['backdrop_path'] = $newBackdropPath
+                ?? ($request->boolean('remove_backdrop_upload') ? null : $oldBackdropPath);
+            $hasMetadataOverride = collect(self::METADATA_FIELDS)
+                ->contains(fn (string $field): bool => filled($values[$field] ?? null));
+
             DB::transaction(function () use (
                 $hasMetadataOverride,
                 $override,
@@ -116,14 +147,22 @@ class LiteratureMetadataOverrideController extends Controller
             });
         } catch (Throwable $exception) {
             if ($newCoverPath !== null) {
-                $this->deleteManagedCover($newCoverPath);
+                $this->deleteManagedImage($newCoverPath, 'literature-covers');
+            }
+
+            if ($newBackdropPath !== null) {
+                $this->deleteManagedImage($newBackdropPath, 'literature-backdrops');
             }
 
             throw $exception;
         }
 
         if ($oldCoverPath !== null && $oldCoverPath !== $values['cover_path']) {
-            $this->deleteManagedCover($oldCoverPath);
+            $this->deleteManagedImage($oldCoverPath, 'literature-covers');
+        }
+
+        if ($oldBackdropPath !== null && $oldBackdropPath !== $values['backdrop_path']) {
+            $this->deleteManagedImage($oldBackdropPath, 'literature-backdrops');
         }
 
         if (! $hasMetadataOverride) {
@@ -137,43 +176,46 @@ class LiteratureMetadataOverrideController extends Controller
             ->with('success', 'Curated metadata was saved and will take priority over API metadata.');
     }
 
-    private function storeUploadedCover(
-        UploadedFile $cover,
+    private function storeUploadedImage(
+        UploadedFile $image,
         Literature $literature,
         ?int $canonicalWorkId,
+        string $directory,
+        string $inputName,
+        string $label,
     ): string {
         $scope = $canonicalWorkId === null
             ? "literature-{$literature->id}"
             : "canonical-{$canonicalWorkId}";
-        $path = $cover->storeAs(
-            "literature-covers/{$scope}",
-            Str::uuid()->toString().'.'.$cover->extension(),
+        $path = $image->storeAs(
+            "{$directory}/{$scope}",
+            Str::uuid()->toString().'.'.$image->extension(),
             'public',
         );
 
         if (! is_string($path)) {
             throw ValidationException::withMessages([
-                'cover_upload' => 'The cover could not be stored. Please try again.',
+                $inputName => "The {$label} could not be stored. Please try again.",
             ]);
         }
 
         return $path;
     }
 
-    private function deleteManagedCover(?string $path): void
+    private function deleteManagedImage(?string $path, string $directory): void
     {
-        if (! $this->isManagedCoverPath($path)) {
+        if (! $this->isManagedImagePath($path, $directory)) {
             return;
         }
 
         if (! Storage::disk('public')->delete($path)) {
-            Log::warning('A managed literature cover could not be deleted.', [
-                'cover_path' => $path,
+            Log::warning('A managed literature image could not be deleted.', [
+                'image_path' => $path,
             ]);
         }
     }
 
-    private function isManagedCoverPath(?string $path): bool
+    private function isManagedImagePath(?string $path, string $directory): bool
     {
         if (blank($path)) {
             return false;
@@ -181,7 +223,7 @@ class LiteratureMetadataOverrideController extends Controller
 
         $normalizedPath = str_replace('\\', '/', $path);
 
-        return Str::startsWith($normalizedPath, 'literature-covers/')
+        return Str::startsWith($normalizedPath, "{$directory}/")
             && ! in_array('..', explode('/', $normalizedPath), true);
     }
 }
