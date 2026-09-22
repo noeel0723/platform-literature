@@ -34,9 +34,21 @@ class ModerationController extends Controller
             ->paginate(20)
             ->withQueryString();
         $reports->getCollection()->loadMorph('reportable', [
-            Review::class => ['user', 'literature'],
-            Discussion::class => ['user', 'literature'],
-            Comment::class => ['user', 'discussion.literature'],
+            Review::class => [
+                'user',
+                'literature.metadataOverride',
+                'literature.sourceMapping.canonicalWork.metadataOverride',
+            ],
+            Discussion::class => [
+                'user',
+                'literature.metadataOverride',
+                'literature.sourceMapping.canonicalWork.metadataOverride',
+            ],
+            Comment::class => [
+                'user',
+                'discussion.literature.metadataOverride',
+                'discussion.literature.sourceMapping.canonicalWork.metadataOverride',
+            ],
         ]);
         $reports->through(fn (Report $report): array => $this->presentReport($report));
 
@@ -93,6 +105,22 @@ class ModerationController extends Controller
             default => null,
         };
 
+        $targetTitle = match (true) {
+            $target instanceof User => 'Profile "'.$target->name.'"',
+            $target instanceof Review => 'Review on "'.$target->literature->displayTitle().'"',
+            $target instanceof Discussion => 'Discussion "'.$target->title.'"',
+            $target instanceof Comment => 'Comment on "'.$target->discussion->title.'"',
+            default => 'Reported item unavailable',
+        };
+
+        $targetContext = match (true) {
+            $target instanceof User => '@'.$target->username,
+            $target instanceof Review => $target->literature->displayTitle(),
+            $target instanceof Discussion => $target->literature->displayTitle(),
+            $target instanceof Comment => $target->discussion->literature->displayTitle(),
+            default => null,
+        };
+
         $availableActions = [];
         $targetState = null;
 
@@ -121,6 +149,8 @@ class ModerationController extends Controller
             'status' => $report->status,
             'status_label' => Report::STATUS_LABELS[$report->status] ?? Str::headline($report->status),
             'target_type' => $target ? class_basename($target) : 'Removed content',
+            'target_title' => $targetTitle,
+            'target_context' => $targetContext,
             'target_summary' => $targetSummary,
             'target_url' => $targetUrl,
             'target_state' => $targetState,

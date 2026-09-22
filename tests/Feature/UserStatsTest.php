@@ -40,7 +40,7 @@ class UserStatsTest extends TestCase
             'literature_id' => $secondEdition->id,
             'api_source_id' => $secondEdition->api_source_id,
         ]);
-        ReadingList::factory()->create(['user_id' => $user->id, 'literature_id' => $firstEdition->id, 'status' => 'completed', 'completed_at' => now()->subMonth()]);
+        ReadingList::factory()->create(['user_id' => $user->id, 'literature_id' => $firstEdition->id, 'status' => 'completed', 'completed_at' => now()->subYearNoOverflow()]);
         ReadingList::factory()->create(['user_id' => $user->id, 'literature_id' => $secondEdition->id, 'status' => 'completed', 'completed_at' => now()]);
         ReadingList::factory()->create(['user_id' => $user->id, 'literature_id' => $manga->id, 'status' => 'completed', 'completed_at' => now()]);
         $savedEntry = ReadingList::factory()->create(['user_id' => $user->id, 'literature_id' => $saved->id, 'status' => 'want_to_read']);
@@ -64,7 +64,48 @@ class UserStatsTest extends TestCase
             ['label' => 'Manga', 'count' => 1],
         ], $stats['by_type']);
         $this->assertSame(2, collect($stats['completed_by_month'])->firstWhere('month', now()->format('M'))['count']);
+        $this->assertSame([
+            ['year' => now()->year, 'count' => 2],
+        ], $stats['completed_by_year']);
         $this->assertSame(1, collect($stats['activity_by_year'])->firstWhere('year', now()->subYearNoOverflow()->year)['days']);
+    }
+
+    public function test_selected_year_controls_monthly_and_yearly_completed_statistics(): void
+    {
+        $user = User::factory()->create();
+        $january = Literature::factory()->create();
+        $june = Literature::factory()->create();
+        $followingYear = Literature::factory()->create();
+        ReadingList::factory()->create([
+            'user_id' => $user->id,
+            'literature_id' => $january->id,
+            'status' => 'completed',
+            'completed_at' => '2024-01-12 10:00:00',
+        ]);
+        ReadingList::factory()->create([
+            'user_id' => $user->id,
+            'literature_id' => $june->id,
+            'status' => 'completed',
+            'completed_at' => '2024-06-23 10:00:00',
+        ]);
+        ReadingList::factory()->create([
+            'user_id' => $user->id,
+            'literature_id' => $followingYear->id,
+            'status' => 'completed',
+            'completed_at' => '2025-02-03 10:00:00',
+        ]);
+
+        $this->get(route('profiles.stats', ['user' => $user, 'year' => 2024]))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Profile/Stats')
+                ->where('stats.year', 2024)
+                ->where('stats.summary.completed_this_year', 2)
+                ->where('stats.completed_by_month.0', ['month' => 'Jan', 'count' => 1])
+                ->where('stats.completed_by_month.5', ['month' => 'Jun', 'count' => 1])
+                ->where('stats.completed_by_year', [
+                    ['year' => 2024, 'count' => 2],
+                    ['year' => 2025, 'count' => 1],
+                ]));
     }
 
     public function test_stats_page_is_public_for_an_active_profile(): void

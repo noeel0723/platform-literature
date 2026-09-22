@@ -67,7 +67,8 @@ class ModerationManagementTest extends TestCase
     public function test_admin_can_view_the_pending_moderation_queue(): void
     {
         $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
-        $review = Review::factory()->create(['body' => 'Reported review body']);
+        $literature = Literature::factory()->create(['title' => 'Chainsaw Man, Vol. 4']);
+        $review = Review::factory()->for($literature)->create(['body' => 'Reported review body']);
         Report::factory()->create([
             'reportable_type' => Review::class,
             'reportable_id' => $review->id,
@@ -83,6 +84,8 @@ class ModerationManagementTest extends TestCase
                 ->where('status', 'pending')
                 ->where('statusCounts.pending', 1)
                 ->where('reports.data.0.target_summary', 'Reported review body')
+                ->where('reports.data.0.target_title', 'Review on "Chainsaw Man, Vol. 4"')
+                ->where('reports.data.0.target_context', 'Chainsaw Man, Vol. 4')
                 ->where('reports.data.0.reason_label', 'Harassment or bullying')
                 ->where('reports.data.0.details', 'Please review this message.')
                 ->where('reports.data.0.available_actions', ['hide', 'dismiss'])

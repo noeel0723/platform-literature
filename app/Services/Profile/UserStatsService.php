@@ -90,6 +90,16 @@ final class UserStatsService
                 'count' => $completed->filter(fn (ReadingList $entry): bool => $entry->completed_at?->year === $year
                     && $entry->completed_at?->month === $month)->count(),
             ])->all(),
+            'completed_by_year' => $completed
+                ->filter(fn (ReadingList $entry): bool => $entry->completed_at !== null)
+                ->countBy(fn (ReadingList $entry): int => $entry->completed_at->year)
+                ->sortKeys()
+                ->map(fn (int $count, int|string $completedYear): array => [
+                    'year' => (int) $completedYear,
+                    'count' => $count,
+                ])
+                ->values()
+                ->all(),
             'activity_by_year' => $activityDates
                 ->countBy(fn (string $date): int => Carbon::parse($date)->year)
                 ->sortKeys()
