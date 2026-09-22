@@ -12,7 +12,7 @@ class AuthenticationTest extends TestCase
 {
     use LazilyRefreshDatabase;
 
-    public function test_login_and_registration_forms_are_rendered_by_react(): void
+    public function test_login_form_is_rendered_by_react_and_register_link_opens_landing_page(): void
     {
         $this->get(route('login'))
             ->assertInertia(fn (Assert $page) => $page
@@ -22,10 +22,31 @@ class AuthenticationTest extends TestCase
                 ->where('routes.register', route('register')));
 
         $this->get(route('register'))
+            ->assertRedirect(route('home', ['register' => 1]));
+
+        $this->get(route('home', ['register' => 1]))
             ->assertInertia(fn (Assert $page) => $page
-                ->component('Auth/Register')
-                ->where('routes.register', route('register'))
-                ->where('routes.login', route('login')));
+                ->component('Home/Index')
+                ->where('viewer', null)
+                ->where('routes.register', route('register')));
+    }
+
+    public function test_invalid_registration_returns_to_landing_page_with_errors_and_keeps_non_password_input(): void
+    {
+        $this->from(route('home'))->post(route('register'), [
+            'name' => 'Imanuel',
+            'username' => 'imanuel_reader',
+            'email' => 'imanuel@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'different-password',
+        ])->assertRedirect(route('home'))
+            ->assertSessionHasErrors('password');
+
+        $this->assertSame('Imanuel', session()->getOldInput('name'));
+        $this->assertSame('imanuel_reader', session()->getOldInput('username'));
+        $this->assertSame('imanuel@example.com', session()->getOldInput('email'));
+        $this->assertSame(0, User::query()->count());
+        $this->assertGuest();
     }
 
     public function test_user_can_register_and_is_automatically_authenticated(): void

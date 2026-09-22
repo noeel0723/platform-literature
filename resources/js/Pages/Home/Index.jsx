@@ -1,8 +1,10 @@
 import { Head, Link } from '@inertiajs/react';
+import { useEffect, useRef, useState } from 'react';
 
 import GuestLandingHero from '../../Components/GuestLandingHero';
 import { TimeLabel } from '../../Components/LiteratureDetail/DetailUi';
 import PopularThisWeek from '../../Components/PopularThisWeek';
+import RegisterDialog from '../../Components/RegisterDialog';
 import SiteContainer from '../../Components/SiteContainer';
 
 function Cover({ literature }) {
@@ -48,12 +50,22 @@ function EmptyActivity({ viewer, routes }) {
 }
 
 export default function HomeIndex({ activities, popularLiteratures, recommendations, guestHero, popularThisWeek, viewer, routes }) {
+    const [registerOpen, setRegisterOpen] = useState(false);
+    const registerTriggerRef = useRef(null);
+
+    useEffect(() => {
+        if (!viewer && new URLSearchParams(window.location.search).get('register') === '1') {
+            setRegisterOpen(true);
+        }
+    }, [viewer]);
+
     if (!viewer) {
         return (
             <>
                 <Head title="Home" />
-                <GuestLandingHero literature={guestHero} routes={routes} />
+                <GuestLandingHero literature={guestHero} onRegisterOpen={() => setRegisterOpen(true)} registerTriggerRef={registerTriggerRef} />
                 <PopularThisWeek literatures={popularThisWeek} browseUrl={routes.literature} />
+                <RegisterDialog open={registerOpen} onClose={() => setRegisterOpen(false)} registerUrl={routes.register} returnFocusRef={registerTriggerRef} />
             </>
         );
     }

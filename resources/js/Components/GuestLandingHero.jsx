@@ -1,9 +1,7 @@
-import { Link } from '@inertiajs/react';
-
 import { openLoginPanel } from '../Support/loginPanel';
 import SiteContainer from './SiteContainer';
 
-export default function GuestLandingHero({ literature, routes }) {
+export default function GuestLandingHero({ literature, onRegisterOpen, registerTriggerRef }) {
     const backdropUrl = literature?.backdrop_url;
 
     return (
@@ -37,12 +35,14 @@ export default function GuestLandingHero({ literature, routes }) {
                         Keep a diary of the novels, manga, manhwa, and comics you love. Rate them, review them, discover new literature, and see what other readers are exploring.
                     </p>
                     <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
-                        <Link
-                            href={routes.register}
+                        <button
+                            ref={registerTriggerRef}
+                            type="button"
+                            onClick={onRegisterOpen}
                             className="inline-flex min-h-11 items-center justify-center rounded-sm bg-brand-coral px-5 py-3 text-xs font-bold uppercase tracking-[0.1em] text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-brand-coral/90 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-plate"
                         >
                             Get started — it&apos;s free
-                        </Link>
+                        </button>
                         <span className="text-sm text-brand-plate/60">
                             Already a member?{' '}
                             <button

@@ -15,14 +15,9 @@ use Inertia\Response;
 
 class AuthController extends Controller
 {
-    public function showRegister(): Response
+    public function showRegister(): RedirectResponse
     {
-        return Inertia::render('Auth/Register', [
-            'routes' => [
-                'register' => route('register'),
-                'login' => route('login'),
-            ],
-        ]);
+        return redirect()->route('home', ['register' => 1]);
     }
 
     public function register(RegisterRequest $request): RedirectResponse
