@@ -1,6 +1,8 @@
 import { Head, Link } from '@inertiajs/react';
 
+import GuestLandingHero from '../../Components/GuestLandingHero';
 import { TimeLabel } from '../../Components/LiteratureDetail/DetailUi';
+import PopularThisWeek from '../../Components/PopularThisWeek';
 import SiteContainer from '../../Components/SiteContainer';
 
 function Cover({ literature }) {
@@ -45,7 +47,17 @@ function EmptyActivity({ viewer, routes }) {
     );
 }
 
-export default function HomeIndex({ activities, popularLiteratures, recommendations, viewer, routes }) {
+export default function HomeIndex({ activities, popularLiteratures, recommendations, guestHero, popularThisWeek, viewer, routes }) {
+    if (!viewer) {
+        return (
+            <>
+                <Head title="Home" />
+                <GuestLandingHero literature={guestHero} routes={routes} />
+                <PopularThisWeek literatures={popularThisWeek} browseUrl={routes.literature} />
+            </>
+        );
+    }
+
     return (
         <>
             <Head title="Home" />

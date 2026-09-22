@@ -18,7 +18,7 @@ class ActivityFeedTest extends TestCase
 {
     use LazilyRefreshDatabase;
 
-    public function test_home_contains_only_the_activity_feed_and_not_the_catalog_sections(): void
+    public function test_guest_home_keeps_personal_sections_empty_while_showing_local_literature(): void
     {
         Literature::factory()->create(['title' => 'Catalog Only Literature']);
 
@@ -27,10 +27,11 @@ class ActivityFeedTest extends TestCase
                 ->component('Home/Index')
                 ->where('viewer', null)
                 ->has('activities', 0)
-                ->has('popularLiteratures', 0));
+                ->has('popularLiteratures', 0)
+                ->where('popularThisWeek.0.title', 'Catalog Only Literature'));
     }
 
-    public function test_guest_is_invited_to_login_instead_of_receiving_a_global_activity_feed(): void
+    public function test_guest_receives_global_popular_literature_without_a_personal_activity_feed(): void
     {
         $reader = User::factory()->create(['name' => 'Community Reader']);
         $literature = Literature::factory()->create(['title' => 'Shared Reading']);
@@ -44,6 +45,8 @@ class ActivityFeedTest extends TestCase
                 ->where('viewer', null)
                 ->has('activities', 0)
                 ->has('popularLiteratures', 0)
+                ->where('popularThisWeek.0.title', 'Shared Reading')
+                ->where('routes.register', route('register'))
                 ->where('routes.login', route('login')));
     }
 

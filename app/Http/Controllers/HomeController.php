@@ -6,6 +6,7 @@ use App\Models\Activity;
 use App\Models\Literature;
 use App\Services\ActivityRatingLookup;
 use App\Services\Literature\CanonicalWorkIdentity;
+use App\Services\Literature\LiteratureBrowseService;
 use App\Services\Recommendations\PersonalRecommendationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -19,6 +20,7 @@ class HomeController extends Controller
         PersonalRecommendationService $recommendations,
         ActivityRatingLookup $activityRatings,
         CanonicalWorkIdentity $canonicalIdentity,
+        LiteratureBrowseService $literatureBrowser,
     ): Response {
         $viewer = $request->user();
         $friendIds = $viewer?->following()
@@ -30,6 +32,11 @@ class HomeController extends Controller
         $recommendedLiteratures = $viewer === null
             ? collect()
             : $recommendations->recommend($viewer, 8);
+        $guestPopularCandidates = $viewer === null
+            ? $literatureBrowser->popular(12)
+            : collect();
+        $guestHeroLiterature = $guestPopularCandidates
+            ->first(fn (Literature $literature): bool => filled($literature->displayBackdropUrl()));
 
         if ($friendIds->isNotEmpty()) {
             $activities = Activity::query()
@@ -92,12 +99,22 @@ class HomeController extends Controller
                     'cold_start' => $recommendation['cold_start'],
                 ])
                 ->all(),
+            'guestHero' => $guestHeroLiterature === null
+                ? null
+                : $this->presentGuestHero($guestHeroLiterature),
+            'popularThisWeek' => $guestPopularCandidates
+                ->take(6)
+                ->map(fn (Literature $literature): array => $this->presentGuestPopularLiterature($literature))
+                ->values()
+                ->all(),
             'viewer' => $viewer === null ? null : [
                 'name' => $viewer->name,
             ],
             'routes' => [
                 'catalog' => route('literatures.index'),
+                'literature' => route('literature.browse', ['sort' => 'popularity']),
                 'login' => route('login'),
+                'register' => route('register'),
             ],
         ]);
     }
@@ -162,6 +179,36 @@ class HomeController extends Controller
             'url' => route('literatures.show', $literature),
             'cover_url' => $literature->displayCoverUrl(),
             'initials' => $this->initials($literature->displayTitle()),
+        ];
+    }
+
+    /** @return array{title: string, type_label: string, backdrop_url: string, url: string} */
+    private function presentGuestHero(Literature $literature): array
+    {
+        return [
+            'title' => $literature->displayTitle(),
+            'type_label' => $literature->typeLabel(),
+            'backdrop_url' => $literature->displayBackdropUrl(),
+            'url' => route('literatures.show', $literature),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function presentGuestPopularLiterature(Literature $literature): array
+    {
+        $title = $literature->displayTitle();
+
+        return [
+            'id' => $literature->id,
+            'title' => $title,
+            'url' => route('literatures.show', $literature),
+            'cover_url' => $literature->displayCoverUrl(),
+            'initials' => $this->initials($title),
+            'type_label' => $literature->typeLabel(),
+            'year' => $literature->displayPublicationYear() ?? 'Year unavailable',
+            'source' => $literature->apiSource->name,
+            'author' => $literature->authors->pluck('name')->implode(' & ') ?: 'Author unavailable',
+            'theme' => $literature->theme,
         ];
     }
 
