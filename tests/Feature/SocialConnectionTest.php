@@ -153,6 +153,78 @@ class SocialConnectionTest extends TestCase
             ->assertNotFound();
     }
 
+    public function test_owner_can_follow_back_a_follower_using_existing_follow_route(): void
+    {
+        $owner = User::factory()->create(['username' => 'connections_owner']);
+        $follower = User::factory()->create(['username' => 'new_follower']);
+        $follower->following()->attach($owner);
+
+        $this->actingAs($owner)
+            ->get(route('profiles.followers', $owner))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Profile/Connections')
+                ->where('connections.data.0.username', 'new_follower')
+                ->where('connections.data.0.viewer_follows', false)
+                ->where('connections.data.0.follows_viewer', true)
+                ->where('connections.data.0.follow_url', route('profiles.follow.store', $follower))
+                ->where('connections.data.0.unfollow_url', route('profiles.follow.destroy', $follower)));
+
+        $this->post(route('profiles.follow.store', $follower))->assertRedirect();
+
+        $this->assertDatabaseHas('follows', ['follower_id' => $owner->id, 'followed_id' => $follower->id]);
+        $this->assertDatabaseHas('follows', ['follower_id' => $follower->id, 'followed_id' => $owner->id]);
+
+        $this->get(route('profiles.followers', $owner))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('connections.data.0.viewer_follows', true)
+                ->where('connections.data.0.follows_viewer', true));
+    }
+
+    public function test_following_connections_distinguish_mutual_and_one_way_relationships(): void
+    {
+        $owner = User::factory()->create();
+        $mutual = User::factory()->create(['name' => 'A Mutual Reader']);
+        $oneWay = User::factory()->create(['name' => 'B One Way Reader']);
+        $owner->following()->attach([$mutual->id, $oneWay->id]);
+        $mutual->following()->attach($owner);
+
+        $this->actingAs($owner)
+            ->get(route('profiles.following', $owner))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Profile/Connections')
+                ->where('connections.data.0.viewer_follows', true)
+                ->where('connections.data.0.follows_viewer', true)
+                ->where('connections.data.1.viewer_follows', true)
+                ->where('connections.data.1.follows_viewer', false));
+    }
+
+    public function test_blocked_connections_have_no_follow_action_and_other_viewers_cannot_manage_connections(): void
+    {
+        $owner = User::factory()->create();
+        $blocked = User::factory()->create();
+        $follower = User::factory()->create();
+        $owner->blockedUsers()->attach($blocked);
+        $follower->following()->attach($owner);
+
+        $this->actingAs($owner)
+            ->get(route('profiles.connections', [$owner, 'relationship' => 'blocked']))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('connections.data.0.follow_url', null)
+                ->where('connections.data.0.unfollow_url', null)
+                ->where('connections.data.0.unblock_url', route('profiles.block.destroy', $blocked)));
+
+        $this->actingAs(User::factory()->create())
+            ->get(route('profiles.followers', $owner))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('canManage', false)
+                ->where('counts.blocked', null)
+                ->where('routes.blocked', null)
+                ->where('connections.data.0.follow_url', null)
+                ->where('connections.data.0.unfollow_url', null)
+                ->where('connections.data.0.block_url', null)
+                ->where('connections.data.0.unblock_url', null));
+    }
+
     public function test_blocking_a_reader_removes_mutual_follows_and_can_be_reversed(): void
     {
         $reader = User::factory()->create();

@@ -349,16 +349,44 @@ class ProfileController extends Controller
             ->orderBy('name')
             ->orderBy('users.id')
             ->paginate(24)
-            ->withQueryString()
-            ->through(fn (User $connection): array => [
+            ->withQueryString();
+
+        $connectionIds = $connections->getCollection()->modelKeys();
+        $viewerFollowingIds = [];
+        $viewerFollowerIds = [];
+        $viewerBlockedIds = [];
+        $blockedViewerIds = [];
+
+        if ($viewer !== null && $connectionIds !== []) {
+            $viewerFollowingIds = $viewer->following()->whereIn('users.id', $connectionIds)->pluck('users.id')->flip()->all();
+            $viewerFollowerIds = $viewer->followers()->whereIn('users.id', $connectionIds)->pluck('users.id')->flip()->all();
+            $viewerBlockedIds = $viewer->blockedUsers()->whereIn('users.id', $connectionIds)->pluck('users.id')->flip()->all();
+            $blockedViewerIds = $viewer->blockers()->whereIn('users.id', $connectionIds)->pluck('users.id')->flip()->all();
+        }
+
+        $connections->through(function (User $connection) use ($presenter, $viewer, $isOwner, $relationship, $viewerFollowingIds, $viewerFollowerIds, $viewerBlockedIds, $blockedViewerIds): array {
+            $connectionId = $connection->getKey();
+            $isBlocked = isset($viewerBlockedIds[$connectionId]) || isset($blockedViewerIds[$connectionId]);
+            $canManageFollow = $isOwner && ! $viewer->is($connection) && ! $isBlocked && $relationship !== 'blocked';
+
+            return [
                 ...$presenter->user($connection),
                 'followers_count' => $connection->followers_count,
                 'following_count' => $connection->following_count,
                 'completed_count' => $connection->completed_count,
                 'readlist_count' => $connection->readlist_count,
-                'block_url' => $isOwner ? route('profiles.block.store', $connection) : null,
-                'unblock_url' => $isOwner ? route('profiles.block.destroy', $connection) : null,
-            ]);
+                'viewer_follows' => isset($viewerFollowingIds[$connectionId]),
+                'follows_viewer' => isset($viewerFollowerIds[$connectionId]),
+                'follow_url' => $canManageFollow ? route('profiles.follow.store', $connection) : null,
+                'unfollow_url' => $canManageFollow ? route('profiles.follow.destroy', $connection) : null,
+                'block_url' => $isOwner && $relationship !== 'blocked' && ! $viewer->is($connection)
+                    ? route('profiles.block.store', $connection)
+                    : null,
+                'unblock_url' => $isOwner && $relationship === 'blocked' && ! $viewer->is($connection)
+                    ? route('profiles.block.destroy', $connection)
+                    : null,
+            ];
+        });
 
         return Inertia::render('Profile/Connections', [
             'profile' => $presenter->user($user),
