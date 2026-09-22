@@ -52,9 +52,9 @@ export default function ActionPanel({ literature, viewer, ratingSummary, routes,
 
             {routes.admin_edit_metadata && (
                 <div className="border-b border-ink-950/10 px-4 py-3 text-center">
-                    <Link href={routes.admin_edit_metadata} className="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-ink-950/60 underline decoration-brand-coral/60 underline-offset-4 transition hover:text-brand-coral">
+                    <a href={routes.admin_edit_metadata} className="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-ink-950/60 underline decoration-brand-coral/60 underline-offset-4 transition hover:text-brand-coral">
                         Edit metadata
-                    </Link>
+                    </a>
                 </div>
             )}
 

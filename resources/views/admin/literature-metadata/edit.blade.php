@@ -25,9 +25,20 @@
         </div>
 
         <div class="mt-7 grid gap-7 lg:grid-cols-[minmax(0,1fr)_250px]">
-            <form action="{{ route('admin.literatures.metadata.update', $literature) }}" method="POST" enctype="multipart/form-data" class="space-y-5">
+            <form id="literature-metadata-form" action="{{ route('admin.literatures.metadata.update', $literature) }}" method="POST" enctype="multipart/form-data" novalidate class="space-y-5">
                 @csrf
                 @method('PUT')
+
+                @if ($errors->any())
+                    <div id="metadata-validation-errors" role="alert" tabindex="-1" class="border border-red-700/25 bg-red-50 px-4 py-3 text-sm text-red-800">
+                        <p class="font-bold">Metadata could not be saved. Please check the fields below.</p>
+                        <ul class="mt-2 list-disc space-y-1 pl-5 text-xs leading-5">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
 
                 <div class="border border-ink-950/12 bg-white/45 p-5 sm:p-7">
                     <p class="text-sm leading-6 text-ink-900">Only filled fields override API metadata. Leave a field empty to inherit its current API value again.</p>
@@ -100,9 +111,9 @@
                 </div>
 
                 <div class="flex flex-wrap items-center gap-3">
-                    <button class="rounded-full bg-brand-coral px-5 py-3 text-sm font-bold text-white transition hover:bg-ink-950">Save curated metadata</button>
+                    <button type="submit" data-metadata-save class="rounded-full bg-brand-coral px-5 py-3 text-sm font-bold text-white transition hover:bg-ink-950 disabled:cursor-wait disabled:opacity-60">Save curated metadata</button>
                     @if ($override)
-                        <button name="reset" value="1" class="rounded-full border border-ink-950/20 px-5 py-3 text-sm font-bold text-ink-950 transition hover:border-brand-coral hover:text-brand-coral">Reset all to API</button>
+                        <button type="submit" name="reset" value="1" class="rounded-full border border-ink-950/20 px-5 py-3 text-sm font-bold text-ink-950 transition hover:border-brand-coral hover:text-brand-coral">Reset all to API</button>
                     @endif
                 </div>
             </form>
@@ -136,7 +147,21 @@
             const input = document.getElementById('cover_upload');
             const preview = document.getElementById('cover-upload-preview');
             const previewShell = document.getElementById('cover-upload-preview-shell');
+            const form = document.getElementById('literature-metadata-form');
+            const saveButton = form?.querySelector('[data-metadata-save]');
+            const validationErrors = document.getElementById('metadata-validation-errors');
             let objectUrl = null;
+
+            validationErrors?.focus();
+
+            form?.addEventListener('submit', (event) => {
+                if (event.submitter !== saveButton || ! (saveButton instanceof HTMLButtonElement)) {
+                    return;
+                }
+
+                saveButton.disabled = true;
+                saveButton.textContent = 'Saving…';
+            });
 
             input?.addEventListener('change', () => {
                 if (objectUrl) {

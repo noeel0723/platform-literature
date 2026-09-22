@@ -97,11 +97,34 @@ class LiteratureMetadataOverrideTest extends TestCase
             ->get(route('admin.literatures.metadata.edit', $literature))
             ->assertOk()
             ->assertSee('enctype="multipart/form-data"', false)
+            ->assertSee('id="literature-metadata-form"', false)
+            ->assertSee('novalidate', false)
+            ->assertSee('type="submit" data-metadata-save', false)
             ->assertSeeText('Upload cover')
             ->assertSeeText('External Cover URL')
             ->assertSeeText('Remove uploaded cover')
             ->assertSeeText('Uploaded cover takes priority over an external cover URL.')
             ->assertSee('URL.createObjectURL', false);
+    }
+
+    public function test_invalid_metadata_submission_returns_visible_validation_feedback(): void
+    {
+        $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+        $literature = Literature::factory()->create();
+        $editUrl = route('admin.literatures.metadata.edit', $literature);
+
+        $this->actingAs($admin)
+            ->from($editUrl)
+            ->followingRedirects()
+            ->put(route('admin.literatures.metadata.update', $literature), [
+                'cover_url' => 'not-an-http-url',
+            ])
+            ->assertOk()
+            ->assertSeeText('Metadata could not be saved. Please check the fields below.');
+
+        $this->assertDatabaseMissing('literature_metadata_overrides', [
+            'literature_id' => $literature->id,
+        ]);
     }
 
     public function test_admin_can_reset_all_curated_fields_to_the_api_values(): void
