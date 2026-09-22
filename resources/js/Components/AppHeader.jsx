@@ -167,31 +167,36 @@ export default function AppHeader({ routes, user, csrf_token: csrfToken, search_
     return (
         <header data-app-header className={headerClassName}>
             <SiteContainer>
-                <div className="relative flex h-18 min-w-0 items-center gap-3 lg:gap-5">
-                    <div className="shrink-0"><BrandMark href={routes.home} /></div>
-                    <div className="ml-auto flex min-w-0 items-center gap-2 md:gap-3 lg:gap-4">
-                        {user && <div className="hidden md:block"><AccountMenu user={user} csrfToken={csrfToken} /></div>}
-                        <nav className="hidden items-center gap-5 text-xs font-semibold uppercase tracking-[0.14em] text-brand-plate/85 lg:flex" aria-label="Main navigation">
-                            {!user && isGuestLanding && (
-                                <a href={routes.login} onClick={(event) => { event.preventDefault(); toggleLogin(); }} aria-expanded={loginOpen} className="whitespace-nowrap transition hover:text-white">
-                                    Log in
-                                </a>
-                            )}
-                            <a href={routes.home} className="whitespace-nowrap transition hover:text-white">Home</a>
-                            <a href={routes.literature} className="whitespace-nowrap transition hover:text-white">Literature</a>
-                            <a href={routes.catalog} className="whitespace-nowrap transition hover:text-white">Catalog</a>
-                        </nav>
-                        <Search action={routes.search} initialQuery={searchQuery} />
-                        {user && <button type="button" data-quick-log-open className="inline-flex h-8 shrink-0 items-center gap-1 rounded-sm bg-[#00c030] px-3 text-[0.7rem] font-extrabold uppercase tracking-[0.08em] text-white shadow-sm transition-colors hover:bg-[#00a628] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00c030]" aria-label="Log a rating or review" onClick={openQuickLog}><span className="text-base leading-none" aria-hidden="true">+</span><span>Log</span></button>}
-                        {!user && !isGuestLanding && <a href={routes.login} onClick={(event) => { event.preventDefault(); toggleLogin(); }} aria-expanded={loginOpen} className="shrink-0 whitespace-nowrap text-xs font-bold uppercase tracking-wider text-brand-plate/85 hover:text-white">Log in</a>}
-                        <button type="button" className="grid size-10 shrink-0 place-items-center rounded-full border border-brand-plate/35 bg-transparent text-brand-plate transition hover:bg-brand-plate hover:text-brand-stem lg:hidden" aria-expanded={mobileOpen} aria-controls="mobile-menu" onClick={() => setMobileOpen((value) => !value)}><span className="sr-only">Open navigation</span><svg aria-hidden="true" className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 7h16M4 12h16M4 17h16" /></svg></button>
-                    </div>
+                <div className={`relative flex min-w-0 items-center gap-3 lg:gap-5 ${!user && loginOpen ? 'flex-wrap lg:min-h-20 lg:flex-nowrap' : 'h-18'}`}>
+                    <div className={`shrink-0 ${!user && loginOpen ? 'flex h-18 items-center lg:h-auto' : ''}`}><BrandMark href={routes.home} /></div>
+                    {!user && loginOpen ? (
+                        <div className="order-last w-full pb-2 lg:order-none lg:ml-auto lg:min-w-0 lg:flex-1 lg:pb-0">
+                            <LoginPanel routes={routes} csrfToken={csrfToken} onClose={() => setLoginOpen(false)} inline />
+                        </div>
+                    ) : (
+                        <div className="ml-auto flex min-w-0 items-center gap-2 md:gap-3 lg:gap-4">
+                            {user && <div className="hidden md:block"><AccountMenu user={user} csrfToken={csrfToken} /></div>}
+                            <nav className="hidden items-center gap-5 text-xs font-semibold uppercase tracking-[0.14em] text-brand-plate/85 lg:flex" aria-label="Main navigation">
+                                {!user && isGuestLanding && (
+                                    <a href={routes.login} onClick={(event) => { event.preventDefault(); toggleLogin(); }} aria-expanded={loginOpen} className="whitespace-nowrap transition hover:text-white">
+                                        Log in
+                                    </a>
+                                )}
+                                <a href={routes.home} className="whitespace-nowrap transition hover:text-white">Home</a>
+                                <a href={routes.literature} className="whitespace-nowrap transition hover:text-white">Literature</a>
+                                <a href={routes.catalog} className="whitespace-nowrap transition hover:text-white">Catalog</a>
+                            </nav>
+                            <Search action={routes.search} initialQuery={searchQuery} />
+                            {user && <button type="button" data-quick-log-open className="inline-flex h-8 shrink-0 items-center gap-1 rounded-sm bg-[#00c030] px-3 text-[0.7rem] font-extrabold uppercase tracking-[0.08em] text-white shadow-sm transition-colors hover:bg-[#00a628] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00c030]" aria-label="Log a rating or review" onClick={openQuickLog}><span className="text-base leading-none" aria-hidden="true">+</span><span>Log</span></button>}
+                            {!user && <a href={routes.login} onClick={(event) => { event.preventDefault(); toggleLogin(); }} aria-expanded={loginOpen} className={`shrink-0 whitespace-nowrap text-xs font-bold uppercase tracking-wider text-brand-plate/85 hover:text-white ${isGuestLanding ? 'lg:hidden' : ''}`}>Log in</a>}
+                            <button type="button" className="grid size-10 shrink-0 place-items-center rounded-full border border-brand-plate/35 bg-transparent text-brand-plate transition hover:bg-brand-plate hover:text-brand-stem lg:hidden" aria-expanded={mobileOpen} aria-controls="mobile-menu" onClick={() => setMobileOpen((value) => !value)}><span className="sr-only">Open navigation</span><svg aria-hidden="true" className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 7h16M4 12h16M4 17h16" /></svg></button>
+                        </div>
+                    )}
                 </div>
             </SiteContainer>
             {mobileOpen && (
                 <nav id="mobile-menu" className="border-t border-brand-plate/15 bg-brand-stem py-4 lg:hidden" aria-label="Mobile navigation">
                     <SiteContainer className="grid gap-1 text-sm font-semibold uppercase tracking-[0.14em] text-brand-plate">
-                        {!user && isGuestLanding && <a href={routes.login} onClick={(event) => { event.preventDefault(); toggleLogin(); }} className="px-3 py-3 transition hover:bg-brand-plate/10">Log in</a>}
                         <a href={routes.home} className="px-3 py-3 transition hover:bg-brand-plate/10">Home</a>
                         <a href={routes.literature} className="px-3 py-3 transition hover:bg-brand-plate/10">Literature</a>
                         <a href={routes.catalog} className="px-3 py-3 transition hover:bg-brand-plate/10">Catalog</a>
@@ -202,11 +207,10 @@ export default function AppHeader({ routes, user, csrf_token: csrfToken, search_
                                 {user.moderation_url && <a href={user.moderation_url} className="px-3 py-3 transition hover:bg-brand-plate/10">Moderation</a>}
                                 <form action={user.logout_url} method="POST"><input type="hidden" name="_token" value={csrfToken} /><button className="w-full px-3 py-3 text-left transition hover:bg-brand-plate/10">Log out</button></form>
                             </>
-                        ) : !isGuestLanding && <a href={routes.login} onClick={(event) => { event.preventDefault(); toggleLogin(); }} className="px-3 py-3 transition hover:bg-brand-plate/10">Log in</a>}
+                        ) : null}
                     </SiteContainer>
                 </nav>
             )}
-            {!user && loginOpen && <div className="absolute inset-x-0 top-full"><LoginPanel routes={routes} csrfToken={csrfToken} onClose={() => setLoginOpen(false)} /></div>}
         </header>
     );
 }
