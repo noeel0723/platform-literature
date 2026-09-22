@@ -149,6 +149,25 @@ class HomeLandingTest extends TestCase
                 ->has('popularThisWeek', 0));
     }
 
+    public function test_header_marks_only_the_guest_home_as_a_guest_landing(): void
+    {
+        $guestHome = $this->get(route('home'));
+        $guestHomeProps = $this->embeddedReactProps($guestHome->getContent(), 'data-react-header-props');
+
+        $this->assertTrue($guestHomeProps['is_guest_landing']);
+
+        $literaturePage = $this->get(route('literature.index'));
+        $literatureHeaderProps = $this->embeddedReactProps($literaturePage->getContent(), 'data-react-header-props');
+
+        $this->assertFalse($literatureHeaderProps['is_guest_landing']);
+
+        $viewer = User::factory()->create();
+        $authenticatedHome = $this->actingAs($viewer)->get(route('home'));
+        $authenticatedHeaderProps = $this->embeddedReactProps($authenticatedHome->getContent(), 'data-react-header-props');
+
+        $this->assertFalse($authenticatedHeaderProps['is_guest_landing']);
+    }
+
     private function canonicalize(Literature $preferred, Literature $sibling): CanonicalWork
     {
         $canonicalWork = CanonicalWork::factory()->create([
@@ -168,5 +187,15 @@ class HomeLandingTest extends TestCase
         }
 
         return $canonicalWork;
+    }
+
+    /** @return array<string, mixed> */
+    private function embeddedReactProps(string $content, string $attribute): array
+    {
+        $matched = preg_match('/<script[^>]*'.preg_quote($attribute, '/').'[^>]*>(.*?)<\/script>/s', $content, $matches);
+
+        $this->assertSame(1, $matched);
+
+        return json_decode($matches[1], true, flags: JSON_THROW_ON_ERROR);
     }
 }

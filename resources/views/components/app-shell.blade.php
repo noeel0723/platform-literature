@@ -23,6 +23,7 @@
         $headerUser = auth()->user();
         $headerProps = [
             'csrf_token' => csrf_token(),
+            'is_guest_landing' => request()->routeIs('home') && ! $headerUser,
             'search_query' => request()->routeIs('search.index') ? request('q') : '',
             'routes' => [
                 'home' => route('home'),

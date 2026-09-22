@@ -140,7 +140,7 @@ function AccountMenu({ user, csrfToken }) {
     );
 }
 
-export default function AppHeader({ routes, user, csrf_token: csrfToken, search_query: searchQuery }) {
+export default function AppHeader({ routes, user, csrf_token: csrfToken, search_query: searchQuery, is_guest_landing: isGuestLanding = false }) {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [loginOpen, setLoginOpen] = useState(false);
     const openQuickLog = () => document.getElementById('quick-log-search-dialog')?.showModal();
@@ -160,8 +160,12 @@ export default function AppHeader({ routes, user, csrf_token: csrfToken, search_
         return () => window.removeEventListener(OPEN_LOGIN_PANEL_EVENT, openLoginPanel);
     }, []);
 
+    const headerClassName = isGuestLanding
+        ? 'absolute inset-x-0 top-0 z-40 border-b border-brand-plate/10 bg-transparent text-brand-plate'
+        : 'sticky top-0 z-40 border-b border-brand-blueberry/15 bg-brand-stem/95 text-brand-plate backdrop-blur-xl';
+
     return (
-        <header data-app-header className="sticky top-0 z-40 border-b border-brand-blueberry/15 bg-brand-stem/95 text-brand-plate backdrop-blur-xl">
+        <header data-app-header className={headerClassName}>
             <SiteContainer>
                 <div className="relative flex h-18 min-w-0 items-center gap-3 lg:gap-5">
                     <div className="shrink-0"><BrandMark href={routes.home} /></div>
