@@ -32,6 +32,7 @@
                 'search' => route('search.index'),
                 'login' => route('login'),
                 'register' => route('register'),
+                'quick_log_search' => $headerUser ? route('quick-log.literatures') : null,
             ],
             'user' => $headerUser ? [
                 'name' => $headerUser->name,
@@ -69,14 +70,33 @@
         {{ $slot }}
     </main>
 
-    @auth
-        <x-quick-log />
-    @endauth
-
-    <footer class="border-t border-brand-blueberry/10 bg-brand-yogurt/45">
-        <div class="mx-auto flex max-w-7xl flex-col gap-3 px-5 py-9 text-sm text-ink-950/60 sm:px-8 md:flex-row md:justify-between lg:px-10">
-            <p>Literahaven</p>
-            <p>Activity Feed &amp; Social Literature Discovery.</p>
+    <footer class="border-t-2 border-brand-coral/60 bg-ink-950 text-brand-cream">
+        <div class="mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:px-10 lg:py-12">
+            <div class="flex flex-col gap-7 md:flex-row md:items-start md:justify-between">
+                <div>
+                    <a href="{{ route('home') }}" class="inline-flex items-center gap-2.5 font-bold text-brand-cream transition hover:text-white" aria-label="Literahaven - Home">
+                        <span class="grid grid-cols-2 gap-0.5" aria-hidden="true">
+                            <span class="size-2.5 rounded-full bg-brand-plate"></span>
+                            <span class="size-2.5 rounded-full bg-brand-sky"></span>
+                            <span class="size-2.5 rounded-full bg-brand-coral"></span>
+                            <span class="size-2.5 rounded-full bg-brand-sun"></span>
+                        </span>
+                        <span class="text-xl font-black tracking-[-0.04em]">Literahaven</span>
+                    </a>
+                    <p class="mt-2 max-w-xs text-sm leading-5 text-brand-cream/55">Activity Feed &amp; Social Literature Discovery.</p>
+                </div>
+                <nav class="flex flex-wrap gap-x-5 gap-y-3 text-xs font-semibold uppercase tracking-[0.12em] text-brand-cream/65 md:justify-end" aria-label="Footer navigation">
+                    <a href="{{ route('home') }}" class="transition hover:text-brand-cream">Home</a>
+                    <a href="{{ route('literature.index') }}" class="transition hover:text-brand-cream">Literature</a>
+                    <a href="{{ route('literatures.index') }}" class="transition hover:text-brand-cream">Catalog</a>
+                    @auth
+                        <a href="{{ route('profiles.lists', $headerUser) }}" class="transition hover:text-brand-cream">Lists</a>
+                    @endauth
+                </nav>
+            </div>
+            <div class="mt-8 border-t border-brand-cream/15 pt-5 text-xs text-brand-cream/45">
+                <p>&copy; {{ now()->year }} Literahaven. All rights reserved.</p>
+            </div>
         </div>
     </footer>
 </body>

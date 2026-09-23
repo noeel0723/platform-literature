@@ -20,24 +20,22 @@ class QuickLogTest extends TestCase
             ->assertUnauthorized();
     }
 
-    public function test_authenticated_header_contains_the_quick_log_workflow(): void
+    public function test_authenticated_header_provides_the_react_quick_log_search_route(): void
     {
         $user = User::factory()->create();
 
         $this->actingAs($user)->get(route('home'))
             ->assertOk()
             ->assertSee('data-react-header-props', false)
-            ->assertSee('id="quick-log-search-dialog"', false)
-            ->assertSee('id="quick-log-review-dialog"', false)
-            ->assertSee('data-search-url="'.route('quick-log.literatures').'"', false)
-            ->assertSee('data-quick-log-review-form', false);
+            ->assertSee('quick_log_search', false)
+            ->assertDontSee('id="quick-log-search-dialog"', false);
     }
 
     public function test_guest_header_does_not_contain_the_quick_log_workflow(): void
     {
         $this->get(route('home'))
             ->assertOk()
-            ->assertDontSee('data-quick-log-open', false)
+            ->assertDontSee(route('quick-log.literatures'), false)
             ->assertDontSee('id="quick-log-search-dialog"', false);
     }
 

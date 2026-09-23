@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { OPEN_LOGIN_PANEL_EVENT } from '../Support/loginPanel';
 import LoginPanel from './LoginPanel';
+import QuickLogDialog from './QuickLogDialog';
 import SiteContainer from './SiteContainer';
 
 function BrandMark({ href }) {
@@ -143,11 +144,33 @@ function AccountMenu({ user, csrfToken }) {
 export default function AppHeader({ routes, user, csrf_token: csrfToken, search_query: searchQuery, is_guest_landing: isGuestLanding = false }) {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [loginOpen, setLoginOpen] = useState(false);
-    const openQuickLog = () => document.getElementById('quick-log-search-dialog')?.showModal();
+    const [quickLogOpen, setQuickLogOpen] = useState(false);
+    const [currentPath, setCurrentPath] = useState(window.location.pathname);
+    const openQuickLog = () => setQuickLogOpen(true);
+    const matchesRoute = (url) => {
+        const path = new URL(url, window.location.origin).pathname.replace(/\/$/, '') || '/';
+        return currentPath === path || (path !== '/' && currentPath.startsWith(`${path}/`));
+    };
+    const activeNavigation = matchesRoute(routes.home) ? 'home'
+        : matchesRoute(routes.literature) ? 'literature'
+            : matchesRoute(routes.catalog) ? 'catalog' : null;
+    const mainLinkClass = (key) => `whitespace-nowrap border-b-2 py-1 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-coral ${activeNavigation === key ? 'border-brand-coral text-white' : 'border-transparent hover:border-brand-plate/50 hover:text-white'}`;
+    const mobileLinkClass = (key) => `border-l-2 px-3 py-3 transition ${activeNavigation === key ? 'border-brand-coral bg-brand-plate/15 text-white' : 'border-transparent hover:bg-brand-plate/10'}`;
     const toggleLogin = () => {
         setMobileOpen(false);
         setLoginOpen((current) => !current);
     };
+
+    useEffect(() => {
+        const syncPath = () => setCurrentPath(window.location.pathname);
+        document.addEventListener('inertia:navigate', syncPath);
+        window.addEventListener('popstate', syncPath);
+
+        return () => {
+            document.removeEventListener('inertia:navigate', syncPath);
+            window.removeEventListener('popstate', syncPath);
+        };
+    }, []);
 
     useEffect(() => {
         const openLoginPanel = () => {
@@ -182,12 +205,12 @@ export default function AppHeader({ routes, user, csrf_token: csrfToken, search_
                                         Log in
                                     </a>
                                 )}
-                                <a href={routes.home} className="whitespace-nowrap transition hover:text-white">Home</a>
-                                <a href={routes.literature} className="whitespace-nowrap transition hover:text-white">Literature</a>
-                                <a href={routes.catalog} className="whitespace-nowrap transition hover:text-white">Catalog</a>
+                                <a href={routes.home} className={mainLinkClass('home')} aria-current={activeNavigation === 'home' ? 'page' : undefined}>Home</a>
+                                <a href={routes.literature} className={mainLinkClass('literature')} aria-current={activeNavigation === 'literature' ? 'page' : undefined}>Literature</a>
+                                <a href={routes.catalog} className={mainLinkClass('catalog')} aria-current={activeNavigation === 'catalog' ? 'page' : undefined}>Catalog</a>
                             </nav>
                             <Search action={routes.search} initialQuery={searchQuery} />
-                            {user && <button type="button" data-quick-log-open className="inline-flex h-8 shrink-0 items-center gap-1 rounded-sm bg-[#00c030] px-3 text-[0.7rem] font-extrabold uppercase tracking-[0.08em] text-white shadow-sm transition-colors hover:bg-[#00a628] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00c030]" aria-label="Log a rating or review" onClick={openQuickLog}><span className="text-base leading-none" aria-hidden="true">+</span><span>Log</span></button>}
+                            {user && <button type="button" className="inline-flex h-8 shrink-0 items-center gap-1 rounded-sm bg-[#00c030] px-3 text-[0.7rem] font-extrabold uppercase tracking-[0.08em] text-white shadow-sm transition-colors hover:bg-[#00a628] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00c030]" aria-label="Log a rating or review" onClick={openQuickLog}><span className="text-base leading-none" aria-hidden="true">+</span><span>Log</span></button>}
                             {!user && <a href={routes.login} onClick={(event) => { event.preventDefault(); toggleLogin(); }} aria-expanded={loginOpen} className="shrink-0 whitespace-nowrap text-xs font-bold uppercase tracking-wider text-brand-plate/85 hover:text-white lg:hidden">Log in</a>}
                             <button type="button" className="grid size-10 shrink-0 place-items-center rounded-full border border-brand-plate/35 bg-transparent text-brand-plate transition hover:bg-brand-plate hover:text-brand-stem lg:hidden" aria-expanded={mobileOpen} aria-controls="mobile-menu" onClick={() => setMobileOpen((value) => !value)}><span className="sr-only">Open navigation</span><svg aria-hidden="true" className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 7h16M4 12h16M4 17h16" /></svg></button>
                         </div>
@@ -197,9 +220,9 @@ export default function AppHeader({ routes, user, csrf_token: csrfToken, search_
             {mobileOpen && (
                 <nav id="mobile-menu" className="border-t border-brand-plate/15 bg-brand-stem py-4 lg:hidden" aria-label="Mobile navigation">
                     <SiteContainer className="grid gap-1 text-sm font-semibold uppercase tracking-[0.14em] text-brand-plate">
-                        <a href={routes.home} className="px-3 py-3 transition hover:bg-brand-plate/10">Home</a>
-                        <a href={routes.literature} className="px-3 py-3 transition hover:bg-brand-plate/10">Literature</a>
-                        <a href={routes.catalog} className="px-3 py-3 transition hover:bg-brand-plate/10">Catalog</a>
+                        <a href={routes.home} className={mobileLinkClass('home')} aria-current={activeNavigation === 'home' ? 'page' : undefined}>Home</a>
+                        <a href={routes.literature} className={mobileLinkClass('literature')} aria-current={activeNavigation === 'literature' ? 'page' : undefined}>Literature</a>
+                        <a href={routes.catalog} className={mobileLinkClass('catalog')} aria-current={activeNavigation === 'catalog' ? 'page' : undefined}>Catalog</a>
                         {user ? (
                             <>
                                 {user.navigation.filter((item) => item.label !== 'Home').map((item) => <a key={item.label} href={item.url} className="px-3 py-3 transition hover:bg-brand-plate/10">{item.label}</a>)}
@@ -211,6 +234,7 @@ export default function AppHeader({ routes, user, csrf_token: csrfToken, search_
                     </SiteContainer>
                 </nav>
             )}
+            {user && <QuickLogDialog open={quickLogOpen} onClose={() => setQuickLogOpen(false)} searchUrl={routes.quick_log_search} />}
         </header>
     );
 }

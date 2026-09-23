@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class LiteratureMetadataOverrideTest extends TestCase
@@ -96,19 +97,12 @@ class LiteratureMetadataOverrideTest extends TestCase
 
         $this->actingAs($admin)
             ->get(route('admin.literatures.metadata.edit', $literature))
-            ->assertOk()
-            ->assertSee('enctype="multipart/form-data"', false)
-            ->assertSee('id="literature-metadata-form"', false)
-            ->assertSee('novalidate', false)
-            ->assertSee('type="submit" data-metadata-save', false)
-            ->assertSeeText('Upload cover')
-            ->assertSeeText('External Cover URL')
-            ->assertSeeText('Remove uploaded cover')
-            ->assertSeeText('Uploaded cover takes priority over an external cover URL.')
-            ->assertSeeText('Upload hero artwork')
-            ->assertSeeText('External Hero Artwork URL')
-            ->assertSeeText('Uploaded hero artwork takes priority over an external hero URL.')
-            ->assertSee('URL.createObjectURL', false);
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Admin/LiteratureMetadata/Edit')
+                ->where('literature.url', route('literatures.show', $literature))
+                ->where('override.cover_path', $coverPath)
+                ->where('override.uploaded_cover_url', Storage::disk('public')->url($coverPath))
+                ->where('updateUrl', route('admin.literatures.metadata.update', $literature)));
     }
 
     public function test_invalid_metadata_submission_returns_visible_validation_feedback(): void
@@ -119,12 +113,11 @@ class LiteratureMetadataOverrideTest extends TestCase
 
         $this->actingAs($admin)
             ->from($editUrl)
-            ->followingRedirects()
             ->put(route('admin.literatures.metadata.update', $literature), [
                 'cover_url' => 'not-an-http-url',
             ])
-            ->assertOk()
-            ->assertSeeText('Metadata could not be saved. Please check the fields below.');
+            ->assertRedirect($editUrl)
+            ->assertSessionHasErrors('cover_url');
 
         $this->assertDatabaseMissing('literature_metadata_overrides', [
             'literature_id' => $literature->id,
@@ -161,6 +154,39 @@ class LiteratureMetadataOverrideTest extends TestCase
         $this->assertSame('https://images.example.test/api-cover.jpg', $literature->fresh()->displayCoverUrl());
         Storage::disk('public')->assertMissing($coverPath);
         Storage::disk('public')->assertMissing($backdropPath);
+    }
+
+    public function test_multipart_post_with_method_override_saves_a_curated_cover(): void
+    {
+        Storage::fake('public');
+        $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+        $literature = Literature::factory()->create();
+
+        $this->actingAs($admin)
+            ->post(route('admin.literatures.metadata.update', $literature), [
+                '_method' => 'PUT',
+                'cover_upload' => UploadedFile::fake()->image('new-cover.jpg', 400, 600),
+            ])
+            ->assertRedirect(route('literatures.show', $literature));
+
+        $override = LiteratureMetadataOverride::query()->where('literature_id', $literature->id)->firstOrFail();
+        Storage::disk('public')->assertExists($override->cover_path);
+    }
+
+    public function test_post_with_method_override_resets_curated_metadata(): void
+    {
+        $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+        $literature = Literature::factory()->create();
+        LiteratureMetadataOverride::factory()->for($literature)->create(['title' => 'Curated Title']);
+
+        $this->actingAs($admin)
+            ->post(route('admin.literatures.metadata.update', $literature), [
+                '_method' => 'PUT',
+                'reset' => '1',
+            ])
+            ->assertRedirect(route('literatures.show', $literature));
+
+        $this->assertDatabaseMissing('literature_metadata_overrides', ['literature_id' => $literature->id]);
     }
 
     public function test_curated_metadata_follows_the_canonical_work_across_api_records(): void

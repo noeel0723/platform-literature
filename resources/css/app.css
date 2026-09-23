@@ -31,6 +31,15 @@
         scroll-behavior: smooth;
     }
 
+    html:has(dialog[open]),
+    body:has(dialog[open]) {
+        overflow: hidden;
+    }
+
+    dialog[open] {
+        overscroll-behavior: contain;
+    }
+
     body {
         background-color: var(--color-brand-plate);
     }

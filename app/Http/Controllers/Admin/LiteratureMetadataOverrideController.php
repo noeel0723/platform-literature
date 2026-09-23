@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateLiteratureMetadataOverrideRequest;
 use App\Models\Literature;
 use App\Models\LiteratureMetadataOverride;
-use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +13,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
+use Inertia\Response;
 use Throwable;
 
 class LiteratureMetadataOverrideController extends Controller
@@ -34,7 +35,7 @@ class LiteratureMetadataOverrideController extends Controller
         'format',
     ];
 
-    public function edit(Literature $literature): View
+    public function edit(Literature $literature): Response
     {
         $literature->load([
             'apiSource',
@@ -43,9 +44,43 @@ class LiteratureMetadataOverrideController extends Controller
             'sourceMapping.canonicalWork.metadataOverride.editor',
         ]);
 
-        return view('admin.literature-metadata.edit', [
-            'literature' => $literature,
-            'override' => $literature->effectiveMetadataOverride(),
+        $override = $literature->effectiveMetadataOverride();
+
+        return Inertia::render('Admin/LiteratureMetadata/Edit', [
+            'literature' => [
+                'title' => $literature->displayTitle(),
+                'source_name' => $literature->apiSource->name,
+                'url' => route('literatures.show', $literature),
+                'api_values' => [
+                    'title' => $literature->title,
+                    'original_title' => $literature->original_title,
+                    'publication_year' => $literature->publication_year,
+                    'tagline' => $literature->tagline,
+                    'synopsis' => $literature->synopsis,
+                    'cover_url' => $literature->cover_url,
+                    'backdrop_url' => $literature->backdrop_url,
+                    'publisher' => $literature->publisher,
+                    'language' => $literature->language,
+                    'format' => $literature->format,
+                ],
+                'effective' => [
+                    'title' => $literature->displayTitle(),
+                    'year' => $literature->displayPublicationYear(),
+                    'cover_url' => $literature->displayCoverUrl(),
+                    'backdrop_url' => $literature->displayBackdropUrl(),
+                ],
+            ],
+            'override' => $override === null ? null : [
+                ...collect([...self::METADATA_FIELDS, 'source_url', 'notes'])
+                    ->mapWithKeys(fn (string $field): array => [$field => $override->{$field}])
+                    ->all(),
+                'uploaded_cover_url' => $override->uploadedCoverUrl(),
+                'uploaded_backdrop_url' => $override->uploadedBackdropUrl(),
+                'updated_label' => $override->updated_at->diffForHumans(),
+                'editor_name' => $override->editor?->name,
+            ],
+            'updateUrl' => route('admin.literatures.metadata.update', $literature),
+            'maxYear' => now()->year + 5,
         ]);
     }
 
