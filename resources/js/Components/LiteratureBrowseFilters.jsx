@@ -56,18 +56,22 @@ export function LiteratureBrowseSearch({ browseUrl, filters = {} }) {
     };
 
     return (
-        <form onSubmit={submit} className="flex h-9 min-w-0 border border-ink-950/15 bg-white/55 focus-within:border-brand-coral focus-within:ring-2 focus-within:ring-brand-coral/20" role="search">
+        <form onSubmit={submit} className="flex h-10 w-full min-w-0 overflow-hidden rounded-full border border-ink-950/20 bg-white/50 focus-within:border-brand-coral sm:w-72 lg:w-80" role="search">
             <label htmlFor="global-literature-search" className="sr-only">Search local literature</label>
             <input
                 id="global-literature-search"
                 type="search"
+                name="q"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Find literature"
-                className="min-w-0 w-44 bg-transparent px-3 text-sm text-ink-950 outline-none placeholder:text-ink-950/45 sm:w-52"
+                placeholder="Find literature..."
+                className="min-w-0 flex-1 bg-transparent px-4 text-sm text-ink-950 outline-none placeholder:text-ink-950/40 focus:bg-white/50"
             />
-            <button type="submit" className="shrink-0 border-l border-ink-950/10 px-3 text-[0.68rem] font-bold uppercase tracking-[0.12em] text-brand-blue transition hover:bg-brand-coral hover:text-white">
-                Search
+            <button type="submit" className="grid size-10 shrink-0 place-items-center bg-ink-950 text-brand-cream transition hover:bg-brand-coral hover:text-brand-cream" aria-label="Search literature">
+                <svg aria-hidden="true" className="size-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="m20 20-4-4" />
+                </svg>
             </button>
         </form>
     );
