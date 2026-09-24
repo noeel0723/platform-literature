@@ -1,6 +1,7 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import AvatarCropDialog from '../../Components/AvatarCropDialog';
 import ProfileSubNavigation from '../../Components/ProfileSubNavigation';
 
 function FieldError({ message }) {
@@ -194,6 +195,11 @@ export default function ProfileEdit({ profile, navigation, favoriteLiteratures, 
         favorite_author_ids: favoriteAuthorIds.map(String),
     });
     const [avatarPreview, setAvatarPreview] = useState(profile.avatar_url);
+    const [avatarSourceFile, setAvatarSourceFile] = useState(null);
+    const [editingAvatarFile, setEditingAvatarFile] = useState(null);
+    const [avatarCropOpen, setAvatarCropOpen] = useState(false);
+    const [avatarSelectionError, setAvatarSelectionError] = useState('');
+    const avatarInputRef = useRef(null);
     const [picker, setPicker] = useState(null);
     const [literatureItems, setLiteratureItems] = useState(favoriteLiteratures);
     const [authorItems, setAuthorItems] = useState(favoriteAuthors);
@@ -208,6 +214,35 @@ export default function ProfileEdit({ profile, navigation, favoriteLiteratures, 
         setAvatarPreview(previewUrl);
         return () => URL.revokeObjectURL(previewUrl);
     }, [form.data.avatar, form.data.remove_avatar, profile.avatar_url]);
+
+    const selectAvatar = (event) => {
+        const file = event.target.files?.[0];
+        event.target.value = '';
+        if (!file) return;
+
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 2 * 1024 * 1024) {
+            setAvatarSelectionError('Choose a JPG, PNG, or WebP image under 2 MB.');
+            return;
+        }
+
+        setAvatarSelectionError('');
+        setEditingAvatarFile(file);
+        setAvatarCropOpen(true);
+    };
+
+    const closeAvatarCrop = () => {
+        setAvatarCropOpen(false);
+        setEditingAvatarFile(avatarSourceFile);
+        window.requestAnimationFrame(() => avatarInputRef.current?.focus());
+    };
+
+    const applyAvatarCrop = (file) => {
+        setAvatarSourceFile(editingAvatarFile);
+        form.setData({ ...form.data, avatar: file, remove_avatar: false });
+        form.clearErrors('avatar');
+        setAvatarCropOpen(false);
+        window.requestAnimationFrame(() => avatarInputRef.current?.focus());
+    };
 
     const updateSlot = (key, index, value) => {
         const next = [...form.data[key]];
@@ -258,8 +293,11 @@ export default function ProfileEdit({ profile, navigation, favoriteLiteratures, 
                                 <div className="size-20 shrink-0 overflow-hidden rounded-full border border-ink-950/15 bg-ink-950">{avatarPreview ? <img src={avatarPreview} alt="Profile preview" className="size-full object-cover" /> : <Initials value={profile.initials} className="text-xl" />}</div>
                                 <div className="min-w-0 flex-1">
                                     <label htmlFor="avatar" className="text-sm font-bold text-ink-950">Profile photo</label>
-                                    <input id="avatar" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => form.setData('avatar', event.target.files?.[0] ?? null)} className="mt-2 block w-full text-xs file:mr-3 file:border-0 file:bg-ink-950 file:px-3 file:py-2 file:font-bold file:text-brand-cream" />
-                                    {profile.has_avatar && <label className="mt-2 flex items-center gap-2 text-xs text-ink-950/55"><input type="checkbox" checked={form.data.remove_avatar} onChange={(event) => form.setData('remove_avatar', event.target.checked)} className="size-4 accent-brand-coral" /> Remove current photo</label>}
+                                    <input ref={avatarInputRef} id="avatar" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="avatar-help" onChange={selectAvatar} className="mt-2 block w-full text-xs file:mr-3 file:border-0 file:bg-ink-950 file:px-3 file:py-2 file:font-bold file:text-brand-cream" />
+                                    <p id="avatar-help" className="mt-1.5 text-xs text-ink-950/50">JPG, PNG, or WebP under 2 MB. Adjust the position before saving.</p>
+                                    {avatarSourceFile && <button type="button" onClick={() => { setEditingAvatarFile(avatarSourceFile); setAvatarCropOpen(true); }} className="mt-2 text-xs font-semibold text-brand-coral underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-brand-coral">Adjust selected photo</button>}
+                                    {profile.has_avatar && <label className="mt-2 flex items-center gap-2 text-xs text-ink-950/55"><input type="checkbox" checked={form.data.remove_avatar} onChange={(event) => { const remove = event.target.checked; form.setData({ ...form.data, remove_avatar: remove, avatar: remove ? null : form.data.avatar }); if (remove) { setAvatarSourceFile(null); setEditingAvatarFile(null); } }} className="size-4 accent-brand-coral" /> Remove current photo</label>}
+                                    {avatarSelectionError && <p role="alert" className="mt-1.5 text-xs font-semibold text-red-700">{avatarSelectionError}</p>}
                                     <FieldError message={form.errors.avatar} />
                                 </div>
                             </div>
@@ -292,6 +330,7 @@ export default function ProfileEdit({ profile, navigation, favoriteLiteratures, 
                 onClose={() => setPicker(null)}
                 onSelect={selectFavorite}
             />
+            <AvatarCropDialog file={editingAvatarFile} open={avatarCropOpen} onClose={closeAvatarCrop} onApply={applyAvatarCrop} />
         </>
     );
 }
