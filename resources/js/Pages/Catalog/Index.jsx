@@ -119,7 +119,6 @@ export default function CatalogIndex({
                     </div>
                     {literatures.length > 0 && (
                         <div className="flex items-center gap-5">
-                            <p className="text-sm text-ink-950/50">Showing {literatures.length} of the best matches</p>
                             {canExpand && (
                                 <Link href={routes.latest} className="text-xs font-bold uppercase tracking-[0.16em] text-ink-950 transition hover:text-brand-coral">
                                     More
