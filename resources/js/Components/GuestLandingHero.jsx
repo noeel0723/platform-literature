@@ -41,7 +41,7 @@ export default function GuestLandingHero({ literature, onRegisterOpen, registerT
                             onClick={onRegisterOpen}
                             className="inline-flex min-h-11 items-center justify-center rounded-sm bg-brand-coral px-5 py-3 text-xs font-bold uppercase tracking-[0.1em] text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-brand-coral/90 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-plate"
                         >
-                            Get started — it&apos;s free
+                            Join us! Sign up here!
                         </button>
                         <span className="text-sm text-brand-plate/60">
                             Already a member?{' '}
