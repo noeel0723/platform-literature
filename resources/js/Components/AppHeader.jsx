@@ -184,7 +184,7 @@ export default function AppHeader({ routes, user, csrf_token: csrfToken, search_
     }, []);
 
     const headerClassName = isGuestLanding
-        ? 'absolute inset-x-0 top-0 z-40 border-b border-brand-plate/10 bg-transparent text-brand-plate'
+        ? 'absolute inset-x-0 top-0 z-40 bg-transparent text-brand-plate'
         : 'sticky top-0 z-40 border-b border-brand-blueberry/15 bg-brand-stem/95 text-brand-plate backdrop-blur-xl';
 
     return (
