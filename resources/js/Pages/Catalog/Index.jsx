@@ -55,12 +55,6 @@ export default function CatalogIndex({
         });
     };
 
-    const resultTitle = query
-        ? `Results for “${query}”`
-        : selectedType
-            ? `Latest ${types[selectedType] ?? 'literature'}`
-            : 'Latest literature';
-
     return (
         <>
             <Head title="Catalog" />
@@ -110,13 +104,8 @@ export default function CatalogIndex({
             </section>
 
             <SiteContainer as="section" className="py-8 lg:py-10" aria-labelledby="catalog-results-title">
-                <div className="mb-5 flex flex-col gap-3 border-b border-ink-950/15 pb-3 sm:flex-row sm:items-end sm:justify-between">
-                    <div>
-                        <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">Latest matches</p>
-                        <h1 id="catalog-results-title" className="mt-1 font-serif text-3xl font-bold text-ink-950">
-                            {resultTitle}
-                        </h1>
-                    </div>
+                <div className="mb-5 flex items-center justify-between gap-3 border-b border-ink-950/15 pb-3">
+                    <p id="catalog-results-title" className="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">Latest matches</p>
                     {literatures.length > 0 && (
                         <div className="flex items-center gap-5">
                             {canExpand && (
