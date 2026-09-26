@@ -2,6 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 
 import GuestLandingHero from '../../Components/GuestLandingHero';
+import GuestLandingFeatures from '../../Components/GuestLandingFeatures';
 import { TimeLabel } from '../../Components/LiteratureDetail/DetailUi';
 import PopularThisWeek from '../../Components/PopularThisWeek';
 import RegisterDialog from '../../Components/RegisterDialog';
@@ -65,6 +66,7 @@ export default function HomeIndex({ activities, popularLiteratures, recommendati
                 <Head title="Home" />
                 <GuestLandingHero literature={guestHero} onRegisterOpen={() => setRegisterOpen(true)} registerTriggerRef={registerTriggerRef} />
                 <PopularThisWeek literatures={popularThisWeek} browseUrl={routes.literature} />
+                <GuestLandingFeatures />
                 <RegisterDialog open={registerOpen} onClose={() => setRegisterOpen(false)} registerUrl={routes.register} returnFocusRef={registerTriggerRef} />
             </>
         );
