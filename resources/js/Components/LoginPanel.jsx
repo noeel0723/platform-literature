@@ -57,7 +57,7 @@ export default function LoginPanel({ routes, csrfToken, onClose, embedded = fals
                 <div className="min-w-0">
                     <div className="flex items-center justify-between gap-3">
                         <label htmlFor={`${embedded ? 'page' : 'header'}-login-password`} className="text-[0.64rem] font-semibold uppercase tracking-[0.12em] text-brand-plate/60">Password</label>
-                        <span className="whitespace-nowrap text-[0.64rem] font-semibold text-[#00c030]" aria-disabled="true" title="Password recovery is not configured yet">Forgot Password?</span>
+                        <a href={routes.password_request} className="whitespace-nowrap text-[0.64rem] font-semibold text-[#00c030]">Forgot Password?</a>
                     </div>
                     <input id={`${embedded ? 'page' : 'header'}-login-password`} type="password" value={form.data.password} onChange={(event) => form.setData('password', event.target.value)} required autoComplete="current-password" className="mt-1 h-9 w-full rounded-sm border border-white/10 bg-brand-cream px-3 text-sm text-ink-950 outline-none transition focus:border-[#00c030]" />
                     <FieldError message={form.errors.password} />

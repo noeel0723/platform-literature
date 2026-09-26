@@ -39,6 +39,7 @@ class AuthController extends Controller
                 'home' => route('home'),
                 'login' => route('login'),
                 'register' => route('register'),
+                'password_request' => route('password.request'),
             ],
         ]);
     }

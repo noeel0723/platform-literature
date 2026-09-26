@@ -32,6 +32,7 @@
                 'search' => route('search.index'),
                 'login' => route('login'),
                 'register' => route('register'),
+                'password_request' => route('password.request'),
                 'quick_log_search' => $headerUser ? route('quick-log.literatures') : null,
             ],
             'user' => $headerUser ? [
