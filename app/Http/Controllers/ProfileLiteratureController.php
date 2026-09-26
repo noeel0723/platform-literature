@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\User;
 use App\Support\ProfilePagePresenter;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -16,6 +17,11 @@ class ProfileLiteratureController extends Controller
     public function __invoke(User $user, ProfilePagePresenter $presenter, Request $request): Response
     {
         $genreSlug = Str::slug(trim((string) $request->query('genre', '')));
+        $ratingOrder = match ($request->query('rating')) {
+            'highest' => 'desc',
+            'lowest' => 'asc',
+            default => null,
+        };
         $genre = $genreSlug === ''
             ? null
             : Category::query()->where('slug', $genreSlug)->first();
@@ -41,7 +47,7 @@ class ProfileLiteratureController extends Controller
                 'slug' => $category->slug,
             ]);
 
-        $completedLiterature = $user->readingLists()
+        $completedLiteratureQuery = $user->readingLists()
             ->where('status', 'completed')
             ->when($genreSlug !== '', function ($readingLists) use ($genre): void {
                 if ($genre === null) {
@@ -71,8 +77,25 @@ class ProfileLiteratureController extends Controller
                 'literature.reviews' => fn ($reviews) => $reviews
                     ->whereBelongsTo($user)
                     ->whereNull('hidden_at'),
-            ])
-            ->latest('completed_at')
+            ]);
+
+        if ($ratingOrder !== null) {
+            $completedLiteratureQuery
+                ->select('reading_lists.*')
+                ->leftJoin('reviews as profile_ratings', function (JoinClause $join) use ($user): void {
+                    $join->on('profile_ratings.literature_id', '=', 'reading_lists.literature_id')
+                        ->where('profile_ratings.user_id', '=', $user->id)
+                        ->whereNull('profile_ratings.hidden_at');
+                })
+                ->orderByRaw('CASE WHEN profile_ratings.rating IS NULL THEN 1 ELSE 0 END')
+                ->orderBy('profile_ratings.rating', $ratingOrder)
+                ->orderByDesc('reading_lists.completed_at')
+                ->orderByDesc('reading_lists.id');
+        } else {
+            $completedLiteratureQuery->latest('completed_at');
+        }
+
+        $completedLiterature = $completedLiteratureQuery
             ->paginate(48)
             ->withQueryString();
 
@@ -91,6 +114,11 @@ class ProfileLiteratureController extends Controller
                 'name' => $genre?->name ?? Str::headline($genreSlug),
                 'slug' => $genreSlug,
             ],
+            'activeRating' => match ($ratingOrder) {
+                'desc' => 'highest',
+                'asc' => 'lowest',
+                default => null,
+            },
             'genres' => $genres->all(),
         ]);
     }

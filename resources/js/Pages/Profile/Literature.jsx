@@ -127,14 +127,43 @@ function GenreFilter({ genres, activeGenre }) {
     );
 }
 
-export default function ProfileLiterature({ profile, navigation, completedLiterature, activeGenre, genres }) {
+function RatingFilter({ activeRating }) {
+    const navigateToRating = (rating) => {
+        const parameters = new URLSearchParams(window.location.search);
+
+        if (rating) parameters.set('rating', rating);
+        else parameters.delete('rating');
+
+        parameters.delete('page');
+        router.get(
+            `${window.location.pathname}${parameters.size ? `?${parameters.toString()}` : ''}`,
+            {},
+            { preserveScroll: true, preserveState: true, replace: true },
+        );
+    };
+
+    return (
+        <select
+            value={activeRating ?? ''}
+            onChange={(event) => navigateToRating(event.target.value)}
+            aria-label="Sort completed literature by reader rating"
+            className="min-h-7 border border-ink-950/15 bg-white/40 px-2.5 text-[0.65rem] font-bold uppercase tracking-[0.12em] text-ink-950 transition hover:border-brand-coral focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-coral"
+        >
+            <option value="">Rating</option>
+            <option value="highest">Highest rating</option>
+            <option value="lowest">Lowest rating</option>
+        </select>
+    );
+}
+
+export default function ProfileLiterature({ profile, navigation, completedLiterature, activeGenre, activeRating, genres }) {
     return (
         <>
             <Head title={`${profile.name} Literature`} />
             <ProfileSubNavigation navigation={navigation} />
 
             <ProfileContentContainer className="py-7 lg:py-9" aria-labelledby="completed-literature-heading">
-                <ProfilePageHeading count={<GenreFilter genres={genres} activeGenre={activeGenre} />} />
+                <ProfilePageHeading count={<span className="inline-flex flex-wrap items-center gap-2"><GenreFilter genres={genres} activeGenre={activeGenre} /><RatingFilter activeRating={activeRating} /></span>} />
 
                 {completedLiterature.data.length === 0 ? (
                     <div className="mt-5 border-y border-dashed border-ink-950/20 px-5 py-10 text-center">

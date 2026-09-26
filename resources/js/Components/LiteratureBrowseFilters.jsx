@@ -23,15 +23,15 @@ function destinationUrl(baseUrl, filters, key, value) {
     return `${url.pathname}${url.search}`;
 }
 
-function BrowseSelect({ label, name, value = '', onChange, children }) {
+function BrowseSelect({ label, name, value = '', onChange, children, className = '', stretch = false }) {
     return (
-        <label className="relative shrink-0">
+        <label className={`relative shrink-0 ${className}`}>
             <span className="sr-only">{label}</span>
             <select
                 name={name}
                 value={value ?? ''}
                 onChange={(event) => onChange(event.target.value)}
-                className={compactSelect}
+                className={`${compactSelect} ${stretch ? 'w-full' : ''}`}
                 aria-label={label}
             >
                 {children}
@@ -40,7 +40,7 @@ function BrowseSelect({ label, name, value = '', onChange, children }) {
     );
 }
 
-export function LiteratureBrowseSearch({ browseUrl, filters = {} }) {
+export function LiteratureBrowseSearch({ browseUrl, filters = {}, fullWidth = false }) {
     const [query, setQuery] = useState(filters.q ?? '');
 
     useEffect(() => {
@@ -56,7 +56,7 @@ export function LiteratureBrowseSearch({ browseUrl, filters = {} }) {
     };
 
     return (
-        <form onSubmit={submit} className="flex h-10 w-full min-w-0 overflow-hidden rounded-full border border-ink-950/20 bg-white/50 focus-within:border-brand-coral sm:w-72 lg:w-80" role="search">
+        <form onSubmit={submit} className={`flex h-10 w-full min-w-0 overflow-hidden rounded-full border border-ink-950/20 bg-white/50 focus-within:border-brand-coral ${fullWidth ? '' : 'sm:w-72 lg:w-80'}`} role="search">
             <label htmlFor="global-literature-search" className="sr-only">Search local literature</label>
             <input
                 id="global-literature-search"
@@ -77,7 +77,7 @@ export function LiteratureBrowseSearch({ browseUrl, filters = {} }) {
     );
 }
 
-export default function LiteratureBrowseFilters({ browseUrl, filters = {}, options, includeSort = false }) {
+export default function LiteratureBrowseFilters({ browseUrl, filters = {}, options, includeSort = false, includeSearch = false }) {
     const navigate = (key, value) => {
         router.get(destinationUrl(browseUrl, filters, key, value), {}, {
             preserveScroll: true,
@@ -92,24 +92,29 @@ export default function LiteratureBrowseFilters({ browseUrl, filters = {}, optio
     }, {});
 
     return (
-        <div className="flex max-w-full flex-wrap items-center gap-1.5" data-literature-browse-filters>
-            <BrowseSelect label="Publication year" name="decade" value={filters.decade} onChange={(value) => navigate('decade', value)}>
+        <div className={includeSearch ? 'grid w-full min-w-0 grid-cols-2 gap-2 md:grid-cols-[minmax(110px,0.85fr)_minmax(140px,1fr)_minmax(200px,2fr)_minmax(140px,1fr)]' : 'flex max-w-full flex-wrap items-center gap-1.5'} data-literature-browse-filters>
+            {includeSearch && (
+                <div className="col-span-2 min-w-0 md:col-span-1 md:col-start-3 md:row-start-1">
+                    <LiteratureBrowseSearch browseUrl={browseUrl} filters={filters} fullWidth />
+                </div>
+            )}
+            <BrowseSelect label="Publication year" name="decade" value={filters.decade} onChange={(value) => navigate('decade', value)} stretch={includeSearch} className={includeSearch ? 'col-start-1 row-start-2 min-w-0 md:col-start-1 md:row-start-2' : ''}>
                 <option value="">All years</option>
                 {options.decades.map((decade) => <option key={decade.value} value={decade.value}>{decade.label}</option>)}
             </BrowseSelect>
 
-            <BrowseSelect label="Ratings" name="rating" value={filters.rating} onChange={(value) => navigate('rating', value)}>
+            <BrowseSelect label="Ratings" name="rating" value={filters.rating} onChange={(value) => navigate('rating', value)} stretch={includeSearch} className={includeSearch ? 'col-start-2 row-start-2 min-w-0 md:col-start-2 md:row-start-2' : ''}>
                 <option value="">All ratings</option>
                 {options.ratings.map((rating) => <option key={rating.value} value={rating.value}>{rating.label}</option>)}
             </BrowseSelect>
 
-            <BrowseSelect label="Genre" name="genre" value={filters.genre} onChange={(value) => navigate('genre', value)}>
+            <BrowseSelect label="Genre" name="genre" value={filters.genre} onChange={(value) => navigate('genre', value)} stretch={includeSearch} className={includeSearch ? 'col-start-1 row-start-3 min-w-0 md:col-start-3 md:row-start-2' : ''}>
                 <option value="">Any genre</option>
                 {options.genres.map((genre) => <option key={genre.slug} value={genre.slug}>{genre.name}</option>)}
             </BrowseSelect>
 
             {includeSort && (
-                <BrowseSelect label="Sort literature" name="sort" value={filters.sort ?? 'popularity'} onChange={(value) => navigate('sort', value)}>
+                <BrowseSelect label="Sort literature" name="sort" value={filters.sort ?? 'popularity'} onChange={(value) => navigate('sort', value)} stretch={includeSearch} className={includeSearch ? 'col-start-2 row-start-3 min-w-0 md:col-start-4 md:row-start-2' : ''}>
                     {Object.entries(sortsByGroup).map(([group, sorts]) => (
                         <optgroup key={group} label={group}>
                             {sorts.map((sort) => <option key={sort.value} value={sort.value}>{sort.label}</option>)}

@@ -223,6 +223,67 @@ class ProfileLiteraturePageTest extends TestCase
         );
     }
 
+    public function test_completed_literature_can_be_sorted_by_the_readers_rating_with_unrated_titles_last(): void
+    {
+        $user = User::factory()->create();
+        $otherReader = User::factory()->create();
+        $high = Literature::factory()->create(['title' => 'High Rated']);
+        $middle = Literature::factory()->create(['title' => 'Middle Rated']);
+        $low = Literature::factory()->create(['title' => 'Low Rated']);
+        $unrated = Literature::factory()->create(['title' => 'Unrated']);
+
+        foreach ([$high, $middle, $low, $unrated] as $literature) {
+            ReadingList::factory()->for($user)->for($literature)->create([
+                'status' => 'completed',
+                'completed_at' => now(),
+            ]);
+        }
+
+        Review::factory()->for($user)->for($high)->create(['rating' => 5]);
+        Review::factory()->for($user)->for($middle)->create(['rating' => 3.5]);
+        Review::factory()->for($user)->for($low)->create(['rating' => 1]);
+        Review::factory()->for($otherReader)->for($unrated)->create(['rating' => 5]);
+
+        $highest = $this->get(route('profiles.literature', ['user' => $user, 'rating' => 'highest']));
+        $lowest = $this->get(route('profiles.literature', ['user' => $user, 'rating' => 'lowest']));
+
+        $this->assertSame('highest', $highest->inertiaProps('activeRating'));
+        $this->assertSame(
+            ['High Rated', 'Middle Rated', 'Low Rated', 'Unrated'],
+            collect($highest->inertiaProps('completedLiterature.data'))->pluck('literature.title')->all(),
+        );
+        $this->assertSame('lowest', $lowest->inertiaProps('activeRating'));
+        $this->assertSame(
+            ['Low Rated', 'Middle Rated', 'High Rated', 'Unrated'],
+            collect($lowest->inertiaProps('completedLiterature.data'))->pluck('literature.title')->all(),
+        );
+    }
+
+    public function test_rating_sort_preserves_genre_and_pagination_state(): void
+    {
+        $user = User::factory()->create();
+        $genre = Category::factory()->create(['name' => 'Fantasy', 'slug' => 'fantasy']);
+
+        Literature::factory()->count(49)->create()->each(function (Literature $literature) use ($genre, $user): void {
+            $literature->categories()->attach($genre);
+            ReadingList::factory()->for($user)->for($literature)->create([
+                'status' => 'completed',
+                'completed_at' => now(),
+            ]);
+        });
+
+        $response = $this->get(route('profiles.literature', [
+            'user' => $user,
+            'genre' => 'fantasy',
+            'rating' => 'highest',
+        ]));
+
+        $this->assertSame(49, $response->inertiaProps('completedLiterature.total'));
+        $this->assertSame('highest', $response->inertiaProps('activeRating'));
+        $this->assertStringContainsString('genre=fantasy', $response->inertiaProps('completedLiterature.next_page_url'));
+        $this->assertStringContainsString('rating=highest', $response->inertiaProps('completedLiterature.next_page_url'));
+    }
+
     public function test_literature_detail_genre_link_targets_global_literature_browse(): void
     {
         $viewer = User::factory()->create(['username' => 'axel']);

@@ -1,7 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 
 import CatalogPagination from '../../Components/CatalogPagination';
-import LiteratureBrowseFilters, { LiteratureBrowseSearch } from '../../Components/LiteratureBrowseFilters';
+import LiteratureBrowseFilters from '../../Components/LiteratureBrowseFilters';
 import LiteratureCard from '../../Components/LiteratureCard';
 import SiteContainer from '../../Components/SiteContainer';
 
@@ -15,9 +15,8 @@ export default function LiteratureBrowse({ literatures, filters, options, routes
                     <h1 id="browse-literature-title">
                         <Link href={routes.index} className="text-sm font-bold uppercase tracking-[0.2em] text-brand-coral transition hover:text-ink-950">Literature</Link>
                     </h1>
-                    <div className="flex max-w-full flex-wrap items-center gap-2">
-                        <LiteratureBrowseSearch browseUrl={routes.browse} filters={filters} />
-                        <LiteratureBrowseFilters browseUrl={routes.browse} filters={filters} options={options} includeSort />
+                    <div className="w-full min-w-0 lg:flex-1">
+                        <LiteratureBrowseFilters browseUrl={routes.browse} filters={filters} options={options} includeSort includeSearch />
                     </div>
                 </div>
 
