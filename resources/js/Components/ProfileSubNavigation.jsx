@@ -4,8 +4,8 @@ export default function ProfileSubNavigation({ navigation }) {
     return (
         <section className="catalog-grid border-b border-ink-950/10" data-profile-subnav-shell>
             <ProfileContentContainer as="div" className="py-5" data-profile-subnav-container>
-                <nav className="flex min-h-16 flex-col border border-ink-950/10 bg-brand-cream/80 sm:h-16 sm:flex-row sm:items-center" aria-label="Profile navigation" data-profile-subnav>
-                    <a href={navigation.user.url} className="flex h-16 shrink-0 items-center gap-3 border-b border-ink-950/10 px-4 text-ink-950 sm:w-56 sm:border-b-0 sm:border-r">
+                <nav className="flex min-h-16 flex-col overflow-hidden rounded-xl border border-ink-950/10 bg-brand-cream/80 sm:h-16 sm:flex-row sm:items-center" aria-label="Profile navigation" data-profile-subnav>
+                    <a href={navigation.user.url} className="flex h-16 shrink-0 items-center gap-3 px-4 text-ink-950 sm:w-56">
                         <span className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full bg-ink-950 font-serif text-sm font-bold text-brand-cream">
                             {navigation.user.avatar_url ? <img src={navigation.user.avatar_url} alt="" className="size-full object-cover" /> : navigation.user.initials}
                         </span>
