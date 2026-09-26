@@ -109,6 +109,7 @@ class HomeController extends Controller
                 ->all(),
             'viewer' => $viewer === null ? null : [
                 'name' => $viewer->name,
+                'profile_url' => route('profiles.show', $viewer),
             ],
             'routes' => [
                 'catalog' => route('literatures.index'),

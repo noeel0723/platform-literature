@@ -78,7 +78,7 @@ export default function HomeIndex({ activities, popularLiteratures, recommendati
                 <SiteContainer className="py-7 sm:py-9">
                     <header className="border-b border-ink-950/15 pb-5">
                         <h1 className="text-center text-lg font-medium tracking-tight text-ink-950 sm:text-xl">
-                            {viewer ? <>Welcome back, <span className="font-bold">{viewer.name}</span>. Here is what your friends have been reading...</> : 'Welcome to Literahaven.'}
+                            Welcome back, <Link href={viewer.profile_url} className="font-bold underline decoration-transparent underline-offset-4 transition hover:text-brand-coral hover:decoration-current focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-coral">{viewer.name}</Link>. Here is what your friends have been reading...
                         </h1>
                         {!viewer && (
                             <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-950/60">

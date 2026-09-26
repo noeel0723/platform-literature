@@ -144,6 +144,7 @@ class HomeLandingTest extends TestCase
         $this->actingAs($viewer)->get(route('home'))
             ->assertInertia(fn (Assert $page) => $page
                 ->where('viewer.name', $viewer->name)
+                ->where('viewer.profile_url', route('profiles.show', $viewer))
                 ->where('activities.0.literature.title', 'Friend Home Activity')
                 ->where('guestHero', null)
                 ->has('popularThisWeek', 0));
