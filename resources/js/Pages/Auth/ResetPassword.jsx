@@ -14,6 +14,7 @@ export default function ResetPassword({ token, email, routes }) {
         event.preventDefault();
         form.post(routes.update, {
             preserveScroll: true,
+            onSuccess: (page) => window.location.assign(page.url),
             onFinish: () => form.reset('password', 'password_confirmation'),
         });
     };
@@ -49,7 +50,7 @@ export default function ResetPassword({ token, email, routes }) {
                             </button>
                         </form>
 
-                        <a href={routes.login} className="mt-5 inline-block text-sm font-semibold text-ink-950/65 underline decoration-brand-coral underline-offset-4 hover:text-ink-950">Back to sign in</a>
+                        <a href={routes.home_login} className="mt-5 inline-block text-sm font-semibold text-ink-950/65 underline decoration-brand-coral underline-offset-4 hover:text-ink-950">Back to sign in</a>
                     </div>
                 </SiteContainer>
             </section>

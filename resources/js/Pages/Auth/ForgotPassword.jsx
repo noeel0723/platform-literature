@@ -45,7 +45,7 @@ export default function ForgotPassword({ status, uses_log_mailer: usesLogMailer,
                             </button>
                         </form>
 
-                        <a href={routes.login} className="mt-5 inline-block text-sm font-semibold text-ink-950/65 underline decoration-brand-coral underline-offset-4 hover:text-ink-950">Back to sign in</a>
+                        <a href={routes.home_login} className="mt-5 inline-block text-sm font-semibold text-ink-950/65 underline decoration-brand-coral underline-offset-4 hover:text-ink-950">Back to sign in</a>
                     </div>
                 </SiteContainer>
             </section>

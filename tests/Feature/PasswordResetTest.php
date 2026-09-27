@@ -28,6 +28,7 @@ class PasswordResetTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Auth/ForgotPassword')
                 ->where('routes.email', route('password.email'))
+                ->where('routes.home_login', route('home', ['login' => 1]))
                 ->where('uses_log_mailer', true));
 
         $this->get(route('password.reset', ['token' => 'example-token', 'email' => 'reader@example.com']))
@@ -35,7 +36,8 @@ class PasswordResetTest extends TestCase
                 ->component('Auth/ResetPassword')
                 ->where('token', 'example-token')
                 ->where('email', 'reader@example.com')
-                ->where('routes.update', route('password.update')));
+                ->where('routes.update', route('password.update'))
+                ->where('routes.home_login', route('home', ['login' => 1])));
     }
 
     public function test_existing_account_receives_a_tokenized_reset_notification(): void
@@ -90,8 +92,8 @@ class PasswordResetTest extends TestCase
             'email' => $user->email,
             'password' => 'new-password123',
             'password_confirmation' => 'new-password123',
-        ])->assertRedirect(route('login'))
-            ->assertSessionHas('success', 'Your password has been reset. You can sign in now.');
+        ])->assertRedirect(route('home', ['login' => 1]))
+            ->assertSessionMissing('success');
 
         $this->assertTrue(Hash::check('new-password123', $user->fresh()->password));
         $this->assertNotSame('original-remember-token', $user->fresh()->getRememberToken());

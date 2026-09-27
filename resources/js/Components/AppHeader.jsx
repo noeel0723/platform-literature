@@ -143,7 +143,7 @@ function AccountMenu({ user, csrfToken }) {
 
 export default function AppHeader({ routes, user, csrf_token: csrfToken, search_query: searchQuery, is_guest_landing: isGuestLanding = false }) {
     const [mobileOpen, setMobileOpen] = useState(false);
-    const [loginOpen, setLoginOpen] = useState(false);
+    const [loginOpen, setLoginOpen] = useState(() => !user && new URLSearchParams(window.location.search).get('login') === '1');
     const [quickLogOpen, setQuickLogOpen] = useState(false);
     const [currentPath, setCurrentPath] = useState(window.location.pathname);
     const openQuickLog = () => setQuickLogOpen(true);

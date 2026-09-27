@@ -24,7 +24,7 @@ class PasswordResetController extends Controller
             'uses_log_mailer' => config('mail.default') === 'log',
             'routes' => [
                 'email' => route('password.email'),
-                'login' => route('login'),
+                'home_login' => route('home', ['login' => 1]),
             ],
         ]);
     }
@@ -47,7 +47,7 @@ class PasswordResetController extends Controller
             'email' => is_string($request->query('email')) ? $request->query('email') : '',
             'routes' => [
                 'update' => route('password.update'),
-                'login' => route('login'),
+                'home_login' => route('home', ['login' => 1]),
             ],
         ]);
     }
@@ -74,7 +74,6 @@ class PasswordResetController extends Controller
             return back()->withErrors(['email' => 'This password reset link is invalid or expired.']);
         }
 
-        return redirect()->route('login')
-            ->with('success', 'Your password has been reset. You can sign in now.');
+        return redirect()->route('home', ['login' => 1]);
     }
 }

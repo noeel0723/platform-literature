@@ -76,8 +76,17 @@ class AuthenticationTest extends TestCase
 
         $this->assertAuthenticatedAs($user);
 
-        $this->post('/logout')->assertRedirect(route('home'));
+        $this->post('/logout')
+            ->assertRedirect(route('home'))
+            ->assertSessionMissing('success');
         $this->assertGuest();
+    }
+
+    public function test_app_shell_does_not_render_global_success_banners(): void
+    {
+        $this->withSession(['success' => 'Operation completed.'])
+            ->get(route('home'))
+            ->assertDontSeeText('Operation completed.');
     }
 
     public function test_user_can_login_with_their_username(): void

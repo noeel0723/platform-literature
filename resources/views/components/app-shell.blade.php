@@ -62,9 +62,6 @@
     <div data-react-header></div>
 
     <main id="main-content">
-        @if (session('success'))
-            <div class="border-b border-brand-blueberry/10 bg-brand-blueberry px-5 py-3 text-center text-sm font-semibold text-brand-plate" role="status">{{ session('success') }}</div>
-        @endif
         @error('report')
             <div class="border-b border-red-800/20 bg-red-50 px-5 py-3 text-center text-sm font-semibold text-red-800" role="alert">{{ $message }}</div>
         @enderror
