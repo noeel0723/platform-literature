@@ -86,7 +86,7 @@ export default function CatalogIndex({
                         </nav>
                     </div>
 
-                    <form onSubmit={submitSearch} role="search" className="flex h-10 w-full overflow-hidden rounded-full border border-ink-950/20 bg-white/50 sm:w-72 lg:w-80">
+                    <form onSubmit={submitSearch} role="search" className="flex h-8 w-full min-w-0 overflow-hidden rounded-md border border-ink-950/20 bg-white/50 focus-within:border-brand-coral sm:w-64 lg:w-72">
                         <label htmlFor="catalog-page-search" className="sr-only">Find literature</label>
                         <input
                             id="catalog-page-search"
@@ -94,9 +94,9 @@ export default function CatalogIndex({
                             value={search}
                             onChange={(event) => setSearch(event.target.value)}
                             placeholder="Find literature..."
-                            className="min-w-0 flex-1 bg-transparent px-4 text-sm text-ink-950 outline-none placeholder:text-ink-950/40 focus:bg-white/50"
+                            className="min-w-0 flex-1 bg-transparent px-3 text-xs text-ink-950 outline-none placeholder:text-ink-950/40 focus:bg-white/50"
                         />
-                        <button type="submit" className="grid size-10 shrink-0 place-items-center bg-ink-950 text-brand-cream transition hover:bg-brand-coral hover:text-brand-cream" aria-label="Search catalog">
+                        <button type="submit" className="grid size-8 shrink-0 place-items-center bg-ink-950 text-brand-cream transition hover:bg-brand-coral hover:text-brand-cream" aria-label="Search catalog">
                             <SearchIcon />
                         </button>
                     </form>
