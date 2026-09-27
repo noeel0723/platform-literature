@@ -16,7 +16,6 @@ export default function LiteratureIndex({ popularLiteratures, options, routes })
                         <LiteratureBrowseFilters browseUrl={routes.browse} options={options} compact />
                     </div>
                     <div className="flex w-full min-w-0 items-center gap-2 lg:ml-auto lg:w-auto">
-                        <span className="hidden shrink-0 text-[0.65rem] font-bold uppercase tracking-[0.14em] text-ink-950/50 sm:inline">Find literature</span>
                         <LiteratureBrowseSearch browseUrl={routes.browse} compact />
                     </div>
                 </SiteContainer>
