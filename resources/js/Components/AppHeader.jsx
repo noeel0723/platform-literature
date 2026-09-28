@@ -146,6 +146,7 @@ export default function AppHeader({ routes, user, csrf_token: csrfToken, search_
     const [loginOpen, setLoginOpen] = useState(() => !user && new URLSearchParams(window.location.search).get('login') === '1');
     const [quickLogOpen, setQuickLogOpen] = useState(false);
     const [currentPath, setCurrentPath] = useState(window.location.pathname);
+    const [guestLanding, setGuestLanding] = useState(isGuestLanding);
     const openQuickLog = () => setQuickLogOpen(true);
     const matchesRoute = (url) => {
         const path = new URL(url, window.location.origin).pathname.replace(/\/$/, '') || '/';
@@ -162,7 +163,11 @@ export default function AppHeader({ routes, user, csrf_token: csrfToken, search_
     };
 
     useEffect(() => {
-        const syncPath = () => setCurrentPath(window.location.pathname);
+        const syncPath = () => {
+            const path = window.location.pathname;
+            setCurrentPath(path);
+            setGuestLanding(!user && path === new URL(routes.home, window.location.origin).pathname);
+        };
         document.addEventListener('inertia:navigate', syncPath);
         window.addEventListener('popstate', syncPath);
 
@@ -170,7 +175,7 @@ export default function AppHeader({ routes, user, csrf_token: csrfToken, search_
             document.removeEventListener('inertia:navigate', syncPath);
             window.removeEventListener('popstate', syncPath);
         };
-    }, []);
+    }, [routes.home, user]);
 
     useEffect(() => {
         const openLoginPanel = () => {
@@ -183,7 +188,7 @@ export default function AppHeader({ routes, user, csrf_token: csrfToken, search_
         return () => window.removeEventListener(OPEN_LOGIN_PANEL_EVENT, openLoginPanel);
     }, []);
 
-    const headerClassName = isGuestLanding
+    const headerClassName = guestLanding
         ? 'absolute inset-x-0 top-0 z-40 bg-transparent text-brand-plate'
         : 'sticky top-0 z-40 border-b border-brand-blueberry/15 bg-brand-stem/95 text-brand-plate backdrop-blur-xl';
 

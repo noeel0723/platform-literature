@@ -45,8 +45,8 @@ export default function LoginPanel({ routes, csrfToken, onClose, embedded = fals
 
     const formContent = (
         <div ref={panelRef} role="dialog" aria-modal="false" aria-label="Sign in to Literahaven" className={inline ? 'min-w-0 flex-1 border-y border-white/8 bg-[#172333] px-3 py-2.5 lg:border-0 lg:bg-transparent lg:p-0' : `w-full border-y border-white/8 bg-[#172333] px-3 py-2.5 md:w-fit md:max-w-[820px] ${embedded ? '' : 'shadow-[0_8px_18px_rgba(7,17,32,0.18)]'}`}>
-            <form onSubmit={submit} className={inline ? 'relative grid min-w-0 gap-2 lg:grid-cols-[2rem_minmax(140px,1fr)_minmax(140px,1fr)_auto_auto] lg:items-end' : 'relative grid gap-2 md:grid-cols-[2rem_240px_220px_auto_auto] md:items-end'}>
-                <button type="button" onClick={onClose} className={inline ? 'absolute right-0 top-0 grid size-8 place-items-center text-xl text-brand-plate/55 transition hover:bg-white/8 hover:text-white lg:static lg:mb-0.5' : 'absolute right-0 top-0 grid size-8 place-items-center text-xl text-brand-plate/55 transition hover:bg-white/8 hover:text-white md:static md:mb-0.5'} aria-label="Close sign in panel">×</button>
+            <form onSubmit={submit} className={inline ? 'relative grid min-w-0 gap-2 lg:grid-cols-[2rem_minmax(140px,1fr)_minmax(140px,1fr)_auto_auto] lg:items-start' : 'relative grid gap-2 md:grid-cols-[2rem_240px_220px_auto_auto] md:items-start'}>
+                <button type="button" onClick={onClose} className={inline ? 'absolute right-0 top-0 grid size-8 place-items-center text-xl text-brand-plate/55 transition hover:bg-white/8 hover:text-white lg:static lg:mt-4' : 'absolute right-0 top-0 grid size-8 place-items-center text-xl text-brand-plate/55 transition hover:bg-white/8 hover:text-white md:static md:mt-4'} aria-label="Close sign in panel">×</button>
 
                 <div className={`min-w-0 ${inline ? '' : 'pr-10 md:pr-0'}`}>
                     <label htmlFor={`${embedded ? 'page' : 'header'}-login-identifier`} className="block text-[0.64rem] font-semibold uppercase tracking-[0.12em] text-brand-plate/60">Username/Email</label>
@@ -63,12 +63,12 @@ export default function LoginPanel({ routes, csrfToken, onClose, embedded = fals
                     <FieldError message={form.errors.password} />
                 </div>
 
-                <label className="mb-1.5 flex min-h-8 items-center gap-2 whitespace-nowrap text-xs text-brand-plate/65">
+                <label className={`flex min-h-8 items-center gap-2 whitespace-nowrap text-xs text-brand-plate/65 ${inline ? 'lg:mt-5' : 'md:mt-5'}`}>
                     <input type="checkbox" checked={form.data.remember} onChange={(event) => form.setData('remember', event.target.checked)} className="size-4 accent-[#00c030]" />
                     Remember me
                 </label>
 
-                <button type="submit" disabled={form.processing} className="h-9 rounded-sm bg-[#00c030] px-4 text-[0.7rem] font-extrabold uppercase tracking-[0.08em] text-white transition-colors hover:bg-[#00a628] disabled:cursor-wait disabled:opacity-55">
+                <button type="submit" disabled={form.processing} className={`h-9 rounded-sm bg-[#00c030] px-4 text-[0.7rem] font-extrabold uppercase tracking-[0.08em] text-white transition-colors hover:bg-[#00a628] disabled:cursor-wait disabled:opacity-55 ${inline ? 'lg:mt-5' : 'md:mt-5'}`}>
                     {form.processing ? 'Signing in…' : 'Sign in'}
                 </button>
             </form>
