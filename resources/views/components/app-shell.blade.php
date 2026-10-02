@@ -6,6 +6,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Discover novels, comics, manga, and manhwa in one social catalog.">
+    <link rel="icon" type="image/png" href="{{ asset('literahaven-logo.png') }}">
     <title>{{ $title ? $title.' - ' : '' }}{{ config('app.name') }}</title>
     @fonts
     @if ($inertia)
@@ -22,6 +23,7 @@
     @php
         $headerUser = auth()->user();
         $headerProps = [
+            'logo_url' => asset('literahaven-logo.png'),
             'csrf_token' => csrf_token(),
             'is_guest_landing' => request()->routeIs('home') && ! $headerUser,
             'search_query' => request()->routeIs('search.index') ? request('q') : '',
@@ -73,12 +75,7 @@
             <div class="flex flex-col gap-7 md:flex-row md:items-start md:justify-between">
                 <div>
                     <a href="{{ route('home') }}" class="inline-flex items-center gap-2.5 font-bold text-brand-cream transition hover:text-white" aria-label="Literahaven - Home">
-                        <span class="grid grid-cols-2 gap-0.5" aria-hidden="true">
-                            <span class="size-2.5 rounded-full bg-brand-plate"></span>
-                            <span class="size-2.5 rounded-full bg-brand-sky"></span>
-                            <span class="size-2.5 rounded-full bg-brand-coral"></span>
-                            <span class="size-2.5 rounded-full bg-brand-sun"></span>
-                        </span>
+                        <img src="{{ asset('literahaven-logo.png') }}" alt="" width="1254" height="1254" class="size-10 shrink-0 object-contain">
                         <span class="text-xl font-black tracking-[-0.04em]">Literahaven</span>
                     </a>
                     <p class="mt-2 max-w-xs text-sm leading-5 text-brand-cream/55">Activity Feed &amp; Social Literature Discovery.</p>

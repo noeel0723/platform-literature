@@ -5,15 +5,10 @@ import LoginPanel from './LoginPanel';
 import QuickLogDialog from './QuickLogDialog';
 import SiteContainer from './SiteContainer';
 
-function BrandMark({ href }) {
+function BrandMark({ href, logoUrl }) {
     return (
         <a href={href} className="group flex items-center gap-2.5" aria-label="Literahaven - Home">
-            <span className="grid grid-cols-2 gap-0.5" aria-hidden="true">
-                <span className="size-4 rounded-full bg-brand-plate" />
-                <span className="size-4 rounded-full bg-brand-sky" />
-                <span className="size-4 rounded-full bg-brand-coral" />
-                <span className="size-4 rounded-full bg-brand-sun" />
-            </span>
+            <img src={logoUrl} alt="" width="1254" height="1254" className="size-10 shrink-0 object-contain sm:size-12" />
             <span className="block text-2xl font-black leading-none tracking-[-0.04em] text-brand-plate sm:text-3xl">Literahaven</span>
         </a>
     );
@@ -141,7 +136,7 @@ function AccountMenu({ user, csrfToken }) {
     );
 }
 
-export default function AppHeader({ routes, user, csrf_token: csrfToken, search_query: searchQuery, is_guest_landing: isGuestLanding = false }) {
+export default function AppHeader({ routes, user, logo_url: logoUrl, csrf_token: csrfToken, search_query: searchQuery, is_guest_landing: isGuestLanding = false }) {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [loginOpen, setLoginOpen] = useState(() => !user && new URLSearchParams(window.location.search).get('login') === '1');
     const [quickLogOpen, setQuickLogOpen] = useState(false);
@@ -196,7 +191,7 @@ export default function AppHeader({ routes, user, csrf_token: csrfToken, search_
         <header data-app-header className={headerClassName}>
             <SiteContainer>
                 <div className={`relative flex min-w-0 items-center gap-3 lg:gap-5 ${!user && loginOpen ? 'flex-wrap lg:min-h-20 lg:flex-nowrap' : 'h-18'}`}>
-                    <div className={`shrink-0 ${!user && loginOpen ? 'flex h-18 items-center lg:h-auto' : ''}`}><BrandMark href={routes.home} /></div>
+                    <div className={`shrink-0 ${!user && loginOpen ? 'flex h-18 items-center lg:h-auto' : ''}`}><BrandMark href={routes.home} logoUrl={logoUrl} /></div>
                     {!user && loginOpen ? (
                         <div className="order-last w-full pb-2 lg:order-none lg:ml-auto lg:min-w-0 lg:flex-1 lg:pb-0">
                             <LoginPanel routes={routes} csrfToken={csrfToken} onClose={() => setLoginOpen(false)} inline />
