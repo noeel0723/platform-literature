@@ -72,24 +72,7 @@
 
     <footer class="border-t-2 border-brand-coral/60 bg-ink-950 text-brand-cream">
         <div class="mx-auto max-w-7xl px-5 py-10 sm:px-8 lg:px-10 lg:py-12">
-            <div class="flex flex-col gap-7 md:flex-row md:items-start md:justify-between">
-                <div>
-                    <a href="{{ route('home') }}" class="inline-flex items-center gap-2.5 font-bold text-brand-cream transition hover:text-white" aria-label="Literahaven - Home">
-                        <img src="{{ asset('literahaven-logo.png') }}" alt="" width="1254" height="1254" class="size-10 shrink-0 object-contain">
-                        <span class="text-xl font-black tracking-[-0.04em]">Literahaven</span>
-                    </a>
-                    <p class="mt-2 max-w-xs text-sm leading-5 text-brand-cream/55">Activity Feed &amp; Social Literature Discovery.</p>
-                </div>
-                <nav class="flex flex-wrap gap-x-5 gap-y-3 text-xs font-semibold uppercase tracking-[0.12em] text-brand-cream/65 md:justify-end" aria-label="Footer navigation">
-                    <a href="{{ route('home') }}" class="transition hover:text-brand-cream">Home</a>
-                    <a href="{{ route('literature.index') }}" class="transition hover:text-brand-cream">Literature</a>
-                    <a href="{{ route('literatures.index') }}" class="transition hover:text-brand-cream">Catalog</a>
-                    @auth
-                        <a href="{{ route('profiles.lists', $headerUser) }}" class="transition hover:text-brand-cream">Lists</a>
-                    @endauth
-                </nav>
-            </div>
-            <section class="mt-7 border-t border-brand-cream/15 pt-5" aria-labelledby="footer-data-sources-heading">
+            <section aria-labelledby="footer-data-sources-heading">
                 <h2 id="footer-data-sources-heading" class="text-[0.65rem] font-bold uppercase tracking-[0.16em] text-brand-coral">Data sources</h2>
                 <p class="mt-1.5 text-xs leading-5 text-brand-cream/55">Literature information and supporting metadata are brought together from these services.</p>
                 @php
