@@ -89,7 +89,44 @@
                     @endauth
                 </nav>
             </div>
-            <div class="mt-8 border-t border-brand-cream/15 pt-5 text-xs text-brand-cream/45">
+            <section class="mt-7 border-t border-brand-cream/15 pt-5" aria-labelledby="footer-data-sources-heading">
+                <h2 id="footer-data-sources-heading" class="text-[0.65rem] font-bold uppercase tracking-[0.16em] text-brand-coral">Data sources</h2>
+                <p class="mt-1.5 text-xs leading-5 text-brand-cream/55">Literature information and supporting metadata are brought together from these services.</p>
+                @php
+                    $footerSources = [
+                        'Literature catalog' => [
+                            'Hardcover' => 'https://hardcover.app/',
+                            'Google Books' => 'https://books.google.com/',
+                            'AniList' => 'https://anilist.co/',
+                            'Kitsu' => 'https://kitsu.io/',
+                            'Comic Vine' => 'https://comicvine.gamespot.com/',
+                        ],
+                        'Supporting metadata' => [
+                            'MangaUpdates' => 'https://www.mangaupdates.com/',
+                            'Wikidata' => 'https://www.wikidata.org/',
+                            'Wikipedia' => 'https://www.wikipedia.org/',
+                            'Google Knowledge Graph' => 'https://developers.google.com/knowledge-graph',
+                        ],
+                    ];
+                @endphp
+                <div class="mt-4 grid gap-5 md:grid-cols-2 md:gap-8">
+                    @foreach ($footerSources as $category => $sources)
+                        <div class="min-w-0">
+                            <h3 class="text-[0.6rem] font-semibold uppercase tracking-[0.12em] text-brand-cream/50">{{ $category }}</h3>
+                            <ul class="mt-2 flex flex-wrap gap-x-4 gap-y-2 text-xs font-medium text-brand-cream/75">
+                                @foreach ($sources as $name => $url)
+                                    <li>
+                                        <a href="{{ $url }}" target="_blank" rel="noopener noreferrer" class="rounded-sm transition hover:text-brand-sky focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-sky">
+                                            {{ $name }}<span class="sr-only"> (opens in a new tab)</span>
+                                        </a>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endforeach
+                </div>
+            </section>
+            <div class="mt-6 border-t border-brand-cream/15 pt-4 text-xs text-brand-cream/45">
                 <p>&copy; {{ now()->year }} Literahaven. All rights reserved.</p>
             </div>
         </div>
