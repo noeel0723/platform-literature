@@ -111,7 +111,7 @@ export default function LiteratureBrowseFilters({ browseUrl, filters = {}, optio
             </BrowseSelect>
 
             {includeSort && (
-                <BrowseSelect label="Sort literature" name="sort" value={filters.sort ?? 'popularity'} onChange={(value) => navigate('sort', value)} stretch={includeSearch}>
+                <BrowseSelect label="Sort literature" name="sort" value={filters.sort ?? 'popularity'} onChange={(value) => navigate('sort', value)} stretch={includeSearch} compactWidth={compact ? 'w-36' : ''}>
                     {Object.entries(sortsByGroup).map(([group, sorts]) => (
                         <optgroup key={group} label={group}>
                             {sorts.map((sort) => <option key={sort.value} value={sort.value}>{sort.label}</option>)}
