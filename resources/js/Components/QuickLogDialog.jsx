@@ -13,7 +13,7 @@ export default function QuickLogDialog({ open, onClose, searchUrl }) {
     const searchRef = useRef(null);
     const [query, setQuery] = useState('');
     const [results, setResults] = useState([]);
-    const [status, setStatus] = useState('Loading recent literature...');
+    const [status, setStatus] = useState('');
     const [selected, setSelected] = useState(null);
     const form = useForm({
         rating: '',
@@ -28,6 +28,8 @@ export default function QuickLogDialog({ open, onClose, searchUrl }) {
 
         if (open && !dialog.open) {
             setQuery('');
+            setResults([]);
+            setStatus('');
             setSelected(null);
             form.clearErrors();
             dialog.showModal();
@@ -43,13 +45,20 @@ export default function QuickLogDialog({ open, onClose, searchUrl }) {
     useEffect(() => {
         if (!open || selected) return;
 
+        const searchQuery = query.trim();
+        setResults([]);
+
+        if (!searchQuery) {
+            setStatus('');
+            return;
+        }
+
+        setStatus('Searching literature...');
         const request = new AbortController();
         const timer = window.setTimeout(async () => {
-            setStatus(query.trim() ? 'Searching literature...' : 'Loading recent literature...');
-
             try {
                 const url = new URL(searchUrl, window.location.origin);
-                if (query.trim()) url.searchParams.set('q', query.trim());
+                url.searchParams.set('q', searchQuery);
 
                 const response = await fetch(url, {
                     headers: { Accept: 'application/json' },
@@ -58,16 +67,18 @@ export default function QuickLogDialog({ open, onClose, searchUrl }) {
                 if (!response.ok) throw new Error('Quick log search failed.');
 
                 const payload = await response.json();
+                if (request.signal.aborted) return;
+
                 const items = Array.isArray(payload.data) ? payload.data : [];
                 setResults(items);
                 setStatus(items.length ? '' : 'No literature matched your search.');
             } catch (error) {
-                if (error.name !== 'AbortError') {
+                if (!request.signal.aborted && error.name !== 'AbortError') {
                     setResults([]);
                     setStatus('Search is temporarily unavailable. Please try again.');
                 }
             }
-        }, query.trim() ? 250 : 0);
+        }, 250);
 
         return () => {
             window.clearTimeout(timer);
@@ -111,35 +122,35 @@ export default function QuickLogDialog({ open, onClose, searchUrl }) {
                 <div className="flex items-center gap-3">
                     {selected && <button type="button" onClick={() => setSelected(null)} className="rounded-sm border border-brand-blueberry/20 px-2.5 py-1.5 text-xs font-bold text-brand-blueberry transition hover:border-brand-coral hover:text-brand-coral">← Back</button>}
                     <div>
-                        <p className="text-[0.65rem] font-bold uppercase tracking-[0.16em] text-brand-coral">Quick log</p>
-                        <h2 id="quick-log-title" className="mt-0.5 text-xl font-extrabold tracking-tight text-brand-berry sm:text-2xl">{selected ? 'I read…' : 'Choose a literature'}</h2>
+                        {selected && <p className="text-[0.65rem] font-bold uppercase tracking-[0.16em] text-brand-coral">Quick log</p>}
+                        <h2 id="quick-log-title" className={`text-xl font-extrabold tracking-tight ${selected ? 'mt-0.5 text-brand-berry sm:text-2xl' : 'text-brand-blueberry'}`}>{selected ? 'I read…' : 'Add to your literature…'}</h2>
                     </div>
                 </div>
                 <button type="button" onClick={onClose} className="grid size-9 place-items-center rounded-sm text-xl text-brand-blueberry transition hover:bg-brand-sky/20 hover:text-brand-coral" aria-label="Close quick log">×</button>
             </header>
 
             {!selected ? (
-                <div className="p-5 sm:p-6">
-                    <label htmlFor="quick-log-search" className="text-xs font-bold uppercase tracking-[0.14em] text-ink-950/55">Search your catalog</label>
-                    <div className="mt-2 flex items-center gap-3 rounded-lg border border-ink-950/15 bg-white/75 px-4 focus-within:border-brand-berry focus-within:ring-3 focus-within:ring-brand-sky/20">
-                        <svg aria-hidden="true" className="size-4 shrink-0 text-ink-950/45" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg>
-                        <input ref={searchRef} id="quick-log-search" type="search" autoComplete="off" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by title or author..." className="h-12 min-w-0 flex-1 border-0 bg-transparent text-sm outline-none" />
-                    </div>
-                    <p className="mt-3 text-xs text-ink-950/45">Select a result to add or update your rating and review.</p>
-                    <div className="mt-4 max-h-[24rem] overflow-y-auto rounded-lg border border-ink-950/10" aria-live="polite">
-                        {status ? <p className="px-4 py-8 text-center text-sm text-ink-950/50">{status}</p> : results.map((literature) => (
-                            <button key={literature.id} type="button" onClick={() => chooseLiterature(literature)} className="quick-log-result">
-                                <span className="quick-log-result-cover">
-                                    {literature.cover_url ? <img src={literature.cover_url} alt="" loading="lazy" className="size-full object-cover" /> : literature.title.slice(0, 2).toUpperCase()}
-                                </span>
-                                <span className="min-w-0 flex-1 text-left">
-                                    <span className="block truncate font-serif text-base font-bold text-ink-950">{literature.title}</span>
-                                    <span className="mt-0.5 block truncate text-xs text-ink-950/50">{literature.authors?.length ? literature.authors.join(' & ') : 'Author unavailable'}</span>
-                                    <span className="mt-1 block text-[0.65rem] font-bold uppercase tracking-[0.12em] text-ink-950/40">{[literature.type, literature.year].filter(Boolean).join(' · ')}</span>
-                                </span>
-                                <span className="shrink-0 text-xs font-bold uppercase tracking-wider text-brand-stem">{literature.review ? 'Edit' : 'Log'}</span>
-                            </button>
-                        ))}
+                <div className="px-5 py-8 sm:px-8 sm:py-10">
+                    <div className="mx-auto max-w-lg">
+                        <label htmlFor="quick-log-search" className="sr-only">Search literature by title or author</label>
+                        <input ref={searchRef} id="quick-log-search" type="search" autoComplete="off" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search for literature..." className="h-10 w-full min-w-0 rounded-md border border-ink-950/20 bg-white px-3.5 text-sm text-ink-950 shadow-sm outline-none placeholder:text-ink-950/45 focus:border-brand-coral focus:ring-2 focus:ring-brand-coral/15" />
+                        {query.trim() && (
+                            <div className="mt-3 max-h-72 overflow-y-auto rounded-md border border-ink-950/10 bg-white/50" aria-live="polite">
+                                {status ? <p className="px-4 py-8 text-center text-sm text-ink-950/50">{status}</p> : results.map((literature) => (
+                                    <button key={literature.id} type="button" onClick={() => chooseLiterature(literature)} className="quick-log-result">
+                                        <span className="quick-log-result-cover">
+                                            {literature.cover_url ? <img src={literature.cover_url} alt="" loading="lazy" className="size-full object-cover" /> : literature.title.slice(0, 2).toUpperCase()}
+                                        </span>
+                                        <span className="min-w-0 flex-1 text-left">
+                                            <span className="block truncate font-serif text-base font-bold text-ink-950">{literature.title}</span>
+                                            <span className="mt-0.5 block truncate text-xs text-ink-950/50">{literature.authors?.length ? literature.authors.join(' & ') : 'Author unavailable'}</span>
+                                            <span className="mt-1 block text-[0.65rem] font-bold uppercase tracking-[0.12em] text-ink-950/40">{[literature.type, literature.year].filter(Boolean).join(' · ')}</span>
+                                        </span>
+                                        <span className="shrink-0 text-xs font-bold uppercase tracking-wider text-brand-stem">{literature.review ? 'Edit' : 'Log'}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             ) : (
