@@ -103,6 +103,11 @@ export default function LiteratureDetailHero({ literature, whereToRead = [] }) {
                 <p className="mt-4 max-w-[58ch] text-base leading-7 text-ink-950/75">
                     {literature.synopsis}
                 </p>
+                {literature.synopsis_source_name && literature.synopsis_source_url && (
+                    <p className="mt-4 text-xs leading-5 text-ink-950/50">
+                        Supplemental summary from <a href={literature.synopsis_source_url} target="_blank" rel="noopener noreferrer" className="font-semibold underline decoration-brand-coral underline-offset-4">{literature.synopsis_source_name}</a> under the <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">CC BY-SA</a> license.
+                    </p>
+                )}
             </div>
         </>
     );
