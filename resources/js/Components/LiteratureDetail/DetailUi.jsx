@@ -64,7 +64,7 @@ export function RatingInput({ value, onChange, compact = false, onCommit, inacti
                                 onCommit?.(rating);
                             }}
                         >
-                            <span className={`block ${compact ? 'w-8' : 'w-12'} ${halfStep % 2 === 0 ? '-translate-x-1/2' : ''}`}>★</span>
+                            <span className={`block text-center ${compact ? 'w-8' : 'w-12'} ${halfStep % 2 === 0 ? '-translate-x-1/2' : ''}`}>★</span>
                         </button>
                     );
                 })}
