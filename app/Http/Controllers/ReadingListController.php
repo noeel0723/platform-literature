@@ -7,6 +7,7 @@ use App\Models\Literature;
 use App\Services\ActivityRecorder;
 use App\Services\Literature\CanonicalWorkIdentity;
 use App\Services\Reading\ReadingManager;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,8 +19,12 @@ class ReadingListController extends Controller
         UpdateReadingListRequest $request,
         Literature $literature,
         ReadingManager $readingManager,
-    ): RedirectResponse {
-        $readingManager->update($request->user(), $literature, $request->validated());
+    ): RedirectResponse|JsonResponse {
+        $readingList = $readingManager->update($request->user(), $literature, $request->validated());
+
+        if ($request->expectsJson()) {
+            return response()->json(['reading_status' => $readingList->status]);
+        }
 
         if ($request->validated('return_to') === 'readlist') {
             return redirect()->route('profiles.readlist', $request->user())
@@ -35,7 +40,7 @@ class ReadingListController extends Controller
         Literature $literature,
         ActivityRecorder $activityRecorder,
         CanonicalWorkIdentity $canonicalIdentity,
-    ): RedirectResponse {
+    ): RedirectResponse|JsonResponse {
         DB::transaction(function () use ($request, $literature, $activityRecorder, $canonicalIdentity): void {
             $readingLists = $request->user()->readingLists()
                 ->whereIn('literature_id', $canonicalIdentity->equivalentLiteratureIds($literature))
@@ -57,6 +62,10 @@ class ReadingListController extends Controller
             $activityRecorder->removeReadingStatus($request->user(), $literature);
             $readingList->delete();
         });
+
+        if ($request->expectsJson()) {
+            return response()->json(['reading_status' => null]);
+        }
 
         return redirect()->route('literatures.show', $literature)
             ->with('success', 'This literature has been removed from your reading activity.');

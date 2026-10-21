@@ -43,6 +43,7 @@ final class LiteraturePresenter
             'id' => $literature->id,
             'slug' => $literature->slug,
             'url' => route('literatures.show', $literature),
+            'preview_url' => route('literatures.preview', $literature),
             'title' => $displayTitle,
             'edition_title' => $literature->alternateTitle(),
             'alternate_title_label' => in_array($literature->type, ['manga', 'manhwa'], true)

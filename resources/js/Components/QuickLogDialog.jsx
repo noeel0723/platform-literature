@@ -1,5 +1,5 @@
 import { useForm } from '@inertiajs/react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
 import { RatingInput } from './LiteratureDetail/DetailUi';
 
@@ -8,7 +8,8 @@ function localDateValue() {
     return new Date(today.getTime() - today.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
 }
 
-export default function QuickLogDialog({ open, onClose, searchUrl }) {
+export default function QuickLogDialog({ open, onClose, searchUrl, initialLiterature = null, initialRating = null }) {
+    const dialogId = useId();
     const dialogRef = useRef(null);
     const searchRef = useRef(null);
     const [query, setQuery] = useState('');
@@ -30,7 +31,15 @@ export default function QuickLogDialog({ open, onClose, searchUrl }) {
             setQuery('');
             setResults([]);
             setStatus('');
-            setSelected(null);
+            setSelected(initialLiterature);
+            if (initialLiterature) {
+                form.setData({
+                    rating: initialRating ?? initialLiterature.review?.rating ?? '',
+                    body: initialLiterature.review?.body ?? '',
+                    contains_spoiler: Boolean(initialLiterature.review?.contains_spoiler),
+                    completed_at: initialLiterature.completed_at ?? localDateValue(),
+                });
+            }
             form.clearErrors();
             dialog.showModal();
         } else if (!open && dialog.open) {
@@ -112,8 +121,8 @@ export default function QuickLogDialog({ open, onClose, searchUrl }) {
     return (
         <dialog
             ref={dialogRef}
-            id="quick-log-dialog"
-            aria-labelledby="quick-log-title"
+            id={`${dialogId}-quick-log`}
+            aria-labelledby={`${dialogId}-title`}
             className="review-dialog m-auto max-h-[92vh] w-[min(896px,calc(100%_-_1.5rem))] max-w-4xl overflow-y-auto rounded-sm border border-brand-blueberry/15 bg-brand-cream p-0 text-ink-950 shadow-[0_22px_60px_rgba(16,47,98,0.24)]"
             onCancel={(event) => { event.preventDefault(); onClose(); }}
             onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}
@@ -123,7 +132,7 @@ export default function QuickLogDialog({ open, onClose, searchUrl }) {
                     {selected && <button type="button" onClick={() => setSelected(null)} className="rounded-sm border border-brand-blueberry/20 px-2.5 py-1.5 text-xs font-bold text-brand-blueberry transition hover:border-brand-coral hover:text-brand-coral">← Back</button>}
                     <div>
                         {selected && <p className="text-[0.65rem] font-bold uppercase tracking-[0.16em] text-brand-coral">Quick log</p>}
-                        <h2 id="quick-log-title" className={`text-xl font-extrabold tracking-tight ${selected ? 'mt-0.5 text-brand-berry sm:text-2xl' : 'text-brand-blueberry'}`}>{selected ? 'I read…' : 'Add to your literature…'}</h2>
+                        <h2 id={`${dialogId}-title`} className={`text-xl font-extrabold tracking-tight ${selected ? 'mt-0.5 text-brand-berry sm:text-2xl' : 'text-brand-blueberry'}`}>{selected ? 'I read…' : 'Add to your literature…'}</h2>
                     </div>
                 </div>
                 <button type="button" onClick={onClose} className="grid size-9 place-items-center rounded-sm text-xl text-brand-blueberry transition hover:bg-brand-sky/20 hover:text-brand-coral" aria-label="Close quick log">×</button>
@@ -132,8 +141,8 @@ export default function QuickLogDialog({ open, onClose, searchUrl }) {
             {!selected ? (
                 <div className="px-5 py-8 sm:px-8 sm:py-10">
                     <div className="mx-auto max-w-lg">
-                        <label htmlFor="quick-log-search" className="sr-only">Search literature by title or author</label>
-                        <input ref={searchRef} id="quick-log-search" type="search" autoComplete="off" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search for literature..." className="h-10 w-full min-w-0 rounded-md border border-ink-950/20 bg-white px-3.5 text-sm text-ink-950 shadow-sm outline-none placeholder:text-ink-950/45 focus:border-brand-coral focus:ring-2 focus:ring-brand-coral/15" />
+                        <label htmlFor={`${dialogId}-search`} className="sr-only">Search literature by title or author</label>
+                        <input ref={searchRef} id={`${dialogId}-search`} type="search" autoComplete="off" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search for literature..." className="h-10 w-full min-w-0 rounded-md border border-ink-950/20 bg-white px-3.5 text-sm text-ink-950 shadow-sm outline-none placeholder:text-ink-950/45 focus:border-brand-coral focus:ring-2 focus:ring-brand-coral/15" />
                         {query.trim() && (
                             <div className="mt-3 max-h-72 overflow-y-auto rounded-md border border-ink-950/10 bg-white/50" aria-live="polite">
                                 {status ? <p className="px-4 py-8 text-center text-sm text-ink-950/50">{status}</p> : results.map((literature) => (
@@ -166,10 +175,10 @@ export default function QuickLogDialog({ open, onClose, searchUrl }) {
                         <p className="mt-1 text-sm text-brand-blueberry/65">{[selected.authors?.join(' & ') || 'Author unavailable', selected.year].filter(Boolean).join(' · ')}</p>
                         <div className="mt-5 flex flex-wrap items-end gap-x-6 gap-y-4 border-y border-brand-blueberry/15 py-4">
                             <span className="flex h-10 items-center gap-2 text-sm font-semibold text-brand-berry">✓ Completed / Read</span>
-                            <label htmlFor="quick-log-completed-at" className="text-sm font-semibold text-brand-berry"><span className="mb-1 block text-xs text-brand-blueberry/65">Read on</span><input id="quick-log-completed-at" type="date" required value={form.data.completed_at} onChange={(event) => form.setData('completed_at', event.target.value)} className="h-10 rounded-sm border border-brand-blueberry/20 bg-white/75 px-3 text-sm text-ink-950 outline-none focus:border-brand-coral focus:ring-2 focus:ring-brand-coral/20" /></label>
+                            <label htmlFor={`${dialogId}-completed-at`} className="text-sm font-semibold text-brand-berry"><span className="mb-1 block text-xs text-brand-blueberry/65">Read on</span><input id={`${dialogId}-completed-at`} type="date" required value={form.data.completed_at} onChange={(event) => form.setData('completed_at', event.target.value)} className="h-10 rounded-sm border border-brand-blueberry/20 bg-white/75 px-3 text-sm text-ink-950 outline-none focus:border-brand-coral focus:ring-2 focus:ring-brand-coral/20" /></label>
                         </div>
                         {form.errors.completed_at && <p className="mt-2 text-sm font-semibold text-red-700">{form.errors.completed_at}</p>}
-                        <div className="mt-5"><label htmlFor="quick-log-body" className="text-sm font-semibold text-brand-berry">Review <span className="font-normal text-brand-blueberry/60">(optional)</span></label><textarea id="quick-log-body" value={form.data.body} onChange={(event) => form.setData('body', event.target.value)} rows="7" maxLength="5000" placeholder="Add a review…" className="mt-2 w-full resize-y rounded-sm border border-brand-blueberry/20 bg-white/75 px-4 py-3 text-base leading-6 text-ink-950 outline-none placeholder:text-brand-blueberry/55 focus:border-brand-coral focus:ring-2 focus:ring-brand-coral/20" />{form.errors.body && <p className="mt-2 text-sm font-semibold text-red-700">{form.errors.body}</p>}</div>
+                        <div className="mt-5"><label htmlFor={`${dialogId}-body`} className="text-sm font-semibold text-brand-berry">Review <span className="font-normal text-brand-blueberry/60">(optional)</span></label><textarea id={`${dialogId}-body`} value={form.data.body} onChange={(event) => form.setData('body', event.target.value)} rows="7" maxLength="5000" placeholder="Add a review…" className="mt-2 w-full resize-y rounded-sm border border-brand-blueberry/20 bg-white/75 px-4 py-3 text-base leading-6 text-ink-950 outline-none placeholder:text-brand-blueberry/55 focus:border-brand-coral focus:ring-2 focus:ring-brand-coral/20" />{form.errors.body && <p className="mt-2 text-sm font-semibold text-red-700">{form.errors.body}</p>}</div>
                         <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                             <fieldset><legend className="text-sm font-semibold text-brand-berry">Rating</legend><div className="mt-1 flex flex-wrap items-center gap-3"><RatingInput value={form.data.rating} onChange={(rating) => { form.setData('rating', rating); form.clearErrors('rating'); }} compact inactiveClassName="text-brand-blueberry/25" /><output className="text-xs font-semibold text-brand-blueberry/65">{form.data.rating ? `${Number(form.data.rating).toFixed(1)} out of 5` : 'Choose a rating'}</output></div>{form.errors.rating && <p className="mt-1.5 text-sm font-semibold text-red-700">{form.errors.rating}</p>}</fieldset>
                             <label className="flex items-center gap-2 text-sm text-brand-blueberry/75"><input type="checkbox" checked={form.data.contains_spoiler} onChange={(event) => form.setData('contains_spoiler', event.target.checked)} className="size-4 accent-brand-coral" />Contains spoilers</label>

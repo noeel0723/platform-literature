@@ -235,6 +235,28 @@
         font-weight: 700;
         color: var(--color-ink-950);
     }
+
+    .literature-card-controls {
+        transition: opacity 150ms ease;
+    }
+
+    .literature-card-cover[data-preview-open='true'] .poster-shine {
+        border-color: var(--color-brand-coral);
+    }
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .literature-card-controls {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .literature-card-cover:hover .literature-card-controls,
+    .literature-card-cover:focus-within .literature-card-controls,
+    .literature-card-cover[data-preview-open='true'] .literature-card-controls {
+        opacity: 1;
+        pointer-events: auto;
+    }
 }
 
 @media (max-width: 767px) {

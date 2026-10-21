@@ -2,7 +2,7 @@ export default function WhereToReadCard({ links = [] }) {
     if (links.length === 0) return null;
 
     return (
-        <aside className="mt-4 w-full max-w-[190px] border border-ink-950/15 bg-white/35" aria-labelledby="where-to-read-heading">
+        <aside id="where-to-read" className="mt-4 w-full max-w-[190px] scroll-mt-24 border border-ink-950/15 bg-white/35" aria-labelledby="where-to-read-heading">
             <h2 id="where-to-read-heading" className="border-b border-ink-950/15 px-3 py-2.5 text-[0.65rem] font-bold uppercase tracking-[0.16em] text-ink-950/60">
                 Where to read
             </h2>

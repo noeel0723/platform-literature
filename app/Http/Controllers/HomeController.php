@@ -203,6 +203,7 @@ class HomeController extends Controller
             'id' => $literature->id,
             'title' => $title,
             'url' => route('literatures.show', $literature),
+            'preview_url' => route('literatures.preview', $literature),
             'cover_url' => $literature->displayCoverUrl(),
             'initials' => $this->initials($title),
             'type_label' => $literature->typeLabel(),

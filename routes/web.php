@@ -15,6 +15,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LikeController;
 use App\Http\Controllers\LiteratureBrowseController;
 use App\Http\Controllers\LiteratureController;
+use App\Http\Controllers\LiteraturePreviewController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfileFavoriteSearchController;
@@ -38,6 +39,7 @@ Route::get('/literature', [LiteratureBrowseController::class, 'index'])->name('l
 Route::get('/literature/browse', [LiteratureBrowseController::class, 'browse'])->name('literature.browse');
 Route::get('/authors/{author}', AuthorController::class)->name('authors.show');
 Route::get('/literatures/{literature}', [LiteratureController::class, 'show'])->name('literatures.show');
+Route::get('/literatures/{literature}/preview', LiteraturePreviewController::class)->name('literatures.preview');
 Route::get('/members/{user}/followers', [ProfileController::class, 'followers'])->name('profiles.followers');
 Route::get('/members/{user}/following', [ProfileController::class, 'following'])->name('profiles.following');
 Route::get('/members/{user}/connections', [ProfileController::class, 'connections'])->name('profiles.connections');
