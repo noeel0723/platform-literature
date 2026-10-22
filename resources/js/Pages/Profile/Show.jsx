@@ -76,7 +76,15 @@ function ProfileOverview({ profile, routes, reportReasons }) {
                             </div>
                             {profile.bio ? <p className="mt-2 line-clamp-2 max-w-xl text-xs leading-5 text-ink-950/65">{profile.bio}</p> : <p className="mt-2 text-xs italic leading-5 text-ink-950/45">This reader has not added a bio yet.</p>}
                             <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[0.68rem] text-ink-950/50">
-                                {profile.location && <span>⌖ {profile.location}</span>}
+                                {profile.location && (
+                                    <span className="inline-flex items-center gap-1">
+                                        <svg viewBox="0 0 12 18" fill="currentColor" className="h-3.5 w-2.5 shrink-0" aria-hidden="true">
+                                            <path fillRule="evenodd" d="M6 1a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm1.25 1.75a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5Z" clipRule="evenodd" />
+                                            <path d="M6 9v8" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                                        </svg>
+                                        {profile.location}
+                                    </span>
+                                )}
                                 <span>Member since {profile.member_since}</span>
                             </div>
                         </div>
