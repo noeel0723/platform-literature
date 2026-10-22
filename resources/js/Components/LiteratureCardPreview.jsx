@@ -152,7 +152,8 @@ export default function LiteratureCardPreview({ literature, compact = false, chi
     const requireLogin = () => {
         if (preview?.viewer.authenticated) return false;
         close();
-        openLoginPanel();
+        if (preview?.routes.verification) window.location.assign(preview.routes.verification);
+        else openLoginPanel();
         return true;
     };
     const review = (rating = null) => {
@@ -235,7 +236,7 @@ export default function LiteratureCardPreview({ literature, compact = false, chi
                                         </div>}
                                     </div>
                                 </div>
-                            ) : <button type="button" onClick={requireLogin} className={`${actionClass} text-brand-coral`}>Log in to rate and track</button>}
+                            ) : <button type="button" onClick={requireLogin} className={`${actionClass} text-brand-coral`}>{preview.routes.verification ? 'Verify email to rate and track' : 'Log in to rate and track'}</button>}
                             {preview.routes.where_to_read && <Link href={preview.routes.where_to_read} className={`${actionClass} border-t border-ink-950/10`} onClick={() => close()}>Where to read</Link>}
                         </>
                     )}

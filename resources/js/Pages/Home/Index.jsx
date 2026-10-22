@@ -55,16 +55,16 @@ export default function HomeIndex({ activities, popularLiteratures, recommendati
     const registerTriggerRef = useRef(null);
 
     useEffect(() => {
-        if (!viewer && new URLSearchParams(window.location.search).get('register') === '1') {
+        if (!viewer && !routes.verification && new URLSearchParams(window.location.search).get('register') === '1') {
             setRegisterOpen(true);
         }
-    }, [viewer]);
+    }, [viewer, routes.verification]);
 
     if (!viewer) {
         return (
             <>
                 <Head title="Home" />
-                <GuestLandingHero literature={guestHero} onRegisterOpen={() => setRegisterOpen(true)} registerTriggerRef={registerTriggerRef} />
+                <GuestLandingHero literature={guestHero} verificationUrl={routes.verification} onRegisterOpen={() => routes.verification ? window.location.assign(routes.verification) : setRegisterOpen(true)} registerTriggerRef={registerTriggerRef} />
                 <PopularThisWeek literatures={popularThisWeek} browseUrl={routes.literature} />
                 <GuestLandingFeatures />
                 <RegisterDialog open={registerOpen} onClose={() => setRegisterOpen(false)} registerUrl={routes.register} returnFocusRef={registerTriggerRef} />

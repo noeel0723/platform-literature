@@ -20,7 +20,7 @@ class CustomListPolicy
      */
     public function view(?User $user, CustomList $customList): bool
     {
-        return ! $customList->is_private || $user?->is($customList->user) === true;
+        return ! $customList->is_private || ($user?->hasVerifiedEmail() && $user->is($customList->user));
     }
 
     /**
@@ -28,7 +28,7 @@ class CustomListPolicy
      */
     public function create(User $user): bool
     {
-        return $user->isActive();
+        return $user->hasVerifiedEmail() && $user->isActive();
     }
 
     /**
@@ -36,7 +36,7 @@ class CustomListPolicy
      */
     public function update(User $user, CustomList $customList): bool
     {
-        return $user->is($customList->user) && $user->isActive();
+        return $user->hasVerifiedEmail() && $user->is($customList->user) && $user->isActive();
     }
 
     /**
@@ -44,7 +44,7 @@ class CustomListPolicy
      */
     public function delete(User $user, CustomList $customList): bool
     {
-        return $user->is($customList->user) && $user->isActive();
+        return $user->hasVerifiedEmail() && $user->is($customList->user) && $user->isActive();
     }
 
     /**

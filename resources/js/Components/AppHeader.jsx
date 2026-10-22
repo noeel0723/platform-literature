@@ -142,7 +142,13 @@ export default function AppHeader({ routes, user, logo_url: logoUrl, csrf_token:
     const [quickLogOpen, setQuickLogOpen] = useState(false);
     const [currentPath, setCurrentPath] = useState(window.location.pathname);
     const [guestLanding, setGuestLanding] = useState(isGuestLanding);
-    const openQuickLog = () => setQuickLogOpen(true);
+    const openQuickLog = () => {
+        if (user?.email_verified === false) {
+            window.location.assign(routes.verification);
+            return;
+        }
+        setQuickLogOpen(true);
+    };
     const matchesRoute = (url) => {
         const path = new URL(url, window.location.origin).pathname.replace(/\/$/, '') || '/';
         return currentPath === path || (path !== '/' && currentPath.startsWith(`${path}/`));
@@ -189,6 +195,7 @@ export default function AppHeader({ routes, user, logo_url: logoUrl, csrf_token:
 
     return (
         <header data-app-header className={headerClassName}>
+            {user?.email_verified === false && <div className="bg-ink-950 px-4 py-2 text-center text-xs text-brand-cream/80">Verify your email to use interactive features. <a href={routes.verification} className="font-semibold text-brand-cream underline decoration-brand-coral underline-offset-4">Verify email</a></div>}
             <SiteContainer>
                 <div className={`relative flex min-w-0 items-center gap-3 lg:gap-5 ${!user && loginOpen ? 'flex-wrap lg:min-h-20 lg:flex-nowrap' : 'h-18'}`}>
                     <div className={`shrink-0 ${!user && loginOpen ? 'flex h-18 items-center lg:h-auto' : ''}`}><BrandMark href={routes.home} logoUrl={logoUrl} /></div>

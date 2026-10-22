@@ -152,7 +152,8 @@ class LiteratureController extends Controller
 
     public function show(Literature $literature, CanonicalWorkIdentity $identity): Response
     {
-        $userId = request()->user()?->id ?? 0;
+        $viewer = request()->user()?->hasVerifiedEmail() ? request()->user() : null;
+        $userId = $viewer?->id ?? 0;
 
         $literature->load([
             'apiSource',
@@ -185,17 +186,17 @@ class LiteratureController extends Controller
             ->unique('user_id')
             ->values();
 
-        $readingList = request()->user()?->readingLists()
+        $readingList = $viewer?->readingLists()
             ->whereIn('literature_id', $equivalentIds)
             ->with('progress')
             ->latest('updated_at')
             ->first();
-        $currentReview = $canonicalReviews->firstWhere('user_id', request()->user()?->id);
+        $currentReview = $canonicalReviews->firstWhere('user_id', $viewer?->id);
         $viewerLists = collect();
 
-        if (request()->user() !== null) {
+        if ($viewer !== null) {
             $canonicalWorkId = $literature->sourceMapping?->canonical_work_id;
-            $viewerLists = request()->user()->customLists()
+            $viewerLists = $viewer->customLists()
                 ->with(['items' => fn ($items) => $canonicalWorkId === null
                     ? $items->whereRaw('1 = 0')
                     : $items->where('canonical_work_id', $canonicalWorkId)])
@@ -297,10 +298,10 @@ class LiteratureController extends Controller
             'literature' => $presentedLiterature,
             'whereToRead' => $whereToRead,
             'viewer' => [
-                'authenticated' => request()->user() !== null,
-                'id' => request()->user()?->id,
-                'is_admin' => request()->user()?->isAdmin() ?? false,
-                'user' => request()->user() === null ? null : $this->presentUser(request()->user()),
+                'authenticated' => $viewer !== null,
+                'id' => $viewer?->id,
+                'is_admin' => $viewer?->isAdmin() ?? false,
+                'user' => $viewer === null ? null : $this->presentUser($viewer),
                 'reading_status' => $readingList?->status,
                 'completed_at' => $readingList?->completed_at?->toDateString(),
                 'current_review' => $currentReview === null ? null : [
@@ -339,7 +340,8 @@ class LiteratureController extends Controller
             'routes' => [
                 'catalog' => route('literatures.index'),
                 'login' => route('login'),
-                'admin_edit_metadata' => request()->user()?->isAdmin()
+                'verification' => request()->user() !== null && ! request()->user()->hasVerifiedEmail() ? route('verification.notice') : null,
+                'admin_edit_metadata' => $viewer?->isAdmin()
                     ? route('admin.literatures.metadata.edit', $literature)
                     : null,
                 'reading_update' => route('reading-list.update', $literature),

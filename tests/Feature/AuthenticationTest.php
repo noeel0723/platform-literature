@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -51,6 +53,8 @@ class AuthenticationTest extends TestCase
 
     public function test_user_can_register_and_is_automatically_authenticated(): void
     {
+        Notification::fake();
+
         $response = $this->post('/register', [
             'name' => 'Imanuel',
             'username' => 'imanuel_reader',
@@ -59,10 +63,12 @@ class AuthenticationTest extends TestCase
             'password_confirmation' => 'password123',
         ]);
 
-        $response->assertRedirect(route('literatures.index'));
+        $response->assertRedirect(route('verification.notice'));
         $this->assertAuthenticated();
         $this->assertSame('imanuel_reader', User::query()->firstOrFail()->username);
         $this->assertTrue(Hash::check('password123', User::query()->firstOrFail()->password));
+        $this->assertFalse(User::query()->firstOrFail()->hasVerifiedEmail());
+        Notification::assertSentTo(User::query()->firstOrFail(), VerifyEmail::class);
     }
 
     public function test_user_can_login_and_logout(): void

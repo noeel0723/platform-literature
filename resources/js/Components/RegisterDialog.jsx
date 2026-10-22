@@ -54,6 +54,7 @@ export default function RegisterDialog({ open, onClose, registerUrl, returnFocus
         form.post(registerUrl, {
             preserveState: true,
             preserveScroll: true,
+            onSuccess: (page) => window.location.assign(page.url),
             onFinish: () => form.reset('password', 'password_confirmation'),
         });
     };

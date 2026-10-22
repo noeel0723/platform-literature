@@ -133,8 +133,8 @@ export default function ActionPanel({ literature, viewer, ratingSummary, routes,
                 </>
             ) : (
                 <div className="p-5">
-                    <p className="text-sm leading-6 text-ink-950/65">Log in to rate, review, and track this literature.</p>
-                    <Link href={routes.login} className="mt-4 block bg-ink-950 px-4 py-3 text-center font-bold text-brand-cream transition hover:bg-brand-coral">Log in</Link>
+                    <p className="text-sm leading-6 text-ink-950/65">{routes.verification ? 'Verify your email to rate, review, and track this literature.' : 'Log in to rate, review, and track this literature.'}</p>
+                    <Link href={routes.verification ?? routes.login} className="mt-4 block bg-ink-950 px-4 py-3 text-center font-bold text-brand-cream transition hover:bg-brand-coral">{routes.verification ? 'Verify email' : 'Log in'}</Link>
                 </div>
             )}
         </aside>

@@ -330,7 +330,7 @@ class ProfileController extends Controller
 
     private function renderConnections(User $user, string $relationship, ProfilePagePresenter $presenter): Response
     {
-        $viewer = request()->user();
+        $viewer = request()->user()?->hasVerifiedEmail() ? request()->user() : null;
         $isOwner = $viewer?->is($user) ?? false;
 
         if ($relationship === 'blocked' && ! $isOwner) {

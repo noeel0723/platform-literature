@@ -24,8 +24,9 @@ class CustomListController extends Controller
      */
     public function index(Request $request, User $user, ProfilePagePresenter $presenter): Response
     {
+        $isOwner = $request->user()?->hasVerifiedEmail() && $request->user()->is($user);
         $lists = $user->customLists()
-            ->when(! $request->user()?->is($user), fn ($query) => $query->where('is_private', false))
+            ->when(! $isOwner, fn ($query) => $query->where('is_private', false))
             ->with(['items' => fn ($query) => $query
                 ->with([
                     'literature.authors',
@@ -40,7 +41,6 @@ class CustomListController extends Controller
             ->latest('updated_at')
             ->paginate(12);
 
-        $isOwner = $request->user()?->is($user) ?? false;
         $lists->through(fn (CustomList $list): array => $this->presentList($list, $presenter, $isOwner));
 
         return Inertia::render('Profile/Lists', [

@@ -10,6 +10,7 @@ use App\Http\Controllers\CommentController;
 use App\Http\Controllers\CustomListController;
 use App\Http\Controllers\CustomListItemController;
 use App\Http\Controllers\DiscussionController;
+use App\Http\Controllers\EmailVerificationController;
 use App\Http\Controllers\FollowController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LikeController;
@@ -68,6 +69,14 @@ Route::middleware('guest')->group(function (): void {
 
 Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+    Route::get('/email/verify', [EmailVerificationController::class, 'notice'])->name('verification.notice');
+    Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+        ->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
+    Route::post('/email/verification-notification', [EmailVerificationController::class, 'send'])
+        ->middleware('throttle:verification')->name('verification.send');
+});
+
+Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/quick-log/literatures', QuickLogController::class)
         ->middleware('throttle:60,1')
         ->name('quick-log.literatures');

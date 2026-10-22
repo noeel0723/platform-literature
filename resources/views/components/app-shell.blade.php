@@ -35,10 +35,12 @@
                 'login' => route('login'),
                 'register' => route('register'),
                 'password_request' => route('password.request'),
+                'verification' => route('verification.notice'),
                 'quick_log_search' => $headerUser ? route('quick-log.literatures') : null,
             ],
             'user' => $headerUser ? [
                 'name' => $headerUser->name,
+                'email_verified' => $headerUser->hasVerifiedEmail(),
                 'username' => $headerUser->username,
                 'avatar_url' => $headerUser->avatarUrl(),
                 'initials' => Str::of($headerUser->name)->squish()->explode(' ')->filter()->take(2)->map(fn (string $part): string => Str::upper(Str::substr($part, 0, 1)))->implode('') ?: '?',

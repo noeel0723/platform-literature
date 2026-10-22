@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Models\User;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,6 +13,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
 class AuthController extends Controller
 {
@@ -27,8 +29,16 @@ class AuthController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('literatures.index')
-            ->with('success', 'Your account is ready. You can now save literature to your Readlist.');
+        try {
+            event(new Registered($user));
+        } catch (TransportExceptionInterface $exception) {
+            report($exception);
+
+            return redirect()->route('verification.notice')
+                ->with('status', 'verification-send-failed');
+        }
+
+        return redirect()->route('verification.notice');
     }
 
     public function showLogin(): Response
@@ -61,6 +71,10 @@ class AuthController extends Controller
         }
 
         $request->session()->regenerate();
+
+        if (! $request->user()->hasVerifiedEmail()) {
+            return redirect()->route('verification.notice');
+        }
 
         return redirect()->intended(route('literatures.index'))
             ->with('success', 'Welcome back.');
