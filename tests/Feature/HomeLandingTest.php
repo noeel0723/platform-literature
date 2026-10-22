@@ -22,6 +22,7 @@ class HomeLandingTest extends TestCase
         Http::preventStrayRequests();
         $preferred = Literature::factory()->create([
             'title' => 'Canonical Hero',
+            'publication_year' => 1999,
             'backdrop_url' => 'https://images.example.test/canonical-hero.jpg',
         ]);
         $sibling = Literature::factory()->create(['title' => 'Canonical Hero Sibling']);
@@ -36,6 +37,8 @@ class HomeLandingTest extends TestCase
                 ->component('Home/Index')
                 ->where('viewer', null)
                 ->where('guestHero.title', 'Canonical Hero')
+                ->where('guestHero.year', 1999)
+                ->where('guestHero.url', route('literatures.show', $preferred))
                 ->where('guestHero.backdrop_url', 'https://images.example.test/canonical-hero.jpg')
                 ->has('popularThisWeek', 1)
                 ->where('popularThisWeek.0.title', 'Canonical Hero')
@@ -103,6 +106,7 @@ class HomeLandingTest extends TestCase
             'literature_id' => $preferred->id,
             'canonical_work_id' => $canonicalWork->id,
             'edited_by' => $editor->id,
+            'publication_year' => 2001,
             'backdrop_url' => 'https://images.example.test/curated-hero.jpg',
         ]);
         Activity::factory()
@@ -113,6 +117,20 @@ class HomeLandingTest extends TestCase
         $response = $this->get(route('home'));
 
         $this->assertSame('https://images.example.test/curated-hero.jpg', $response->inertiaProps('guestHero.backdrop_url'));
+        $this->assertSame(2001, $response->inertiaProps('guestHero.year'));
+    }
+
+    public function test_guest_hero_keeps_a_missing_publication_year_unknown(): void
+    {
+        Literature::factory()->create([
+            'publication_year' => null,
+            'backdrop_url' => 'https://images.example.test/undated-hero.jpg',
+        ]);
+
+        $this->get(route('home'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('guestHero')
+                ->where('guestHero.year', null));
     }
 
     public function test_guest_popular_this_week_is_limited_to_six_works(): void

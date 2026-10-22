@@ -186,11 +186,12 @@ class HomeController extends Controller
         ];
     }
 
-    /** @return array{title: string, type_label: string, backdrop_url: string, url: string} */
+    /** @return array{title: string, year: int|null, type_label: string, backdrop_url: string, url: string} */
     private function presentGuestHero(Literature $literature): array
     {
         return [
             'title' => $literature->displayTitle(),
+            'year' => $literature->displayPublicationYear(),
             'type_label' => $literature->typeLabel(),
             'backdrop_url' => $literature->displayBackdropUrl(),
             'url' => route('literatures.show', $literature),

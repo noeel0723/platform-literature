@@ -1,3 +1,5 @@
+import { Link } from '@inertiajs/react';
+
 import { openLoginPanel } from '../Support/loginPanel';
 import SiteContainer from './SiteContainer';
 
@@ -56,6 +58,16 @@ export default function GuestLandingHero({ literature, onRegisterOpen, registerT
                     </div>
                 </div>
             </SiteContainer>
+
+            {backdropUrl && (
+                <Link
+                    href={literature.url}
+                    title={literature.title}
+                    className="absolute bottom-4 right-5 z-20 max-w-[70%] truncate rounded-sm text-xs tracking-wide text-ink-950/70 transition-colors hover:text-brand-coral focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-coral sm:bottom-auto sm:right-4 sm:top-1/2 sm:max-h-[60%] sm:max-w-none sm:-translate-y-1/2 sm:rotate-180 sm:text-sm sm:text-brand-plate/75 sm:hover:text-brand-plate sm:[writing-mode:vertical-rl]"
+                >
+                    {literature.title}{literature.year != null && ` (${literature.year})`}
+                </Link>
+            )}
         </section>
     );
 }
