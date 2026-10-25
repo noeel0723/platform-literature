@@ -5,6 +5,11 @@ import { createRoot } from 'react-dom/client';
 import AppHeader from './Components/AppHeader';
 import ActionToast from './Components/ActionToast';
 import { actionFeedback, ACTION_RESTORED_EVENT } from './Support/actionFeedback';
+import { installReviewDraftPrivacy, reviewDrafts } from './Support/reviewDraft';
+
+const headerProps = document.querySelector('[data-react-header-props]');
+const initialHeader = headerProps ? JSON.parse(headerProps.textContent) : null;
+installReviewDraftPrivacy({ repository: reviewDrafts, browserWindow: window, browserDocument: document, router, userId: initialHeader?.user?.id, logoutUrl: initialHeader?.user?.logout_url });
 
 const feedbackRoot = document.createElement('div');
 feedbackRoot.dataset.actionFeedbackRoot = '';
@@ -47,12 +52,11 @@ if (inertiaRoot && (inertiaRoot.dataset.page || inertiaPage)) {
 }
 
 const headerRoot = document.querySelector('[data-react-header]');
-const headerProps = document.querySelector('[data-react-header-props]');
 
 if (headerRoot && headerProps) {
     createRoot(headerRoot).render(
         <StrictMode>
-            <AppHeader {...JSON.parse(headerProps.textContent)} />
+            <AppHeader {...initialHeader} />
         </StrictMode>,
     );
 }

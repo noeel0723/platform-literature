@@ -134,6 +134,7 @@ function Discovery({ relationshipGroups, authorDiscoveries }) {
 export default function Show({ literature, whereToRead, viewer, ratingSummary, reviews, reviewPagination, discussions, discussionCount, relationshipGroups, authorDiscoveries, reportReasons, successMessage, routes }) {
     const { actionFeedback } = usePage().props;
     const [reviewOpen, setReviewOpen] = useState(false);
+    const [initialReviewRating, setInitialReviewRating] = useState(null);
     const backdropUrl = literature.backdrop_url || literature.cover_url;
     const hasDedicatedBackdrop = Boolean(literature.backdrop_url);
     const reviewForm = useForm({
@@ -154,7 +155,7 @@ export default function Show({ literature, whereToRead, viewer, ratingSummary, r
     }, []);
 
     const chooseRating = (rating) => {
-        reviewForm.setData('rating', rating);
+        setInitialReviewRating(rating);
         setReviewOpen(true);
     };
 
@@ -174,14 +175,14 @@ export default function Show({ literature, whereToRead, viewer, ratingSummary, r
             <section className="border-b border-ink-950/10 bg-brand-cream">
                 <SiteContainer data-literature-detail-grid className="relative grid items-start gap-6 py-9 md:grid-cols-[180px_minmax(0,1fr)] lg:grid-cols-[190px_minmax(0,1fr)_240px] lg:gap-7 lg:py-11">
                     <LiteratureDetailHero literature={literature} whereToRead={whereToRead} />
-                    <ActionPanel literature={literature} viewer={viewer} ratingSummary={ratingSummary} routes={routes} onOpenReview={() => setReviewOpen(true)} onChooseRating={chooseRating} />
+                    <ActionPanel literature={literature} viewer={viewer} ratingSummary={ratingSummary} routes={routes} onOpenReview={() => { setInitialReviewRating(null); setReviewOpen(true); }} onChooseRating={chooseRating} />
                 </SiteContainer>
             </section>
 
             <LiteratureDetails literature={literature} hasDiscovery={relationshipGroups.some((group) => group.items.length > 0) || authorDiscoveries.length > 0} />
             <Discovery relationshipGroups={relationshipGroups} authorDiscoveries={authorDiscoveries} />
             <ReviewSection reviews={reviews} pagination={reviewPagination} ratingSummary={ratingSummary} viewer={viewer} reportReasons={reportReasons} reportAction={routes.report_store} />
-            {viewer.authenticated && <ReviewDialog literature={literature} viewer={viewer} routes={routes} form={reviewForm} open={reviewOpen} onClose={() => setReviewOpen(false)} />}
+            {viewer.authenticated && <ReviewDialog literature={literature} viewer={viewer} routes={routes} form={reviewForm} open={reviewOpen} initialRating={initialReviewRating} onClose={() => setReviewOpen(false)} />}
             <DiscussionSection literature={literature} discussions={discussions} discussionCount={discussionCount} viewer={viewer} routes={routes} reportReasons={reportReasons} />
         </>
     );

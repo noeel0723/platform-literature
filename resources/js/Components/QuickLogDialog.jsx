@@ -2,6 +2,8 @@ import { useForm } from '@inertiajs/react';
 import { useEffect, useId, useRef, useState } from 'react';
 
 import { RatingInput } from './LiteratureDetail/DetailUi';
+import ReviewDraftStatus from './ReviewDraftStatus';
+import useReviewDraft from '../Support/useReviewDraft';
 
 function localDateValue() {
     const today = new Date();
@@ -16,12 +18,14 @@ export default function QuickLogDialog({ open, onClose, searchUrl, initialLitera
     const [results, setResults] = useState([]);
     const [status, setStatus] = useState('');
     const [selected, setSelected] = useState(null);
+    const [ratingOverride, setRatingOverride] = useState(null);
     const form = useForm({
         rating: '',
         body: '',
         contains_spoiler: false,
         completed_at: localDateValue(),
     });
+    const draft = useReviewDraft({ open: open && Boolean(selected), literature: selected, form, initialRating: ratingOverride });
 
     useEffect(() => {
         const dialog = dialogRef.current;
@@ -32,6 +36,7 @@ export default function QuickLogDialog({ open, onClose, searchUrl, initialLitera
             setResults([]);
             setStatus('');
             setSelected(initialLiterature);
+            setRatingOverride(initialLiterature ? initialRating : null);
             if (initialLiterature) {
                 form.setData({
                     rating: initialRating ?? initialLiterature.review?.rating ?? '',
@@ -96,6 +101,7 @@ export default function QuickLogDialog({ open, onClose, searchUrl, initialLitera
     }, [open, query, searchUrl, selected]);
 
     const chooseLiterature = (literature) => {
+        setRatingOverride(null);
         form.clearErrors();
         form.setData({
             rating: literature.review?.rating ?? '',
@@ -108,14 +114,15 @@ export default function QuickLogDialog({ open, onClose, searchUrl, initialLitera
 
     const submit = (event) => {
         event.preventDefault();
-        if (!selected) return;
+        if (!selected || form.processing || draft.blocked) return;
+        draft.flush();
 
         if (!Number(form.data.rating)) {
             form.setError('rating', 'Please choose a rating before saving.');
             return;
         }
 
-        form.put(selected.review_url, { onSuccess: onClose });
+        form.put(selected.review_url, { onSuccess: () => { draft.published(); onClose(); } });
     };
 
     return (
@@ -173,17 +180,20 @@ export default function QuickLogDialog({ open, onClose, searchUrl, initialLitera
                     <div className="min-w-0">
                         <h3 className="font-serif text-2xl font-bold leading-tight text-brand-blueberry">{selected.title}</h3>
                         <p className="mt-1 text-sm text-brand-blueberry/65">{[selected.authors?.join(' & ') || 'Author unavailable', selected.year].filter(Boolean).join(' · ')}</p>
-                        <div className="mt-5 flex flex-wrap items-end gap-x-6 gap-y-4 border-y border-brand-blueberry/15 py-4">
-                            <span className="flex h-10 items-center gap-2 text-sm font-semibold text-brand-berry">✓ Completed / Read</span>
-                            <label htmlFor={`${dialogId}-completed-at`} className="text-sm font-semibold text-brand-berry"><span className="mb-1 block text-xs text-brand-blueberry/65">Read on</span><input id={`${dialogId}-completed-at`} type="date" required value={form.data.completed_at} onChange={(event) => form.setData('completed_at', event.target.value)} className="h-10 rounded-sm border border-brand-blueberry/20 bg-white/75 px-3 text-sm text-ink-950 outline-none focus:border-brand-coral focus:ring-2 focus:ring-brand-coral/20" /></label>
-                        </div>
-                        {form.errors.completed_at && <p className="mt-2 text-sm font-semibold text-red-700">{form.errors.completed_at}</p>}
-                        <div className="mt-5"><label htmlFor={`${dialogId}-body`} className="text-sm font-semibold text-brand-berry">Review <span className="font-normal text-brand-blueberry/60">(optional)</span></label><textarea id={`${dialogId}-body`} value={form.data.body} onChange={(event) => form.setData('body', event.target.value)} rows="7" maxLength="5000" placeholder="Add a review…" className="mt-2 w-full resize-y rounded-sm border border-brand-blueberry/20 bg-white/75 px-4 py-3 text-base leading-6 text-ink-950 outline-none placeholder:text-brand-blueberry/55 focus:border-brand-coral focus:ring-2 focus:ring-brand-coral/20" />{form.errors.body && <p className="mt-2 text-sm font-semibold text-red-700">{form.errors.body}</p>}</div>
-                        <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                            <fieldset><legend className="text-sm font-semibold text-brand-berry">Rating</legend><div className="mt-1 flex flex-wrap items-center gap-3"><RatingInput value={form.data.rating} onChange={(rating) => { form.setData('rating', rating); form.clearErrors('rating'); }} compact inactiveClassName="text-brand-blueberry/25" /><output className="text-xs font-semibold text-brand-blueberry/65">{form.data.rating ? `${Number(form.data.rating).toFixed(1)} out of 5` : 'Choose a rating'}</output></div>{form.errors.rating && <p className="mt-1.5 text-sm font-semibold text-red-700">{form.errors.rating}</p>}</fieldset>
-                            <label className="flex items-center gap-2 text-sm text-brand-blueberry/75"><input type="checkbox" checked={form.data.contains_spoiler} onChange={(event) => form.setData('contains_spoiler', event.target.checked)} className="size-4 accent-brand-coral" />Contains spoilers</label>
-                        </div>
-                        <div className="mt-6 flex justify-end border-t border-brand-blueberry/15 bg-white/35 px-4 py-3"><button type="submit" disabled={form.processing} className="rounded-sm bg-brand-berry px-5 py-2 text-sm font-bold text-white transition hover:bg-brand-blueberry disabled:opacity-50">{form.processing ? 'Saving…' : 'Save'}</button></div>
+                        <ReviewDraftStatus draft={draft} processing={form.processing} />
+                        <fieldset className="contents" disabled={draft.blocked || form.processing}>
+                            <div className="mt-5 flex flex-wrap items-end gap-x-6 gap-y-4 border-y border-brand-blueberry/15 py-4">
+                                <span className="flex h-10 items-center gap-2 text-sm font-semibold text-brand-berry">✓ Completed / Read</span>
+                                <label htmlFor={`${dialogId}-completed-at`} className="text-sm font-semibold text-brand-berry"><span className="mb-1 block text-xs text-brand-blueberry/65">Read on</span><input id={`${dialogId}-completed-at`} type="date" required value={form.data.completed_at} onChange={(event) => draft.change('completed_at', event.target.value)} className="h-10 rounded-sm border border-brand-blueberry/20 bg-white/75 px-3 text-sm text-ink-950 outline-none focus:border-brand-coral focus:ring-2 focus:ring-brand-coral/20" /></label>
+                            </div>
+                            {form.errors.completed_at && <p className="mt-2 text-sm font-semibold text-red-700">{form.errors.completed_at}</p>}
+                            <div className="mt-5"><label htmlFor={`${dialogId}-body`} className="text-sm font-semibold text-brand-berry">Review <span className="font-normal text-brand-blueberry/60">(optional)</span></label><textarea id={`${dialogId}-body`} value={form.data.body} onChange={(event) => draft.change('body', event.target.value)} rows="7" maxLength="5000" placeholder="Add a review…" className="mt-2 w-full resize-y rounded-sm border border-brand-blueberry/20 bg-white/75 px-4 py-3 text-base leading-6 text-ink-950 outline-none placeholder:text-brand-blueberry/55 focus:border-brand-coral focus:ring-2 focus:ring-brand-coral/20" />{form.errors.body && <p className="mt-2 text-sm font-semibold text-red-700">{form.errors.body}</p>}</div>
+                            <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                                <fieldset><legend className="text-sm font-semibold text-brand-berry">Rating</legend><div className="mt-1 flex flex-wrap items-center gap-3"><RatingInput value={form.data.rating} onChange={(rating) => { draft.change('rating', rating); form.clearErrors('rating'); }} compact inactiveClassName="text-brand-blueberry/25" /><output className="text-xs font-semibold text-brand-blueberry/65">{form.data.rating ? `${Number(form.data.rating).toFixed(1)} out of 5` : 'Choose a rating'}</output></div>{form.errors.rating && <p className="mt-1.5 text-sm font-semibold text-red-700">{form.errors.rating}</p>}</fieldset>
+                                <label className="flex items-center gap-2 text-sm text-brand-blueberry/75"><input type="checkbox" checked={form.data.contains_spoiler} onChange={(event) => draft.change('contains_spoiler', event.target.checked)} className="size-4 accent-brand-coral" />Contains spoilers</label>
+                            </div>
+                        </fieldset>
+                        <div className="mt-6 flex justify-end border-t border-brand-blueberry/15 bg-white/35 px-4 py-3"><button type="submit" disabled={form.processing || draft.blocked} className="rounded-sm bg-brand-berry px-5 py-2 text-sm font-bold text-white transition hover:bg-brand-blueberry disabled:opacity-50">{form.processing ? 'Saving…' : 'Save'}</button></div>
                     </div>
                 </form>
             )}

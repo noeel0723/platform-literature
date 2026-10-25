@@ -39,6 +39,7 @@
                 'quick_log_search' => $headerUser ? route('quick-log.literatures') : null,
             ],
             'user' => $headerUser ? [
+                'id' => $headerUser->id,
                 'name' => $headerUser->name,
                 'email_verified' => $headerUser->hasVerifiedEmail(),
                 'username' => $headerUser->username,

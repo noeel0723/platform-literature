@@ -16,6 +16,7 @@ use App\Services\Literature\CanonicalReviewQuery;
 use App\Services\Literature\CanonicalWorkIdentity;
 use App\Services\Literature\CatalogSyncService;
 use App\Services\Literature\LiteraturePresenter;
+use App\Support\ReviewDraftContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -144,7 +145,7 @@ class LiteratureController extends Controller
         ]);
     }
 
-    public function show(Literature $literature, CanonicalWorkIdentity $identity, CanonicalReviewQuery $reviewQuery): Response
+    public function show(Literature $literature, CanonicalWorkIdentity $identity, CanonicalReviewQuery $reviewQuery, ReviewDraftContext $draftContext): Response
     {
         $viewer = request()->user()?->hasVerifiedEmail() ? request()->user() : null;
         $userId = $viewer?->id ?? 0;
@@ -192,7 +193,7 @@ class LiteratureController extends Controller
             ->first();
         $currentReview = $viewer === null ? null : (clone $canonicalReviews)
             ->where('reviews.user_id', $viewer->id)
-            ->first(['reviews.id', 'reviews.rating', 'reviews.body', 'reviews.contains_spoiler']);
+            ->first(['reviews.id', 'reviews.rating', 'reviews.body', 'reviews.contains_spoiler', 'reviews.updated_at']);
         $viewerLists = collect();
 
         if ($viewer !== null) {
@@ -269,6 +270,7 @@ class LiteratureController extends Controller
                 ->get()
                 ->map(fn (Literature $candidate): array => $this->presenter->present($candidate));
         $presentedLiterature = $this->presenter->present($literature);
+        $presentedLiterature['review_draft_context'] = $draftContext->present($viewer, $literature, $currentReview, $readingList?->completed_at?->toDateString());
         $presentedLiterature['genre_links'] = collect($presentedLiterature['genre_links'])
             ->map(fn (array $genre): array => [
                 ...$genre,

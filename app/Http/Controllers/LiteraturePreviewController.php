@@ -5,12 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\CanonicalWorkLink;
 use App\Models\Literature;
 use App\Services\Literature\CanonicalWorkIdentity;
+use App\Support\ReviewDraftContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class LiteraturePreviewController extends Controller
 {
-    public function __invoke(Request $request, Literature $literature, CanonicalWorkIdentity $identity): JsonResponse
+    public function __invoke(Request $request, Literature $literature, CanonicalWorkIdentity $identity, ReviewDraftContext $draftContext): JsonResponse
     {
         $literature = $identity->representative($literature);
         $literature->loadMissing(['authors', 'metadataOverride', 'sourceMapping.canonicalWork.metadataOverride']);
@@ -20,7 +21,7 @@ class LiteraturePreviewController extends Controller
             ->whereIn('literature_id', $equivalentIds)
             ->whereNull('hidden_at')
             ->latest('updated_at')
-            ->first(['id', 'rating', 'body', 'contains_spoiler']);
+            ->first(['id', 'rating', 'body', 'contains_spoiler', 'updated_at']);
         $reading = $user?->readingLists()
             ->whereIn('literature_id', $equivalentIds)
             ->latest('updated_at')
@@ -54,6 +55,8 @@ class LiteraturePreviewController extends Controller
         return response()->json([
             'literature' => [
                 'id' => $literature->id,
+                'preview_url' => route('literatures.preview', $literature),
+                'review_draft_context' => $draftContext->present($user, $literature, $review, $reading?->completed_at?->toDateString()),
                 'title' => $literature->displayTitle(),
                 'type' => $literature->typeLabel(),
                 'year' => $literature->displayPublicationYear(),

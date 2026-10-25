@@ -8,6 +8,7 @@ use App\Models\ReadingList;
 use App\Models\Review;
 use App\Services\Literature\CanonicalLiteratureSearch;
 use App\Services\Literature\CanonicalWorkIdentity;
+use App\Support\ReviewDraftContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
@@ -18,6 +19,7 @@ class QuickLogController extends Controller
         QuickLogSearchRequest $request,
         CanonicalLiteratureSearch $canonicalSearch,
         CanonicalWorkIdentity $canonicalIdentity,
+        ReviewDraftContext $draftContext,
     ): JsonResponse {
         $query = Str::squish((string) $request->validated('q', ''));
         $normalizedQuery = Str::lower($query);
@@ -38,7 +40,7 @@ class QuickLogController extends Controller
         $canonicalIds = $literatures->pluck('sourceMapping.canonical_work_id')->filter()->values();
         $literatureIds = $literatures->modelKeys();
         $reviews = Review::query()
-            ->select(['id', 'user_id', 'literature_id', 'rating', 'body', 'contains_spoiler', 'created_at'])
+            ->select(['id', 'user_id', 'literature_id', 'rating', 'body', 'contains_spoiler', 'created_at', 'updated_at'])
             ->whereBelongsTo($request->user())
             ->whereNull('hidden_at')
             ->where(function (Builder $reviewQuery) use ($literatureIds, $canonicalIds): void {
@@ -70,13 +72,15 @@ class QuickLogController extends Controller
             ->keyBy(fn (ReadingList $readingList): string => $this->reviewKey($readingList->literature));
 
         $results = $literatures
-            ->map(function (Literature $literature) use ($readingLists, $reviews, $canonicalIdentity): array {
+            ->map(function (Literature $literature) use ($readingLists, $reviews, $canonicalIdentity, $draftContext, $request): array {
                 $review = $reviews->get($this->reviewKey($literature));
                 $readingList = $readingLists->get($this->reviewKey($literature));
                 $reviewLiterature = $canonicalIdentity->representative($review?->literature ?? $literature);
 
                 return [
                     'id' => $literature->id,
+                    'preview_url' => route('literatures.preview', $reviewLiterature),
+                    'review_draft_context' => $draftContext->present($request->user(), $literature, $review, $readingList?->completed_at?->toDateString()),
                     'title' => $literature->displayTitle(),
                     'year' => $literature->displayPublicationYear(),
                     'type' => $literature->typeLabel(),
