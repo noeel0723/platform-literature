@@ -12,8 +12,8 @@ use App\Models\Report;
 use App\Models\Review;
 use App\Models\User;
 use App\Services\Literature\CanonicalLiteratureSearch;
+use App\Services\Literature\CanonicalReviewQuery;
 use App\Services\Literature\CanonicalWorkIdentity;
-use App\Services\Literature\CatalogResultRanker;
 use App\Services\Literature\CatalogSyncService;
 use App\Services\Literature\LiteraturePresenter;
 use Illuminate\Database\Eloquent\Builder;
@@ -29,7 +29,6 @@ class LiteratureController extends Controller
     public function index(
         Request $request,
         CatalogSyncService $catalogSync,
-        CatalogResultRanker $resultRanker,
         CanonicalLiteratureSearch $canonicalSearch,
     ): Response {
         $query = trim((string) $request->query('q', ''));
@@ -79,13 +78,10 @@ class LiteratureController extends Controller
         $literatures = collect();
 
         if ($query !== '' || $selectedType !== '') {
-            $matches = $canonicalSearch->query($query, $selectedType)
-                ->latest('updated_at')
-                ->latest('id')
-                ->limit(100)
+            $rankedMatches = $canonicalSearch->rankedQuery($query, $selectedType)
+                ->limit($displayLimit + 1)
                 ->get();
 
-            $rankedMatches = $resultRanker->rank($matches, $query);
             $canExpand = $rankedMatches->count() > $displayLimit;
             $literatures = $rankedMatches
                 ->take($displayLimit)
@@ -129,9 +125,7 @@ class LiteratureController extends Controller
         $query = trim((string) $request->query('q', ''));
         $selectedType = trim((string) $request->query('type', ''));
         $selectedType = array_key_exists($selectedType, Literature::TYPE_LABELS) ? $selectedType : '';
-        $literatures = $canonicalSearch->query($query, $selectedType)
-            ->latest('updated_at')
-            ->latest('id')
+        $literatures = $canonicalSearch->rankedQuery($query, $selectedType)
             ->paginate(18)
             ->withQueryString()
             ->through(fn (Literature $literature): array => $this->presenter->present($literature));
@@ -150,7 +144,7 @@ class LiteratureController extends Controller
         ]);
     }
 
-    public function show(Literature $literature, CanonicalWorkIdentity $identity): Response
+    public function show(Literature $literature, CanonicalWorkIdentity $identity, CanonicalReviewQuery $reviewQuery): Response
     {
         $viewer = request()->user()?->hasVerifiedEmail() ? request()->user() : null;
         $userId = $viewer?->id ?? 0;
@@ -170,28 +164,35 @@ class LiteratureController extends Controller
             'outgoingRelations.relatedLiterature.apiSource',
             'outgoingRelations.relatedLiterature.authors',
             'outgoingRelations.relatedLiterature.categories',
+            'outgoingRelations.relatedLiterature.metadataOverride',
+            'outgoingRelations.relatedLiterature.sourceMapping.canonicalWork.metadataOverride',
         ]);
 
         $equivalentIds = $identity->equivalentLiteratureIds($literature);
-        $canonicalReviews = Review::query()
-            ->whereIn('literature_id', $equivalentIds)
-            ->whereNull('hidden_at')
-            ->with([
-                'user',
-                'likes' => fn ($likes) => $likes->where('user_id', $userId),
-            ])
+        $canonicalReviews = $reviewQuery->query($equivalentIds->all());
+        $ratingSummary = (clone $canonicalReviews)->toBase()
+            ->selectRaw('AVG(reviews.rating) AS average, COUNT(*) AS rating_count')
+            ->first();
+        $reviews = (clone $canonicalReviews)
+            ->written()
+            ->with('user:id,name,username,avatar_path')
             ->withCount('likes')
-            ->latest('updated_at')
-            ->get()
-            ->unique('user_id')
-            ->values();
+            ->withExists(['likes as is_liked' => fn (Builder $likes) => $likes->where('user_id', $userId)])
+            ->latest('reviews.created_at')
+            ->latest('reviews.updated_at')
+            ->latest('reviews.id')
+            ->paginate(12, ['reviews.*'], 'reviews_page')
+            ->withQueryString()
+            ->fragment('reviews');
 
         $readingList = $viewer?->readingLists()
             ->whereIn('literature_id', $equivalentIds)
             ->with('progress')
             ->latest('updated_at')
             ->first();
-        $currentReview = $canonicalReviews->firstWhere('user_id', $viewer?->id);
+        $currentReview = $viewer === null ? null : (clone $canonicalReviews)
+            ->where('reviews.user_id', $viewer->id)
+            ->first(['reviews.id', 'reviews.rating', 'reviews.body', 'reviews.contains_spoiler']);
         $viewerLists = collect();
 
         if ($viewer !== null) {
@@ -218,7 +219,6 @@ class LiteratureController extends Controller
             ->whereNull('hidden_at')
             ->with([
                 'user',
-                'likes' => fn ($likes) => $likes->where('user_id', $userId),
                 'topLevelComments.user',
                 'topLevelComments.replies.user',
             ])
@@ -226,6 +226,7 @@ class LiteratureController extends Controller
                 'comments' => fn ($comments) => $comments->whereNull('hidden_at'),
                 'likes',
             ])
+            ->withExists(['likes as is_liked' => fn (Builder $likes) => $likes->where('user_id', $userId)])
             ->latest()
             ->limit(20)
             ->get();
@@ -258,7 +259,7 @@ class LiteratureController extends Controller
         $authorDiscoveries = $authorIds->isEmpty()
             ? collect()
             : Literature::query()
-                ->with(['apiSource', 'authors', 'categories'])
+                ->with(['apiSource', 'authors', 'categories', 'metadataOverride', 'sourceMapping.canonicalWork.metadataOverride'])
                 ->canonicalRepresentatives()
                 ->where('id', '!=', $literature->id)
                 ->whereNotIn('id', $relatedIds)
@@ -313,15 +314,21 @@ class LiteratureController extends Controller
                 'custom_lists' => $viewerLists->all(),
             ],
             'ratingSummary' => [
-                'average' => $canonicalReviews->avg('rating'),
-                'count' => $canonicalReviews->count(),
+                'average' => $ratingSummary->average === null ? null : (float) $ratingSummary->average,
+                'count' => (int) $ratingSummary->rating_count,
             ],
-            'reviews' => $canonicalReviews
-                ->filter(fn (Review $review): bool => filled($review->body))
-                ->sortByDesc('created_at')
+            'reviews' => $reviews->getCollection()
                 ->map(fn (Review $review): array => $this->presentReview($review, $userId))
                 ->values()
                 ->all(),
+            'reviewPagination' => [
+                'current_page' => $reviews->currentPage(),
+                'last_page' => $reviews->lastPage(),
+                'per_page' => $reviews->perPage(),
+                'total' => $reviews->total(),
+                'prev_page_url' => $reviews->previousPageUrl(),
+                'next_page_url' => $reviews->nextPageUrl(),
+            ],
             'discussions' => $discussions
                 ->map(fn (Discussion $discussion): array => $this->presentDiscussion($discussion, $userId))
                 ->values()
@@ -366,7 +373,7 @@ class LiteratureController extends Controller
             'body' => $review->body,
             'contains_spoiler' => $review->contains_spoiler,
             'likes_count' => $review->likes_count,
-            'is_liked' => $review->likes->isNotEmpty(),
+            'is_liked' => (bool) $review->is_liked,
             'created_at' => $review->created_at->utc()->toIso8601String(),
             'user' => $this->presentUser($review->user),
             'can_report' => $userId > 0 && $userId !== $review->user_id,
@@ -387,7 +394,7 @@ class LiteratureController extends Controller
             'contains_spoiler' => $discussion->contains_spoiler,
             'comments_count' => $discussion->comments_count,
             'likes_count' => $discussion->likes_count,
-            'is_liked' => $discussion->likes->isNotEmpty(),
+            'is_liked' => (bool) $discussion->is_liked,
             'created_at' => $discussion->created_at->utc()->toIso8601String(),
             'user' => $this->presentUser($discussion->user),
             'can_report' => $userId > 0 && $userId !== $discussion->user_id,

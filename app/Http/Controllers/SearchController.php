@@ -24,8 +24,7 @@ class SearchController extends Controller
         $members = collect();
 
         if ($query !== '') {
-            $literatures = $canonicalSearch->query($query)
-                ->latest('updated_at')
+            $literatures = $canonicalSearch->rankedQuery($query)
                 ->limit(12)
                 ->get();
 

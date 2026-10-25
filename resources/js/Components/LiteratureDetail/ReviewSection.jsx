@@ -1,9 +1,10 @@
 import { Link, router } from '@inertiajs/react';
 
 import SiteContainer from '../SiteContainer';
+import CatalogPagination from '../CatalogPagination';
 import { ReportForm, SectionHeading, SpoilerContent, StarRating, TimeLabel, UserAvatar, plural } from './DetailUi';
 
-export default function ReviewSection({ reviews, ratingSummary, viewer, reportReasons, reportAction }) {
+export default function ReviewSection({ reviews, pagination, ratingSummary, viewer, reportReasons, reportAction }) {
     const toggleLike = (review) => {
         const options = { preserveScroll: true };
         if (review.is_liked) router.delete(review.unlike_url, options);
@@ -51,6 +52,7 @@ export default function ReviewSection({ reviews, ratingSummary, viewer, reportRe
                             </article>
                         )) : <div className="py-7 text-sm text-ink-950/65">No reviews yet. Be the first reader to share a rating.</div>}
                     </div>
+                    {pagination?.last_page > 1 && <CatalogPagination pagination={pagination} label="Review pagination" />}
                 </div>
             </SiteContainer>
         </section>

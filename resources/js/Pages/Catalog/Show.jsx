@@ -131,7 +131,7 @@ function Discovery({ relationshipGroups, authorDiscoveries }) {
     );
 }
 
-export default function Show({ literature, whereToRead, viewer, ratingSummary, reviews, discussions, discussionCount, relationshipGroups, authorDiscoveries, reportReasons, successMessage, routes }) {
+export default function Show({ literature, whereToRead, viewer, ratingSummary, reviews, reviewPagination, discussions, discussionCount, relationshipGroups, authorDiscoveries, reportReasons, successMessage, routes }) {
     const [reviewOpen, setReviewOpen] = useState(false);
     const backdropUrl = literature.backdrop_url || literature.cover_url;
     const hasDedicatedBackdrop = Boolean(literature.backdrop_url);
@@ -179,7 +179,7 @@ export default function Show({ literature, whereToRead, viewer, ratingSummary, r
 
             <LiteratureDetails literature={literature} hasDiscovery={relationshipGroups.some((group) => group.items.length > 0) || authorDiscoveries.length > 0} />
             <Discovery relationshipGroups={relationshipGroups} authorDiscoveries={authorDiscoveries} />
-            <ReviewSection reviews={reviews} ratingSummary={ratingSummary} viewer={viewer} reportReasons={reportReasons} reportAction={routes.report_store} />
+            <ReviewSection reviews={reviews} pagination={reviewPagination} ratingSummary={ratingSummary} viewer={viewer} reportReasons={reportReasons} reportAction={routes.report_store} />
             {viewer.authenticated && <ReviewDialog literature={literature} viewer={viewer} routes={routes} form={reviewForm} open={reviewOpen} onClose={() => setReviewOpen(false)} />}
             <DiscussionSection literature={literature} discussions={discussions} discussionCount={discussionCount} viewer={viewer} routes={routes} reportReasons={reportReasons} />
         </>

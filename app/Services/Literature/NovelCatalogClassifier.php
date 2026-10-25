@@ -2,10 +2,71 @@
 
 namespace App\Services\Literature;
 
+use App\Models\Literature;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 
 final class NovelCatalogClassifier
 {
+    private const EXCLUDED_TITLES = [
+        'unofficial', 'study guide', 'study notes', 'workbook', 'summary',
+        'teacher guide', 'teacher s guide',
+        'lesson plan', 'lesson plans', 'reading guide', 'reader guide',
+        'reader s guide', 'companion guide',
+        'critical perspectives', 'literary criticism', 'coloring book', 'colouring book',
+        'activity book', 'quiz book', 'musical script', 'screenplay',
+    ];
+
+    private const EXCLUDED_CATEGORIES = [
+        'nonfiction', 'non fiction', 'literary criticism', 'literary collections',
+        'study aids', 'education', 'reference', 'biography autobiography',
+        'biography and autobiography', 'comics graphic novels', 'comics and graphic novels',
+        'language arts disciplines', 'language arts and disciplines',
+    ];
+
+    /** @param Builder<Literature> $query */
+    public function constrainSearch(Builder $query, string $titleExpression): void
+    {
+        $query->where(function (Builder $eligible) use ($titleExpression): void {
+            $eligible->where('literatures.type', '!=', 'novel')
+                ->orWhere(function (Builder $novels) use ($titleExpression): void {
+                    $this->excludePhrases($novels, $titleExpression, self::EXCLUDED_TITLES);
+                    $novels->whereDoesntHave('categories', function (Builder $categories): void {
+                        $categories->where(function (Builder $excluded): void {
+                            $this->excludePhrases($excluded, 'categories.name', self::EXCLUDED_CATEGORIES, true);
+                        });
+                    });
+                });
+        });
+    }
+
+    /** @param list<string> $phrases */
+    private function excludePhrases(Builder $query, string $expression, array $phrases, bool $matchAny = false): void
+    {
+        $normalized = "LOWER(COALESCE({$expression}, ''))";
+
+        foreach (["'", '’', '-', '/', '&', '.', ',', ':', ';', '!', '?', '(', ')'] as $punctuation) {
+            $literal = str_replace("'", "''", $punctuation);
+            $normalized = "REPLACE({$normalized}, '{$literal}', ' ')";
+        }
+
+        for ($pass = 0; $pass < 3; $pass++) {
+            $normalized = "REPLACE({$normalized}, '  ', ' ')";
+        }
+
+        $padded = $query->getConnection()->getDriverName() === 'sqlite'
+            ? "(' ' || {$normalized} || ' ')"
+            : "CONCAT(' ', {$normalized}, ' ')";
+
+        foreach ($phrases as $phrase) {
+            if ($matchAny) {
+                $query->orWhereRaw("{$padded} LIKE ?", ['% '.$phrase.' %']);
+            } else {
+                $query->whereRaw("{$padded} NOT LIKE ?", ['% '.$phrase.' %']);
+            }
+        }
+    }
+
     /**
      * @param  list<string>  $categories
      * @param  list<string>  $authors
@@ -77,18 +138,18 @@ final class NovelCatalogClassifier
 
     private function hasExcludedTitle(string $title): bool
     {
-        return preg_match(
-            '/\b(?:unofficial|study guide|study notes|workbook|summary(?: and analysis)?|teacher(?: s)? guide|lesson plans?|reading guide|reader(?: s)? guide|companion guide|critical perspectives|literary criticism|coloring book|colouring book|activity book|quiz book|musical script|screenplay)\b/u',
-            $title,
-        ) === 1;
+        return $this->containsExcludedPhrase($title, self::EXCLUDED_TITLES);
     }
 
     private function hasExcludedCategory(string $categories): bool
     {
-        return preg_match(
-            '/\b(?:nonfiction|non fiction|literary criticism|literary collections|study aids|education|reference|biography (?:and )?autobiography|comics (?:and )?graphic novels|language arts (?:and )?disciplines)\b/u',
-            $categories,
-        ) === 1;
+        return $this->containsExcludedPhrase($categories, self::EXCLUDED_CATEGORIES);
+    }
+
+    /** @param list<string> $phrases */
+    private function containsExcludedPhrase(string $value, array $phrases): bool
+    {
+        return Str::contains(' '.$value.' ', array_map(fn (string $phrase): string => ' '.$phrase.' ', $phrases));
     }
 
     private function hasNovelEvidence(string $categories, string $description): bool
