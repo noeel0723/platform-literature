@@ -37,6 +37,11 @@ export default function CatalogIndex({
     routes,
 }) {
     const [search, setSearch] = useState(query);
+    const resultsTitle = query?.trim()
+        ? 'Search results'
+        : selectedType && types[selectedType]
+            ? `Latest ${types[selectedType].toLowerCase()} matches`
+            : 'Latest matches';
 
     useEffect(() => {
         setSearch(query);
@@ -105,7 +110,7 @@ export default function CatalogIndex({
 
             <SiteContainer as="section" className="py-8 lg:py-10" aria-labelledby="catalog-results-title">
                 <div className="mb-5 flex items-center justify-between gap-3 border-b border-ink-950/15 pb-3">
-                    <p id="catalog-results-title" className="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">Latest matches</p>
+                    <p id="catalog-results-title" className="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">{resultsTitle}</p>
                     {literatures.length > 0 && (
                         <div className="flex items-center gap-5">
                             {canExpand && (
