@@ -236,6 +236,10 @@
         color: var(--color-ink-950);
     }
 
+    .literature-card-cover {
+        container-type: inline-size;
+    }
+
     .literature-card-controls {
         transition: opacity 150ms ease;
     }
@@ -245,7 +249,13 @@
     }
 }
 
-@media (hover: hover) and (pointer: fine) {
+@container (max-width: 159px) {
+    .literature-card-controls [data-cover-status-action] {
+        display: none;
+    }
+}
+
+@media (min-width: 768px) and (hover: hover) and (pointer: fine) {
     .literature-card-controls {
         opacity: 0;
         pointer-events: none;

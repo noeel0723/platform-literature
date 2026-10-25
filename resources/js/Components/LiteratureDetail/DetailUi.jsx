@@ -1,6 +1,8 @@
 import { Link, useForm } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 
+import { previewActionIndex } from '../../Support/literatureCardPreview';
+
 export function SectionHeading({ as: Tag = 'h2', id, children }) {
     return (
         <Tag id={id} className="font-serif text-sm font-semibold uppercase tracking-[0.14em] text-ink-950">
@@ -30,17 +32,31 @@ export function StarRating({ rating = 0, size = 'text-lg' }) {
     );
 }
 
-export function RatingInput({ value, onChange, compact = false, onCommit, inactiveClassName = 'text-ink-950/45' }) {
+export function RatingInput({ value, onChange, compact = false, onCommit, keyboardNavigation = false, inactiveClassName = 'text-ink-950/45' }) {
     const [hovered, setHovered] = useState(null);
+    const [activeRating, setActiveRating] = useState(null);
     const preview = hovered ?? Number(value || 0);
+    const ratingActions = keyboardNavigation && Boolean(onCommit);
 
     return (
         <div>
             <div
                 className="flex"
-                role="radiogroup"
+                role={ratingActions ? 'toolbar' : 'radiogroup'}
                 aria-label="Choose your rating from 0.5 to 5 stars"
+                aria-orientation={ratingActions ? 'horizontal' : undefined}
+                aria-description={ratingActions ? 'Use arrow keys to preview a rating. Press Enter or Space to open the review form.' : undefined}
                 onMouseLeave={() => setHovered(null)}
+                onKeyDown={(event) => {
+                    if (!keyboardNavigation) return;
+                    const buttons = Array.from(event.currentTarget.querySelectorAll('button'));
+                    const key = { ArrowRight: 'ArrowDown', ArrowLeft: 'ArrowUp' }[event.key] ?? event.key;
+                    const next = previewActionIndex(key, buttons.indexOf(event.target), buttons.length);
+                    if (next === null) return;
+                    event.preventDefault();
+                    event.stopPropagation();
+                    buttons[next]?.focus();
+                }}
             >
                 {Array.from({ length: 10 }, (_, index) => {
                     const halfStep = index + 1;
@@ -52,19 +68,21 @@ export function RatingInput({ value, onChange, compact = false, onCommit, inacti
                             key={rating}
                             type="button"
                             data-rating-value={rating}
-                            className={`${compact ? 'h-10 w-4 text-3xl leading-10' : 'h-14 w-6 text-5xl leading-14'} overflow-hidden text-left transition focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-coral ${selected ? 'text-brand-coral' : inactiveClassName}`}
-                            role="radio"
-                            aria-checked={Number(value) === rating}
+                            className={`${compact ? (keyboardNavigation ? 'h-11 w-5 text-4xl leading-11' : 'h-10 w-4 text-3xl leading-10') : 'h-14 w-6 text-5xl leading-14'} overflow-hidden text-left transition focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-coral ${selected ? 'text-brand-coral' : inactiveClassName}`}
+                            role={ratingActions ? undefined : 'radio'}
+                            tabIndex={keyboardNavigation ? ((activeRating ?? Number(value || 0.5)) === rating ? 0 : -1) : undefined}
+                            aria-checked={ratingActions ? undefined : Number(value) === rating}
+                            aria-pressed={ratingActions ? Number(value) === rating : undefined}
                             aria-label={`${rating.toFixed(1)} out of 5 stars`}
                             onMouseEnter={() => setHovered(rating)}
-                            onFocus={() => setHovered(rating)}
+                            onFocus={() => { setHovered(rating); setActiveRating(rating); }}
                             onBlur={() => setHovered(null)}
                             onClick={() => {
                                 onChange(rating);
                                 onCommit?.(rating);
                             }}
                         >
-                            <span className={`block text-center ${compact ? 'w-8' : 'w-12'} ${halfStep % 2 === 0 ? '-translate-x-1/2' : ''}`}>★</span>
+                            <span aria-hidden="true" className={`block text-center ${compact ? (keyboardNavigation ? 'w-10' : 'w-8') : 'w-12'} ${halfStep % 2 === 0 ? '-translate-x-1/2' : ''}`}>★</span>
                         </button>
                     );
                 })}

@@ -3,11 +3,13 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { openLoginPanel } from '../Support/loginPanel';
+import { focusablePreviewActions, previewActionIndex, previewPosition, previewTabBoundary } from '../Support/literatureCardPreview';
 import { RatingInput } from './LiteratureDetail/DetailUi';
 import QuickLogDialog from './QuickLogDialog';
 
 const OPEN_PREVIEW_EVENT = 'literahaven:open-cover-preview';
-const actionClass = 'flex min-h-9 w-full items-center justify-between gap-3 px-4 py-2 text-left text-xs font-semibold transition hover:bg-brand-sky/20 focus-visible:bg-brand-sky/20 focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-brand-coral disabled:cursor-wait disabled:opacity-50';
+const actionClass = 'flex min-h-11 w-full items-center justify-between gap-3 px-4 py-2 text-left text-xs font-semibold transition hover:bg-brand-sky/20 focus-visible:bg-brand-sky/20 focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-brand-coral disabled:cursor-wait disabled:opacity-50';
+const controlClass = 'grid size-11 shrink-0 place-items-center rounded-sm transition hover:bg-brand-cream/15 focus-visible:outline-2 focus-visible:outline-brand-coral';
 
 async function fetchPreview(url, signal) {
     const response = await fetch(url, {
@@ -39,6 +41,11 @@ export default function LiteratureCardPreview({ literature, compact = false, chi
     const openTimer = useRef(null);
     const closeTimer = useRef(null);
     const focusRequested = useRef(false);
+    const pinned = useRef(false);
+    const returnFocusRef = useRef(null);
+    const processingRef = useRef(false);
+    const mutationRef = useRef(null);
+    const restoreQuickLogFocus = useRef(false);
     const [open, setOpen] = useState(false);
     const [preview, setPreview] = useState(null);
     const [position, setPosition] = useState(null);
@@ -55,37 +62,79 @@ export default function LiteratureCardPreview({ literature, compact = false, chi
     };
     const close = (restoreFocus = false) => {
         clearTimers();
+        pinned.current = false;
+        focusRequested.current = false;
         setOpen(false);
-        if (restoreFocus) triggerRef.current?.focus();
+        setPosition(null);
+        if (restoreFocus) (returnFocusRef.current ?? triggerRef.current)?.focus({ preventScroll: true });
     };
-    const show = () => {
+    const show = (focus = false, source = triggerRef.current) => {
         clearTimers();
+        pinned.current = true;
+        returnFocusRef.current = source;
+        focusRequested.current = focus;
         setOpen(true);
+        if (focus && open && position) {
+            menuRef.current?.focus({ preventScroll: true });
+            focusRequested.current = false;
+        }
     };
     const scheduleOpen = () => {
         clearTimers();
-        openTimer.current = window.setTimeout(() => setOpen(true), 180);
+        openTimer.current = window.setTimeout(() => {
+            if (document.querySelector('dialog[open]')) return;
+            const focusedPanel = document.activeElement?.closest('[data-preview-panel]');
+            if (focusedPanel && focusedPanel !== menuRef.current) return;
+            returnFocusRef.current = triggerRef.current;
+            setOpen(true);
+        }, 180);
     };
     const scheduleClose = () => {
         clearTimers();
+        if (pinned.current) return;
         closeTimer.current = window.setTimeout(() => {
-            if (!menuRef.current?.contains(document.activeElement)) setOpen(false);
-        }, 180);
+            if (!menuRef.current?.contains(document.activeElement) && !coverRef.current?.contains(document.activeElement)) close();
+        }, 300);
     };
     const onBlur = (event) => {
-        if (!coverRef.current?.contains(event.relatedTarget) && !menuRef.current?.contains(event.relatedTarget)) scheduleClose();
+        if (event.relatedTarget && !coverRef.current?.contains(event.relatedTarget) && !menuRef.current?.contains(event.relatedTarget)) close();
+    };
+
+    const onPanelKeyDown = (event) => {
+        const actions = focusablePreviewActions(menuRef.current);
+        const current = actions.indexOf(document.activeElement);
+        if (event.key === 'Tab') {
+            const boundary = previewTabBoundary(current, actions.length, event.shiftKey);
+            if (!boundary) return;
+            event.preventDefault();
+            if (boundary === 'first') actions[0]?.focus();
+            else if (boundary === 'trigger') close(true);
+            else {
+                const pageActions = focusablePreviewActions(document).filter((element) => !menuRef.current.contains(element));
+                const next = pageActions[pageActions.indexOf(triggerRef.current) + 1];
+                close();
+                (next ?? triggerRef.current)?.focus({ preventScroll: true });
+            }
+            return;
+        }
+        if (event.target.closest('[role="radiogroup"], [role="toolbar"]')) return;
+        const next = previewActionIndex(event.key, current, actions.length);
+        if (next !== null) {
+            event.preventDefault();
+            actions[next].focus();
+        }
     };
 
     useEffect(() => {
         const closeOther = (event) => {
             if (event.detail !== menuId) {
-                clearTimers();
-                setOpen(false);
+                close(menuRef.current?.contains(document.activeElement));
             }
         };
         window.addEventListener(OPEN_PREVIEW_EVENT, closeOther);
         return () => {
             clearTimers();
+            mutationRef.current?.abort();
             window.removeEventListener(OPEN_PREVIEW_EVENT, closeOther);
         };
     }, [menuId]);
@@ -104,7 +153,7 @@ export default function LiteratureCardPreview({ literature, compact = false, chi
         return () => request.abort();
     }, [open, literature.preview_url, menuId]);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         if (!open) return;
         const outside = (event) => {
             if (!coverRef.current?.contains(event.target) && !menuRef.current?.contains(event.target)) close();
@@ -112,7 +161,8 @@ export default function LiteratureCardPreview({ literature, compact = false, chi
         const escape = (event) => {
             if (event.key === 'Escape') {
                 event.preventDefault();
-                close(true);
+                event.stopPropagation();
+                close(menuRef.current?.contains(document.activeElement) || coverRef.current?.contains(document.activeElement));
             }
         };
         document.addEventListener('pointerdown', outside);
@@ -125,29 +175,54 @@ export default function LiteratureCardPreview({ literature, compact = false, chi
 
     useLayoutEffect(() => {
         if (!open) return;
+        let frame;
         const updatePosition = () => {
             if (!coverRef.current || !menuRef.current) return;
             const cover = coverRef.current.getBoundingClientRect();
-            const width = Math.min(256, window.innerWidth - 24);
-            const height = menuRef.current.getBoundingClientRect().height;
-            let left = cover.right - 12;
-            if (left + width > window.innerWidth - 12) left = cover.left - width + 12;
-            left = Math.max(12, Math.min(left, window.innerWidth - width - 12));
-            const top = Math.max(12, Math.min(cover.bottom - height, window.innerHeight - height - 12));
-            setPosition({ left, top, width });
+            const viewport = window.visualViewport;
+            const next = previewPosition(cover, {
+                left: viewport?.offsetLeft ?? 0,
+                top: viewport?.offsetTop ?? 0,
+                width: viewport?.width ?? window.innerWidth,
+                height: viewport?.height ?? window.innerHeight,
+            }, menuRef.current.getBoundingClientRect().height);
+            setPosition((current) => current && Object.keys(next).every((key) => current[key] === next[key]) ? current : next);
+        };
+        const schedulePosition = () => {
+            window.cancelAnimationFrame(frame);
+            frame = window.requestAnimationFrame(updatePosition);
         };
         updatePosition();
-        if (focusRequested.current) {
-            menuRef.current?.focus();
-            focusRequested.current = false;
-        }
-        window.addEventListener('resize', updatePosition);
-        window.addEventListener('scroll', updatePosition, true);
+        const observer = new ResizeObserver(schedulePosition);
+        observer.observe(menuRef.current);
+        observer.observe(coverRef.current);
+        window.addEventListener('resize', schedulePosition);
+        window.addEventListener('scroll', schedulePosition, true);
+        window.visualViewport?.addEventListener('resize', schedulePosition);
+        window.visualViewport?.addEventListener('scroll', schedulePosition);
         return () => {
-            window.removeEventListener('resize', updatePosition);
-            window.removeEventListener('scroll', updatePosition, true);
+            window.cancelAnimationFrame(frame);
+            observer.disconnect();
+            window.removeEventListener('resize', schedulePosition);
+            window.removeEventListener('scroll', schedulePosition, true);
+            window.visualViewport?.removeEventListener('resize', schedulePosition);
+            window.visualViewport?.removeEventListener('scroll', schedulePosition);
         };
     }, [open, preview, loading, listsOpen, error]);
+
+    useLayoutEffect(() => {
+        if (open && position && focusRequested.current) {
+            menuRef.current?.focus({ preventScroll: true });
+            focusRequested.current = false;
+        }
+    }, [open, position]);
+
+    useLayoutEffect(() => {
+        if (!quickLog && restoreQuickLogFocus.current) {
+            restoreQuickLogFocus.current = false;
+            triggerRef.current?.focus({ preventScroll: true });
+        }
+    }, [quickLog]);
 
     const requireLogin = () => {
         if (preview?.viewer.authenticated) return false;
@@ -157,33 +232,43 @@ export default function LiteratureCardPreview({ literature, compact = false, chi
         return true;
     };
     const review = (rating = null) => {
-        if (!preview || loading) return show();
+        if (!preview || loading) return show(true);
         if (requireLogin()) return;
         setQuickLog({ literature: preview.literature, rating });
         close();
     };
     const mutate = async (url, method, values = {}) => {
-        if (processing) return;
+        if (processingRef.current) return;
+        processingRef.current = true;
+        const request = new AbortController();
+        mutationRef.current = request;
+        const previousAction = document.activeElement;
+        const restoreAction = menuRef.current?.contains(previousAction) || coverRef.current?.contains(previousAction);
         setProcessing(true);
         setError('');
         try {
             const response = await fetch(url, {
                 method,
                 credentials: 'same-origin',
+                signal: request.signal,
                 headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...values, _token: preview.csrf_token }),
             });
             const data = await response.json();
             if (!response.ok) throw new Error(Object.values(data.errors ?? {}).flat()[0] ?? data.message ?? 'The action could not be saved.');
-            setPreview(await fetchPreview(literature.preview_url));
+            setPreview(await fetchPreview(literature.preview_url, request.signal));
         } catch (failure) {
-            setError(failure.message || 'The action could not be saved. Please try again.');
+            if (!request.signal.aborted) setError(failure.message || 'The action could not be saved. Please try again.');
         } finally {
-            setProcessing(false);
+            processingRef.current = false;
+            if (!request.signal.aborted) setProcessing(false);
+            if (restoreAction && !request.signal.aborted) window.requestAnimationFrame(() => {
+                if (previousAction.isConnected && document.activeElement === document.body) previousAction.focus({ preventScroll: true });
+            });
         }
     };
-    const toggleReading = (status) => {
-        if (!preview || loading) return show();
+    const toggleReading = (status, source = triggerRef.current) => {
+        if (!preview || loading) return show(true, source);
         if (requireLogin()) return;
         if (readingStatus === status) mutate(preview.routes.reading_destroy, 'DELETE');
         else mutate(preview.routes.reading_update, 'PUT', { status });
@@ -197,40 +282,45 @@ export default function LiteratureCardPreview({ literature, compact = false, chi
 
     return (
         <>
-            <div ref={coverRef} className="literature-card-cover relative" data-preview-open={open} onPointerEnter={(event) => { if (event.pointerType === 'mouse') scheduleOpen(); }} onPointerLeave={scheduleClose} onFocusCapture={clearTimers} onBlurCapture={onBlur}>
+            <div ref={coverRef} className="literature-card-cover relative" data-preview-open={open} onPointerEnter={(event) => { if (event.pointerType === 'mouse' && window.matchMedia('(hover: hover) and (pointer: fine)').matches) scheduleOpen(); }} onPointerLeave={(event) => { if (event.pointerType === 'mouse') scheduleClose(); }} onFocusCapture={clearTimers} onBlurCapture={onBlur}>
                 {children}
                 <div className="literature-card-controls absolute inset-x-0 bottom-0 flex justify-end gap-1 bg-linear-to-t from-ink-950/95 to-transparent p-2 pt-8 text-brand-cream">
                     {!compact && <>
-                    <button type="button" disabled={processing} onClick={() => toggleReading('completed')} aria-label={readingStatus === 'completed' ? `Remove completed status for ${literature.title}` : `Mark ${literature.title} as completed`} title="Completed" aria-pressed={readingStatus === 'completed'} className={`grid size-8 place-items-center rounded-sm transition hover:bg-brand-cream/15 focus-visible:outline-2 focus-visible:outline-brand-coral ${readingStatus === 'completed' ? 'text-brand-coral' : ''}`}><ActionIcon name="completed" /></button>
-                    <button type="button" disabled={processing} onClick={() => toggleReading('want_to_read')} aria-label={readingStatus === 'want_to_read' ? `Remove ${literature.title} from Readlist` : `Add ${literature.title} to Readlist`} title="Readlist" aria-pressed={readingStatus === 'want_to_read'} className={`grid size-8 place-items-center rounded-sm transition hover:bg-brand-cream/15 focus-visible:outline-2 focus-visible:outline-brand-coral ${readingStatus === 'want_to_read' ? 'text-brand-coral' : ''}`}><ActionIcon name="readlist" /></button>
+                    <button type="button" data-cover-status-action disabled={processing} onClick={(event) => toggleReading('completed', event.currentTarget)} aria-label={readingStatus === 'completed' ? `Remove completed status for ${literature.title}` : `Mark ${literature.title} as completed`} title="Completed" aria-pressed={readingStatus === 'completed'} className={`${controlClass} ${readingStatus === 'completed' ? 'text-brand-coral' : ''}`}><ActionIcon name="completed" /></button>
+                    <button type="button" data-cover-status-action disabled={processing} onClick={(event) => toggleReading('want_to_read', event.currentTarget)} aria-label={readingStatus === 'want_to_read' ? `Remove ${literature.title} from Readlist` : `Add ${literature.title} to Readlist`} title="Readlist" aria-pressed={readingStatus === 'want_to_read'} className={`${controlClass} ${readingStatus === 'want_to_read' ? 'text-brand-coral' : ''}`}><ActionIcon name="readlist" /></button>
                     </>}
-                    <button ref={triggerRef} type="button" onClick={(event) => { focusRequested.current = event.detail === 0; if (open) close(); else show(); }} aria-label={`Quick actions for ${literature.title}`} title="Quick actions" aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? menuId : undefined} className="grid size-8 place-items-center rounded-sm transition hover:bg-brand-cream/15 focus-visible:outline-2 focus-visible:outline-brand-coral"><ActionIcon name="more" /></button>
+                    <button ref={triggerRef} type="button" onClick={() => { if (open && pinned.current) close(true); else show(true); }} onKeyDown={(event) => {
+                        if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || (event.key === 'Tab' && !event.shiftKey && open)) {
+                            event.preventDefault();
+                            show(true);
+                        }
+                    }} aria-label={`Quick actions for ${literature.title}`} title="Quick actions" aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? menuId : undefined} className={controlClass}><ActionIcon name="more" /></button>
                 </div>
             </div>
 
             {open && createPortal(
-                <div ref={menuRef} id={menuId} role="dialog" aria-modal="false" aria-label={`Quick actions for ${literature.title}`} tabIndex={-1} style={{ width: Math.min(256, window.innerWidth - 24), ...position, visibility: position ? 'visible' : 'hidden' }} className="fixed z-50 max-h-[calc(100dvh-1.5rem)] overflow-y-auto rounded-lg border border-ink-950/15 bg-brand-cream text-ink-950 shadow-xl shadow-ink-950/20 outline-none" onPointerEnter={clearTimers} onPointerLeave={scheduleClose} onFocusCapture={clearTimers} onBlurCapture={onBlur}>
+                <div ref={menuRef} id={menuId} data-preview-panel role="dialog" aria-modal="false" aria-labelledby={`${menuId}-title`} aria-describedby={`${menuId}-metadata`} aria-busy={loading || processing} tabIndex={-1} style={{ width: 256, ...position, visibility: position ? 'visible' : 'hidden' }} className="fixed z-50 max-h-[calc(100dvh-1.5rem)] max-w-[calc(100vw_-_1.5rem)] overflow-y-auto overscroll-contain rounded-lg border border-ink-950/15 bg-brand-cream text-ink-950 shadow-xl shadow-ink-950/20 outline-none focus-visible:ring-2 focus-visible:ring-brand-coral" onKeyDown={onPanelKeyDown} onPointerEnter={clearTimers} onPointerLeave={(event) => { if (event.pointerType === 'mouse') scheduleClose(); }} onFocusCapture={clearTimers} onBlurCapture={onBlur}>
                     <div className="flex items-start justify-between gap-2 border-b border-ink-950/10 px-4 py-3">
-                        <div className="min-w-0"><p className="line-clamp-2 text-sm font-bold leading-5 [overflow-wrap:anywhere]">{literature.title}</p><p className="mt-0.5 truncate text-xs leading-5 text-ink-950/70">{[literature.type_label, literature.year].filter(Boolean).join(' · ')}</p></div>
-                        <button type="button" onClick={() => close(true)} aria-label="Close preview" className="-mr-1 grid size-6 shrink-0 place-items-center rounded-sm text-lg leading-none text-ink-950/45 hover:bg-brand-sky/20 hover:text-ink-950">×</button>
+                        <div className="min-w-0"><p id={`${menuId}-title`} className="line-clamp-2 text-sm font-bold leading-5 [overflow-wrap:anywhere]"><span className="sr-only">Quick actions for </span>{literature.title}</p><p id={`${menuId}-metadata`} className="mt-0.5 truncate text-xs leading-5 text-ink-950/70">{[literature.type_label, literature.year].filter(Boolean).join(' · ')}</p></div>
+                        <button type="button" onClick={() => close(true)} aria-label={`Close preview for ${literature.title}`} className="-mr-1 grid size-11 shrink-0 place-items-center rounded-sm text-lg leading-none text-ink-950/65 hover:bg-brand-sky/20 hover:text-ink-950 focus-visible:outline-2 focus-visible:outline-brand-coral">×</button>
                     </div>
                     {loading ? <p role="status" className="px-4 py-5 text-center text-xs text-ink-950/55">Loading your actions…</p> : preview && (
                         <>
                             <fieldset disabled={processing} className="border-b border-ink-950/10 px-4 py-2 text-center">
                                 <legend className="sr-only">Your rating</legend>
-                                <div className="flex justify-center"><RatingInput compact value={preview.literature.review?.rating ?? ''} onChange={() => {}} onCommit={review} /></div>
+                                <div className="flex justify-center"><RatingInput compact keyboardNavigation value={preview.literature.review?.rating ?? ''} onChange={() => {}} onCommit={review} /></div>
                                 {preview.literature.review && <p className="pb-1 text-xs leading-5 text-ink-950/70">Your rating: {Number(preview.literature.review.rating).toFixed(1)} / 5</p>}
                             </fieldset>
                             {preview.viewer.authenticated ? (
                                 <div className="divide-y divide-ink-950/10">
-                                    <button type="button" disabled={processing} onClick={() => toggleReading('completed')} className={actionClass}><span>{readingStatus === 'completed' ? 'Remove completed status' : 'Mark as completed'}</span>{readingStatus === 'completed' && <span className="text-brand-coral">✓</span>}</button>
+                                    <button type="button" disabled={processing} aria-pressed={readingStatus === 'completed'} onClick={() => toggleReading('completed')} className={actionClass}><span>{readingStatus === 'completed' ? 'Remove completed status' : 'Mark as completed'}</span>{readingStatus === 'completed' && <span aria-hidden="true" className="text-brand-coral">✓</span>}</button>
                                     <button type="button" onClick={() => review()} disabled={processing} className={actionClass}>{preview.literature.review ? 'Edit rating or review…' : 'Rate or review literature…'}</button>
-                                    <button type="button" disabled={processing} onClick={() => toggleReading('want_to_read')} className={actionClass}><span>{readingStatus === 'want_to_read' ? 'Remove from Readlist' : 'Add to Readlist'}</span>{readingStatus === 'want_to_read' && <span className="text-brand-coral">✓</span>}</button>
+                                    <button type="button" disabled={processing} aria-pressed={readingStatus === 'want_to_read'} onClick={() => toggleReading('want_to_read')} className={actionClass}><span>{readingStatus === 'want_to_read' ? 'Remove from Readlist' : 'Add to Readlist'}</span>{readingStatus === 'want_to_read' && <span aria-hidden="true" className="text-brand-coral">✓</span>}</button>
                                     <div>
-                                        <button type="button" onClick={() => setListsOpen((current) => !current)} className={actionClass} aria-expanded={listsOpen} aria-controls={listsOpen ? `${menuId}-lists` : undefined}><span>Add to lists…</span><span aria-hidden="true">{listsOpen ? '−' : '+'}</span></button>
+                                        <button type="button" disabled={processing} onClick={() => setListsOpen((current) => !current)} className={actionClass} aria-expanded={listsOpen} aria-controls={listsOpen ? `${menuId}-lists` : undefined}><span>Add to lists…</span><span aria-hidden="true">{listsOpen ? '−' : '+'}</span></button>
                                         {listsOpen && <div id={`${menuId}-lists`} className="border-t border-ink-950/10 bg-white/40 py-1">
                                             <div className="max-h-40 overflow-y-auto">
-                                                {preview.lists.length ? preview.lists.map((list) => <button key={list.id} type="button" disabled={processing} aria-pressed={list.contains} onClick={() => toggleList(list)} className={actionClass}><span className="min-w-0 truncate">{list.title}{list.is_private ? ' · Private' : ''}</span><span className="text-brand-coral" aria-hidden="true">{list.contains ? '✓' : '+'}</span></button>) : <p className="px-4 py-2 text-xs text-ink-950/55">No custom lists yet.</p>}
+                                                {preview.lists.length ? preview.lists.map((list) => <button key={list.id} type="button" title={list.title} disabled={processing} aria-pressed={list.contains} onClick={() => toggleList(list)} className={actionClass}><span className="min-w-0 truncate">{list.title}{list.is_private ? ' · Private' : ''}</span><span className="text-brand-coral" aria-hidden="true">{list.contains ? '✓' : '+'}</span></button>) : <p className="px-4 py-2 text-xs text-ink-950/55">No custom lists yet.</p>}
                                             </div>
                                             <Link href={preview.routes.create_list} className={`${actionClass} text-brand-coral`} onClick={() => close()}>Create a list →</Link>
                                         </div>}
@@ -245,7 +335,7 @@ export default function LiteratureCardPreview({ literature, compact = false, chi
                 </div>, document.body,
             )}
 
-            {quickLog && <QuickLogDialog open initialLiterature={quickLog.literature} initialRating={quickLog.rating} searchUrl={preview.routes.quick_log_search} onClose={() => { setQuickLog(null); triggerRef.current?.focus(); }} />}
+            {quickLog && <QuickLogDialog open initialLiterature={quickLog.literature} initialRating={quickLog.rating} searchUrl={preview.routes.quick_log_search} onClose={() => { restoreQuickLogFocus.current = true; setQuickLog(null); }} />}
         </>
     );
 }
