@@ -186,7 +186,7 @@ class HomeController extends Controller
         ];
     }
 
-    /** @return array{title: string, year: int|null, type_label: string, backdrop_url: string, url: string} */
+    /** @return array{title: string, year: int|null, type_label: string, backdrop_url: string, url: string, focal_position: array<string, mixed>} */
     private function presentGuestHero(Literature $literature): array
     {
         return [
@@ -195,6 +195,10 @@ class HomeController extends Controller
             'type_label' => $literature->typeLabel(),
             'backdrop_url' => $literature->displayBackdropUrl(),
             'url' => route('literatures.show', $literature),
+            'focal_position' => array_replace_recursive(
+                config('landing.hero_focal_position', []),
+                config('landing.hero_focal_positions', [])[$literature->slug] ?? [],
+            ),
         ];
     }
 

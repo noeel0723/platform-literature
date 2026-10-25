@@ -40,6 +40,7 @@ class HomeLandingTest extends TestCase
                 ->where('guestHero.year', 1999)
                 ->where('guestHero.url', route('literatures.show', $preferred))
                 ->where('guestHero.backdrop_url', 'https://images.example.test/canonical-hero.jpg')
+                ->where('guestHero.focal_position', [])
                 ->has('popularThisWeek', 1)
                 ->where('popularThisWeek.0.title', 'Canonical Hero')
                 ->where('routes.register', route('register'))
@@ -131,6 +132,48 @@ class HomeLandingTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->has('guestHero')
                 ->where('guestHero.year', null));
+    }
+
+    public function test_guest_hero_uses_responsive_focal_overrides_for_the_canonical_representative(): void
+    {
+        $preferred = Literature::factory()->create([
+            'slug' => 'featured-work',
+            'backdrop_url' => 'https://images.example.test/featured.jpg',
+        ]);
+        $sibling = Literature::factory()->create(['slug' => 'featured-sibling']);
+        $this->canonicalize($preferred, $sibling);
+        config()->set('landing.hero_focal_position', [
+            'desktop' => ['x' => 50, 'y' => 35],
+            'tablet' => ['x' => 60, 'y' => 40],
+            'mobile' => ['x' => 65, 'y' => 40],
+        ]);
+        config()->set('landing.hero_focal_positions', [
+            'featured-work' => ['mobile' => ['x' => 78]],
+            'featured-sibling' => ['desktop' => ['x' => 1, 'y' => 1]],
+        ]);
+        Activity::factory()->for(User::factory())->for($sibling)
+            ->create(['type' => Activity::TYPE_STARTED_READING]);
+
+        $this->get(route('home'))->assertInertia(fn (Assert $page) => $page
+            ->where('guestHero.url', route('literatures.show', $preferred))
+            ->where('guestHero.focal_position.desktop', ['x' => 50, 'y' => 35])
+            ->where('guestHero.focal_position.tablet', ['x' => 60, 'y' => 40])
+            ->where('guestHero.focal_position.mobile', ['x' => 78, 'y' => 40]));
+    }
+
+    public function test_guest_hero_ignores_focal_overrides_for_other_works(): void
+    {
+        Literature::factory()->create([
+            'slug' => 'current-featured-work',
+            'backdrop_url' => 'https://images.example.test/current-featured.jpg',
+        ]);
+        config()->set('landing.hero_focal_position', ['mobile' => ['x' => 55, 'y' => 45]]);
+        config()->set('landing.hero_focal_positions', [
+            'another-work' => ['mobile' => ['x' => 95, 'y' => 95]],
+        ]);
+
+        $this->get(route('home'))->assertInertia(fn (Assert $page) => $page
+            ->where('guestHero.focal_position.mobile', ['x' => 55, 'y' => 45]));
     }
 
     public function test_guest_popular_this_week_is_limited_to_six_works(): void
