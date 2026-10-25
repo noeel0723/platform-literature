@@ -7,6 +7,7 @@ use App\Http\Requests\StoreCustomListItemRequest;
 use App\Models\CustomList;
 use App\Models\CustomListItem;
 use App\Models\Literature;
+use App\Services\ActionFeedback;
 use App\Services\Lists\CustomListManager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -19,14 +20,16 @@ class CustomListItemController extends Controller
         StoreCustomListItemRequest $request,
         CustomList $customList,
         CustomListManager $manager,
+        ActionFeedback $feedback,
     ): RedirectResponse|JsonResponse {
-        $manager->add($customList, Literature::query()->findOrFail($request->integer('literature_id')));
+        $action = $feedback->run($request->user(), 'list', ['list_id' => $customList->id],
+            fn () => $manager->add($customList, Literature::query()->findOrFail($request->integer('literature_id'))), 'Added to “'.$customList->title.'”.');
 
         if ($request->expectsJson()) {
-            return response()->json(['contains' => true]);
+            return response()->json(['contains' => true, 'feedback' => $action['feedback']]);
         }
 
-        return back()->with('success', 'Literature added to list.');
+        return back()->with('success', 'Literature added to list.')->with('action_feedback', $action['feedback']);
     }
 
     public function destroy(
@@ -34,16 +37,18 @@ class CustomListItemController extends Controller
         CustomList $customList,
         CustomListItem $customListItem,
         CustomListManager $manager,
+        ActionFeedback $feedback,
     ): RedirectResponse|JsonResponse {
         Gate::authorize('update', $customList);
         abort_unless($customListItem->custom_list_id === $customList->id, 404);
-        $manager->remove($customList, $customListItem);
+        $action = $feedback->run($request->user(), 'list', ['list_id' => $customList->id],
+            fn () => $manager->remove($customList, $customListItem), 'Removed from “'.$customList->title.'”.');
 
         if ($request->expectsJson()) {
-            return response()->json(['contains' => false]);
+            return response()->json(['contains' => false, 'feedback' => $action['feedback']]);
         }
 
-        return back()->with('success', 'Literature removed from list.');
+        return back()->with('success', 'Literature removed from list.')->with('action_feedback', $action['feedback']);
     }
 
     public function reorder(

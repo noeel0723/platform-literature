@@ -1,14 +1,15 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 
 import ProfileSubNavigation from '../../Components/ProfileSubNavigation';
+import useFeedbackAction from '../../Support/useFeedbackAction';
 import EmptyState from '../../Components/EmptyState';
 import { plural, TimeLabel } from '../../Components/LiteratureDetail/DetailUi';
 import { LiteratureCover, Pagination, ProfileContentContainer, ProfilePageHeading } from '../../Components/ProfilePageUi';
 
 function QuickAdd({ suggestions, catalogUrl }) {
     const [query, setQuery] = useState('');
-    const [processingId, setProcessingId] = useState(null);
+    const { processing, visit } = useFeedbackAction();
     const visibleSuggestions = useMemo(() => {
         const term = query.trim().toLocaleLowerCase();
         if (!term) return suggestions;
@@ -17,11 +18,8 @@ function QuickAdd({ suggestions, catalogUrl }) {
     }, [query, suggestions]);
 
     const add = (literature) => {
-        setProcessingId(literature.id);
-        router.put(literature.update_url, { status: 'want_to_read', return_to: 'readlist' }, {
-            preserveScroll: true,
-            onFinish: () => setProcessingId(null),
-        });
+        if (processing) return;
+        visit('put', literature.update_url, { status: 'want_to_read', return_to: 'readlist' });
     };
 
     return (
@@ -40,7 +38,7 @@ function QuickAdd({ suggestions, catalogUrl }) {
                         <article key={literature.id} className="flex items-center gap-2 border-b border-ink-950/10 py-2 last:border-b-0" data-readlist-suggestion data-suggestion-literature-id={literature.id}>
                             <Link href={literature.url} className="block shrink-0"><LiteratureCover literature={literature} alt={false} className="h-12 w-8 rounded-sm" /></Link>
                             <div className="min-w-0 flex-1"><Link href={literature.url} title={literature.title} className="line-clamp-2 text-xs font-bold leading-5 text-ink-950 [overflow-wrap:anywhere] hover:text-brand-coral">{literature.title}</Link><p title={literature.author} className="mt-0.5 truncate text-xs leading-5 text-ink-950/75">{literature.author}</p></div>
-                            <button type="button" disabled={processingId === literature.id} onClick={() => add(literature)} className="grid size-7 shrink-0 place-items-center rounded-full border border-ink-950/15 text-base text-ink-950 transition hover:border-brand-coral hover:bg-brand-coral hover:text-white disabled:opacity-40" aria-label={`Add ${literature.title} to Readlist`}>+</button>
+                            <button type="button" disabled={processing} onClick={() => add(literature)} className="grid size-7 shrink-0 place-items-center rounded-full border border-ink-950/15 text-base text-ink-950 transition hover:border-brand-coral hover:bg-brand-coral hover:text-white disabled:opacity-40" aria-label={`Add ${literature.title} to Readlist`}>+</button>
                         </article>
                     ))}
                 </div>

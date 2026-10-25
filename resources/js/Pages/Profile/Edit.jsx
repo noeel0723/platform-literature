@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import AvatarCropDialog from '../../Components/AvatarCropDialog';
 import ProfileSubNavigation from '../../Components/ProfileSubNavigation';
 import EmptyState from '../../Components/EmptyState';
+import { actionFeedback, feedbackVisitOptions } from '../../Support/actionFeedback';
 
 function FieldError({ message }) {
     return message ? <p className="mt-1.5 text-xs font-semibold text-red-700">{message}</p> : null;
@@ -182,6 +183,7 @@ function FavoritePickerDialog({ picker, searchUrl, selectedValues, currentValue,
 }
 
 export default function ProfileEdit({ profile, navigation, favoriteLiteratures, favoriteAuthors, favoriteLiteratureIds, favoriteAuthorIds, routes }) {
+    const submitting = useRef(false);
     const form = useForm({
         _method: 'put',
         name: profile.name,
@@ -250,12 +252,17 @@ export default function ProfileEdit({ profile, navigation, favoriteLiteratures, 
     };
     const submit = (event) => {
         event.preventDefault();
+        if (form.processing || submitting.current) return;
+        const finish = actionFeedback.begin();
+        if (!finish) return;
+        submitting.current = true;
         form.clearErrors();
-        form.post(routes.update, {
+        form.post(routes.update, feedbackVisitOptions({
             forceFormData: true,
             preserveScroll: true,
             onSuccess: () => form.setDefaults(),
-        });
+            onFinish: () => { submitting.current = false; finish(); },
+        }));
     };
     const chosenLiteratures = form.data.favorite_literature_ids.filter(Boolean).map(String);
     const chosenAuthors = form.data.favorite_author_ids.filter(Boolean).map(String);

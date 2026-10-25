@@ -26,6 +26,7 @@ class ReadingManager
         $equivalentIds = $this->canonicalIdentity->equivalentLiteratureIds($literature);
 
         return DB::transaction(function () use ($user, $literature, $equivalentIds, $data): ReadingList {
+            User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
             $readingLists = ReadingList::query()
                 ->where('user_id', $user->id)
                 ->whereIn('literature_id', $equivalentIds)

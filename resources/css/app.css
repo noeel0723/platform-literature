@@ -270,6 +270,10 @@
 }
 
 @media (max-width: 767px) {
+    [data-action-feedback-root]:has([data-action-toast]) {
+        min-height: calc(var(--action-toast-space, 0px) + env(safe-area-inset-bottom, 0px));
+    }
+
     .header-search[data-expanded='true'] {
         position: absolute;
         inset-inline: 0;

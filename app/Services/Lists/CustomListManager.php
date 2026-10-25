@@ -54,6 +54,7 @@ final class CustomListManager
         $canonicalWork = $this->identity->canonicalWork($literature);
 
         return DB::transaction(function () use ($list, $literature, $canonicalWork): CustomListItem {
+            CustomList::query()->whereKey($list->id)->lockForUpdate()->firstOrFail();
             $existing = $list->items()
                 ->where('canonical_work_id', $canonicalWork->id)
                 ->lockForUpdate()
@@ -81,6 +82,7 @@ final class CustomListManager
     public function reorder(CustomList $list, array $itemIds): void
     {
         DB::transaction(function () use ($list, $itemIds): void {
+            CustomList::query()->whereKey($list->id)->lockForUpdate()->firstOrFail();
             $requestedIds = collect($itemIds)->map(fn ($id): int => (int) $id)->values();
             $storedItems = $list->items()
                 ->whereKey($requestedIds)
@@ -109,6 +111,7 @@ final class CustomListManager
     public function remove(CustomList $list, CustomListItem $item): void
     {
         DB::transaction(function () use ($list, $item): void {
+            CustomList::query()->whereKey($list->id)->lockForUpdate()->firstOrFail();
             $item->delete();
 
             $list->items()->orderBy('position')->get()->each(

@@ -1,10 +1,10 @@
-import { Link, router, useForm } from '@inertiajs/react';
-import { useState } from 'react';
+import { Link, useForm } from '@inertiajs/react';
+import useFeedbackAction from '../../Support/useFeedbackAction';
 
 import { RatingInput, StarRating, plural } from './DetailUi';
 
 export default function ActionPanel({ literature, viewer, ratingSummary, routes, onOpenReview, onChooseRating }) {
-    const [processing, setProcessing] = useState(false);
+    const { processing, visit } = useFeedbackAction();
     const isCompleted = viewer.reading_status === 'completed';
     const isInReadlist = viewer.reading_status === 'want_to_read';
     const listForm = useForm({
@@ -16,19 +16,13 @@ export default function ActionPanel({ literature, viewer, ratingSummary, routes,
     });
 
     const updateReading = (status, active) => {
-        setProcessing(true);
-        const options = { preserveScroll: true, onFinish: () => setProcessing(false) };
-
-        if (active) router.delete(routes.reading_destroy, options);
-        else router.put(routes.reading_update, { status }, options);
+        if (active) visit('delete', routes.reading_destroy);
+        else visit('put', routes.reading_update, { status });
     };
 
     const toggleList = (list) => {
-        setProcessing(true);
-        const options = { preserveScroll: true, onFinish: () => setProcessing(false) };
-
-        if (list.contains) router.delete(list.destroy_url, options);
-        else router.post(list.store_url, { literature_id: literature.id }, options);
+        if (list.contains) visit('delete', list.destroy_url);
+        else visit('post', list.store_url, { literature_id: literature.id });
     };
 
     const createList = (event) => {

@@ -3,6 +3,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { openLoginPanel } from '../Support/loginPanel';
+import { actionFeedback, requestAction, ACTION_RESTORED_EVENT } from '../Support/actionFeedback';
 import { focusablePreviewActions, previewActionIndex, previewPosition, previewTabBoundary } from '../Support/literatureCardPreview';
 import { RatingInput } from './LiteratureDetail/DetailUi';
 import QuickLogDialog from './QuickLogDialog';
@@ -44,7 +45,6 @@ export default function LiteratureCardPreview({ literature, compact = false, chi
     const pinned = useRef(false);
     const returnFocusRef = useRef(null);
     const processingRef = useRef(false);
-    const mutationRef = useRef(null);
     const restoreQuickLogFocus = useRef(false);
     const [open, setOpen] = useState(false);
     const [preview, setPreview] = useState(null);
@@ -134,7 +134,6 @@ export default function LiteratureCardPreview({ literature, compact = false, chi
         window.addEventListener(OPEN_PREVIEW_EVENT, closeOther);
         return () => {
             clearTimers();
-            mutationRef.current?.abort();
             window.removeEventListener(OPEN_PREVIEW_EVENT, closeOther);
         };
     }, [menuId]);
@@ -152,6 +151,18 @@ export default function LiteratureCardPreview({ literature, compact = false, chi
             .finally(() => { if (!request.signal.aborted) setLoading(false); });
         return () => request.abort();
     }, [open, literature.preview_url, menuId]);
+
+    useEffect(() => {
+        const request = new AbortController();
+        const refresh = () => {
+            if (!open) { setPreview(null); return; }
+            fetchPreview(literature.preview_url, request.signal)
+                .then((data) => { if (!request.signal.aborted) setPreview(data); })
+                .catch(() => { if (!request.signal.aborted) setError('Action undone. Reopen this preview to refresh its details.'); });
+        };
+        window.addEventListener(ACTION_RESTORED_EVENT, refresh);
+        return () => { request.abort(); window.removeEventListener(ACTION_RESTORED_EVENT, refresh); };
+    }, [open, literature.preview_url]);
 
     useLayoutEffect(() => {
         if (!open) return;
@@ -239,27 +250,29 @@ export default function LiteratureCardPreview({ literature, compact = false, chi
     };
     const mutate = async (url, method, values = {}) => {
         if (processingRef.current) return;
+        const finish = actionFeedback.begin();
+        if (!finish) return;
         processingRef.current = true;
         const request = new AbortController();
-        mutationRef.current = request;
         const previousAction = document.activeElement;
         const restoreAction = menuRef.current?.contains(previousAction) || coverRef.current?.contains(previousAction);
         setProcessing(true);
         setError('');
         try {
-            const response = await fetch(url, {
-                method,
-                credentials: 'same-origin',
-                signal: request.signal,
-                headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...values, _token: preview.csrf_token }),
-            });
-            const data = await response.json();
-            if (!response.ok) throw new Error(Object.values(data.errors ?? {}).flat()[0] ?? data.message ?? 'The action could not be saved.');
-            setPreview(await fetchPreview(literature.preview_url, request.signal));
+            const data = await requestAction(url, method, values, { signal: request.signal, csrfToken: preview.csrf_token });
+            actionFeedback.publish(data.feedback);
+            try {
+                setPreview(await fetchPreview(literature.preview_url, request.signal));
+            } catch {
+                setError('Saved. Reopen this preview to refresh its details.');
+            }
         } catch (failure) {
-            if (!request.signal.aborted) setError(failure.message || 'The action could not be saved. Please try again.');
+            if (!request.signal.aborted) {
+                setError(failure.message);
+                actionFeedback.error(failure.message);
+            }
         } finally {
+            finish();
             processingRef.current = false;
             if (!request.signal.aborted) setProcessing(false);
             if (restoreAction && !request.signal.aborted) window.requestAnimationFrame(() => {

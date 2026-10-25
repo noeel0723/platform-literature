@@ -37,7 +37,7 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
-            //
+            'actionFeedback' => fn () => $request->session()->get('action_feedback'),
         ];
     }
 }

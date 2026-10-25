@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useLayoutEffect, useState } from 'react';
 
 import LiteratureCard from '../../Components/LiteratureCard';
@@ -132,6 +132,7 @@ function Discovery({ relationshipGroups, authorDiscoveries }) {
 }
 
 export default function Show({ literature, whereToRead, viewer, ratingSummary, reviews, reviewPagination, discussions, discussionCount, relationshipGroups, authorDiscoveries, reportReasons, successMessage, routes }) {
+    const { actionFeedback } = usePage().props;
     const [reviewOpen, setReviewOpen] = useState(false);
     const backdropUrl = literature.backdrop_url || literature.cover_url;
     const hasDedicatedBackdrop = Boolean(literature.backdrop_url);
@@ -160,7 +161,7 @@ export default function Show({ literature, whereToRead, viewer, ratingSummary, r
     return (
         <>
             <Head title={literature.title} />
-            {successMessage && <div role="status" className="border-b border-brand-sky/50 bg-brand-sky/20 px-5 py-3 text-center text-sm font-semibold text-ink-950">{successMessage}</div>}
+            {successMessage && !actionFeedback && <div role="status" className="border-b border-brand-sky/50 bg-brand-sky/20 px-5 py-3 text-center text-sm font-semibold text-ink-950">{successMessage}</div>}
             <section data-literature-backdrop className="relative isolate min-h-[360px] overflow-hidden bg-ink-950 sm:min-h-[430px] lg:min-h-[520px]">
                 {backdropUrl ? (
                     <div className="absolute inset-0 -z-20 overflow-hidden" aria-hidden="true"><img src={backdropUrl} alt="" className={`size-full object-cover object-center ${hasDedicatedBackdrop ? 'scale-[1.02] opacity-95' : 'scale-110 opacity-65 blur-[3px]'}`} /></div>

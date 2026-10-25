@@ -1,14 +1,16 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 
 import { LiteratureCover } from '../../Components/ProfilePageUi';
 import SiteContainer from '../../Components/SiteContainer';
 import EmptyState from '../../Components/EmptyState';
+import useFeedbackAction from '../../Support/useFeedbackAction';
 
-function SearchResult({ literature, onAdd }) {
+function SearchResult({ literature, onAdd, disabled }) {
     return (
         <button
             type="button"
+            disabled={disabled}
             onClick={() => onAdd(literature)}
             className="grid w-full grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-ink-950/10 px-3 py-2 text-left transition-colors last:border-b-0 hover:bg-brand-sky/20 focus-visible:bg-brand-sky/20"
         >
@@ -29,6 +31,8 @@ function SearchResult({ literature, onAdd }) {
 }
 
 export default function EditList({ list, formUrl, profileUrl, searchUrl, items: initialItems = [], addUrl, reorderUrl, showUrl, successMessage }) {
+    const { actionFeedback } = usePage().props;
+    const { processing, visit } = useFeedbackAction();
     const editing = list !== null;
     const form = useForm({
         title: list?.title ?? '',
@@ -39,7 +43,6 @@ export default function EditList({ list, formUrl, profileUrl, searchUrl, items: 
     const [query, setQuery] = useState('');
     const [results, setResults] = useState([]);
     const [searching, setSearching] = useState(false);
-    const [addingId, setAddingId] = useState(null);
     const [items, setItems] = useState(initialItems);
     const [draggingId, setDraggingId] = useState(null);
 
@@ -88,20 +91,18 @@ export default function EditList({ list, formUrl, profileUrl, searchUrl, items: 
     };
 
     const addLiterature = (literature) => {
-        if (!addUrl || addingId !== null) return;
-        setAddingId(literature.id);
-        router.post(addUrl, { literature_id: literature.id }, {
+        if (!addUrl || processing) return;
+        visit('post', addUrl, { literature_id: literature.id }, {
             preserveScroll: true,
             onSuccess: () => {
                 setQuery('');
                 setResults([]);
             },
-            onFinish: () => setAddingId(null),
         });
     };
 
     const reorder = (targetId) => {
-        if (draggingId === null || draggingId === targetId) return;
+        if (processing || draggingId === null || draggingId === targetId) return;
         const reordered = [...items];
         const from = reordered.findIndex((item) => item.id === draggingId);
         const to = reordered.findIndex((item) => item.id === targetId);
@@ -110,13 +111,13 @@ export default function EditList({ list, formUrl, profileUrl, searchUrl, items: 
         reordered.splice(to, 0, moved);
         setItems(reordered);
         setDraggingId(null);
-        router.patch(reorderUrl, { item_ids: reordered.map((item) => item.id) }, { preserveScroll: true });
+        visit('patch', reorderUrl, { item_ids: reordered.map((item) => item.id) }, { onError: () => setItems(initialItems), onNetworkError: () => setItems(initialItems), onHttpException: () => setItems(initialItems) });
     };
 
     return (
         <>
             <Head title={editing ? 'Edit list' : 'Create list'} />
-            {successMessage && <div role="status" className="border-b border-brand-sky/50 bg-brand-sky/20 px-5 py-3 text-center text-sm font-semibold text-ink-950">{successMessage}</div>}
+            {successMessage && !actionFeedback && <div role="status" className="border-b border-brand-sky/50 bg-brand-sky/20 px-5 py-3 text-center text-sm font-semibold text-ink-950">{successMessage}</div>}
             <SiteContainer as="main" className="py-7 lg:py-10">
                 <div className="mx-auto max-w-5xl">
                     <header className="flex items-start justify-between gap-4">
@@ -176,11 +177,11 @@ export default function EditList({ list, formUrl, profileUrl, searchUrl, items: 
                                     <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg>
                                 </span>
                                 <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search canonical literature by title…" disabled={!editing} className="h-10 min-w-0 flex-1 bg-transparent pr-2 text-sm text-ink-950 outline-none placeholder:text-ink-950/40 disabled:cursor-not-allowed" aria-label="Search literature to add" />
-                                <button type="submit" disabled={!editing || !results[0] || addingId !== null} className="shrink-0 border-l border-ink-950/10 bg-brand-coral px-4 text-xs font-bold uppercase tracking-wider text-ink-950 transition hover:bg-brand-coral/85 disabled:cursor-not-allowed disabled:opacity-45 sm:px-5">Add</button>
+                                <button type="submit" disabled={!editing || !results[0] || processing} className="shrink-0 border-l border-ink-950/10 bg-brand-coral px-4 text-xs font-bold uppercase tracking-wider text-ink-950 transition hover:bg-brand-coral/85 disabled:cursor-not-allowed disabled:opacity-45 sm:px-5">Add</button>
                             </form>
                             {editing && (query.trim().length >= 2 || searching) && (
                                 <div className="absolute z-20 mt-1 max-h-80 w-full overflow-y-auto rounded-md border border-ink-950/15 bg-brand-cream shadow-lg shadow-ink-950/10">
-                                    {searching ? <p className="px-3 py-4 text-sm text-ink-950/50">Searching…</p> : results.length > 0 ? results.map((literature) => <SearchResult key={literature.id} literature={literature} onAdd={addLiterature} />) : <EmptyState compact title="No matching literature." description="Try another title." />}
+                                    {searching ? <p className="px-3 py-4 text-sm text-ink-950/50">Searching…</p> : results.length > 0 ? results.map((literature) => <SearchResult key={literature.id} literature={literature} onAdd={addLiterature} disabled={processing} />) : <EmptyState compact title="No matching literature." description="Try another title." />}
                                 </div>
                             )}
                         </div>
@@ -193,7 +194,7 @@ export default function EditList({ list, formUrl, profileUrl, searchUrl, items: 
                             {items.map((item, index) => (
                                 <article
                                     key={item.id}
-                                    draggable
+                                    draggable={!processing}
                                     onDragStart={(event) => { setDraggingId(item.id); event.dataTransfer.effectAllowed = 'move'; }}
                                     onDragEnd={() => setDraggingId(null)}
                                     onDragOver={(event) => event.preventDefault()}
@@ -208,7 +209,7 @@ export default function EditList({ list, formUrl, profileUrl, searchUrl, items: 
                                         <p className="truncate text-xs text-ink-950/50">{item.literature.year || 'Year unavailable'} · {item.literature.author} · {item.literature.type_label}</p>
                                         {item.average_rating !== null && <p className="mt-0.5 text-[0.68rem] font-semibold text-brand-coral">★ {Number(item.average_rating).toFixed(1)} community rating</p>}
                                     </div>
-                                    <button type="button" onClick={() => router.delete(item.remove_url, { preserveScroll: true })} className="shrink-0 px-1 py-2 text-[0.65rem] font-bold uppercase tracking-wider text-brand-coral transition hover:text-ink-950 sm:px-2">Remove</button>
+                                    <button type="button" disabled={processing} onClick={() => visit('delete', item.remove_url)} className="shrink-0 px-1 py-2 text-[0.65rem] font-bold uppercase tracking-wider text-brand-coral transition hover:text-ink-950 disabled:cursor-wait disabled:opacity-50 sm:px-2">Remove</button>
                                 </article>
                             ))}
                         </section>

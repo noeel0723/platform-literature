@@ -8,6 +8,7 @@ use App\Models\Author;
 use App\Models\Literature;
 use App\Models\Report;
 use App\Models\User;
+use App\Services\ActionFeedback;
 use App\Services\Literature\CanonicalWorkIdentity;
 use App\Services\Profile\UserStatsService;
 use App\Support\ProfilePagePresenter;
@@ -237,7 +238,7 @@ class ProfileController extends Controller
         ]);
     }
 
-    public function update(UpdateProfileRequest $request, CanonicalWorkIdentity $canonicalIdentity): RedirectResponse
+    public function update(UpdateProfileRequest $request, CanonicalWorkIdentity $canonicalIdentity, ActionFeedback $feedback): RedirectResponse
     {
         $user = $request->user();
         $profileData = $request->safe()->only(['name', 'username', 'location', 'bio']);
@@ -275,10 +276,16 @@ class ProfileController extends Controller
             ->values()
             ->all();
 
-        $user->favoriteLiteratures()->sync($this->positionedIds($canonicalFavoriteIds));
-        $user->favoriteAuthors()->sync($this->positionedIds($request->validated('favorite_author_ids', [])));
+        $action = $feedback->run($user, 'favorites', [], function () use ($user, $canonicalFavoriteIds, $request): void {
+            $user->favoriteLiteratures()->sync($this->positionedIds($canonicalFavoriteIds));
+            $user->favoriteAuthors()->sync($this->positionedIds($request->validated('favorite_author_ids', [])));
+        }, 'Favorites saved.');
+        if ($action['feedback']['undo'] === null) {
+            $action['feedback']['message'] = 'Profile saved.';
+        }
 
         return redirect()->route('profiles.show', $user)
+            ->with('action_feedback', $action['feedback'])
             ->with('success', 'Your profile has been updated.');
     }
 

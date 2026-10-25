@@ -1,16 +1,19 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 
 import { LiteratureCover, Pagination } from '../../Components/ProfilePageUi';
 import SiteContainer from '../../Components/SiteContainer';
 import EmptyState from '../../Components/EmptyState';
+import useFeedbackAction from '../../Support/useFeedbackAction';
 
 export default function ShowList({ list, canEdit, successMessage }) {
+    const { actionFeedback } = usePage().props;
+    const { processing, visit } = useFeedbackAction();
     const move = (index, direction) => {
         const items = [...list.items.data];
         const target = index + direction;
         if (target < 0 || target >= items.length) return;
         [items[index], items[target]] = [items[target], items[index]];
-        router.patch(list.reorder_url, { item_ids: items.map((item) => item.id) }, { preserveScroll: true });
+        visit('patch', list.reorder_url, { item_ids: items.map((item) => item.id) });
     };
 
     const destroyList = () => {
@@ -20,7 +23,7 @@ export default function ShowList({ list, canEdit, successMessage }) {
     return (
         <>
             <Head title={list.title} />
-            {successMessage && <div role="status" className="border-b border-brand-sky/50 bg-brand-sky/20 px-5 py-3 text-center text-sm font-semibold text-ink-950">{successMessage}</div>}
+            {successMessage && !actionFeedback && <div role="status" className="border-b border-brand-sky/50 bg-brand-sky/20 px-5 py-3 text-center text-sm font-semibold text-ink-950">{successMessage}</div>}
             <SiteContainer as="main" className="py-7 lg:py-10">
                 <header className="border-b border-ink-950/20 pb-4">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -41,7 +44,7 @@ export default function ShowList({ list, canEdit, successMessage }) {
                                 {list.is_ranked && <span className="absolute -left-1.5 -top-1.5 z-10 grid size-7 place-items-center bg-ink-950 font-serif text-sm font-bold text-brand-cream shadow">{item.position}</span>}
                                 <Link href={item.literature.url}><LiteratureCover literature={item.literature} className="aspect-[2/3]" /></Link>
                                 <Link href={item.literature.url} title={item.literature.title} className="mt-1.5 line-clamp-2 text-xs font-bold leading-5 text-ink-950 [overflow-wrap:anywhere] hover:text-brand-coral sm:text-[13px]">{item.literature.title}</Link>
-                                {canEdit && <div className="mt-1 flex items-center justify-between text-[0.65rem]"><button type="button" disabled={index === 0} onClick={() => move(index, -1)} className="disabled:opacity-20">←</button><button type="button" onClick={() => router.delete(item.remove_url, { preserveScroll: true })} className="text-brand-coral">Remove</button><button type="button" disabled={index === list.items.data.length - 1} onClick={() => move(index, 1)} className="disabled:opacity-20">→</button></div>}
+                                {canEdit && <div className="mt-1 flex items-center justify-between text-[0.65rem]"><button type="button" disabled={processing || index === 0} onClick={() => move(index, -1)} className="disabled:opacity-20">←</button><button type="button" disabled={processing} onClick={() => visit('delete', item.remove_url)} className="text-brand-coral disabled:opacity-50">Remove</button><button type="button" disabled={processing || index === list.items.data.length - 1} onClick={() => move(index, 1)} className="disabled:opacity-20">→</button></div>}
                             </article>
                         ))}
                     </div>

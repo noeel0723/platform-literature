@@ -30,6 +30,7 @@ use App\Http\Controllers\ReadlistController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\UndoActionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
@@ -77,6 +78,8 @@ Route::middleware('auth')->group(function (): void {
 });
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
+    Route::post('/action-feedback/{token}/undo', UndoActionController::class)
+        ->whereUuid('token')->middleware('throttle:30,1')->name('action-feedback.undo');
     Route::get('/quick-log/literatures', QuickLogController::class)
         ->middleware('throttle:60,1')
         ->name('quick-log.literatures');
