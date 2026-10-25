@@ -47,12 +47,12 @@ function LiteratureResults({ items }) {
                     <div className="min-w-0 self-start">
                         <h3 className="text-base font-bold leading-5 text-ink-950 sm:text-lg sm:leading-6">
                             <Link href={literature.url} className="hover:text-brand-coral">{literature.title}</Link>{' '}
-                            {literature.year && <span className="whitespace-nowrap text-xs font-normal text-ink-950/45">{literature.year}</span>}
+                            {literature.year && <span className="whitespace-nowrap text-xs font-normal tabular-nums text-ink-950/65">{literature.year}</span>}
                         </h3>
-                        <p className="mt-0.5 truncate text-xs text-ink-950/55">By <span className="font-semibold text-ink-950/70">{literature.author}</span></p>
+                        <p title={literature.author} className="mt-0.5 truncate text-xs leading-5 text-ink-950/75 sm:text-[13px]">By <span className="font-semibold">{literature.author}</span></p>
                         {literature.alternative_title && <p className="mt-1 line-clamp-1 text-xs text-ink-950/45"><span className="font-semibold">Alternative title:</span> {literature.alternative_title}</p>}
                         <p className="mt-1 line-clamp-2 text-xs leading-5 text-ink-950/55">{literature.synopsis}</p>
-                        <span className="mt-1.5 inline-block text-[0.62rem] font-bold uppercase tracking-[0.14em] text-brand-coral">{literature.type_label}</span>
+                        <span className="mt-1.5 inline-block text-[11px] font-bold uppercase leading-4 tracking-[0.06em] text-brand-coral">{literature.type_label}</span>
                     </div>
                 </article>
             ))}

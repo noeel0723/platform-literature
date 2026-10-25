@@ -15,13 +15,13 @@ export default function LiteratureCard({ literature, compact = false }) {
         ?? 'from-brand-cream via-brand-sky to-brand-coral text-ink-950';
     const badgeSpacing = compact
         ? 'gap-1 p-1.5'
-        : 'gap-2 p-3';
+        : 'gap-1.5 p-2 sm:gap-2 sm:p-3';
     const typeBadge = compact
-        ? 'px-1.5 py-1 text-[0.5rem] tracking-[0.1em]'
-        : 'px-2 py-1 text-[0.62rem] tracking-[0.14em]';
+        ? 'px-1 py-0.5 text-[11px] leading-4 tracking-[0.02em]'
+        : 'px-1.5 py-1 text-[11px] leading-4 tracking-[0.06em] sm:px-2 sm:text-xs';
     const yearBadge = compact
-        ? 'px-1.5 py-1 text-[0.55rem]'
-        : 'px-2 py-1 text-xs';
+        ? 'px-1 py-0.5 text-[11px] leading-4'
+        : 'px-1.5 py-1 text-[11px] leading-4 sm:px-2 sm:text-xs';
 
     return (
         <article
@@ -49,11 +49,11 @@ export default function LiteratureCard({ literature, compact = false }) {
                             <div className="absolute inset-0 opacity-30 [background-image:linear-gradient(115deg,transparent_20%,rgba(255,255,255,.35)_50%,transparent_80%)]" />
                         )}
 
-                        <div className={`absolute inset-x-0 top-0 flex items-start justify-between ${badgeSpacing} ${literature.cover_url ? 'text-brand-cream' : ''}`}>
-                            <span className={`bg-ink-950/80 font-semibold uppercase text-brand-cream backdrop-blur ${typeBadge}`}>
+                        <div className={`absolute inset-x-0 top-0 flex flex-wrap items-start justify-between ${badgeSpacing} ${literature.cover_url ? 'text-brand-cream' : ''}`}>
+                            <span title={literature.type_label} className={`max-w-full break-words bg-ink-950/85 font-semibold uppercase text-brand-cream backdrop-blur ${typeBadge}`}>
                                 {literature.type_label}
                             </span>
-                            <span className={`bg-ink-950/65 font-semibold text-brand-cream backdrop-blur ${yearBadge}`}>
+                            <span className={`max-w-full break-words bg-ink-950/85 font-semibold tabular-nums text-brand-cream backdrop-blur ${yearBadge}`}>
                                 {literature.year}
                             </span>
                         </div>
@@ -64,7 +64,7 @@ export default function LiteratureCard({ literature, compact = false }) {
                                     {literature.initials}
                                 </span>
                             )}
-                            <span className={`block border-t border-current/40 font-semibold uppercase ${compact ? 'mt-1.5 truncate pt-1.5 text-[0.5rem] tracking-[0.1em]' : 'mt-3 pt-3 text-xs tracking-[0.18em]'}`}>
+                            <span title={literature.source} className={`line-clamp-2 break-words border-t border-current/40 font-semibold uppercase ${compact ? 'mt-1.5 pt-1.5 text-[11px] leading-4 tracking-[0.04em]' : 'mt-3 pt-3 text-xs leading-5 tracking-[0.08em] sm:text-[13px]'}`}>
                                 {literature.source}
                             </span>
                         </div>
@@ -73,10 +73,10 @@ export default function LiteratureCard({ literature, compact = false }) {
             </LiteratureCardPreview>
             <Link href={literature.url} className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-coral focus-visible:ring-offset-4 focus-visible:ring-offset-brand-cream">
                 <div className={compact ? 'pt-2' : 'pt-3'}>
-                    <h3 className={`truncate font-semibold text-ink-950 transition group-hover:text-brand-coral ${compact ? 'text-sm leading-5' : ''}`}>
+                    <h3 title={literature.title} className={`line-clamp-2 font-semibold text-ink-950 [overflow-wrap:anywhere] transition group-hover:text-brand-coral ${compact ? 'text-sm leading-5' : 'text-base leading-6'}`}>
                         {literature.title}
                     </h3>
-                    <p className={`truncate text-ink-950/60 ${compact ? 'mt-0.5 text-xs' : 'mt-1 text-sm'}`}>
+                    <p title={literature.author} className={`truncate leading-5 text-ink-950/75 ${compact ? 'mt-0.5 text-xs sm:text-[13px]' : 'mt-1 text-[13px] sm:text-sm'}`}>
                         {literature.author}
                     </p>
                 </div>

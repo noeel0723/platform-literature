@@ -179,11 +179,11 @@ export default function ProfileLiterature({ profile, navigation, completedLitera
                                 <article key={item.id} className="group min-w-0" data-profile-literature-item>
                                     <Link href={item.literature.url} className="block">
                                         <LiteratureCover literature={item.literature} className="aspect-[2/3] rounded-sm shadow-[0_3px_10px_rgba(47,58,85,0.06)] transition duration-200 group-hover:-translate-y-0.5 group-hover:border-brand-coral" />
-                                        <h2 className="mt-1 truncate text-[0.68rem] font-bold leading-4 text-ink-950 transition group-hover:text-brand-coral" title={item.literature.title}>{item.literature.title}</h2>
+                                        <h2 className="mt-1 line-clamp-2 text-xs font-bold leading-5 text-ink-950 [overflow-wrap:anywhere] transition group-hover:text-brand-coral sm:text-[13px]" title={item.literature.title}>{item.literature.title}</h2>
                                     </Link>
-                                    <div className="mt-0.5 flex min-h-4 items-center justify-between gap-1 text-[0.625rem] leading-4 text-ink-950/45">
-                                        {item.rating ? <StarRating rating={item.rating} size="text-[0.68rem]" /> : <span className="truncate">Completed</span>}
-                                        {item.rating && item.literature.year && <span>{item.literature.year}</span>}
+                                    <div className="mt-0.5 flex min-h-4 flex-wrap items-center justify-between gap-x-1 gap-y-0.5 text-[11px] leading-4 text-ink-950/70">
+                                        {item.rating ? <StarRating rating={item.rating} size="text-xs" /> : <span className="truncate">Completed</span>}
+                                        {item.rating && item.literature.year && <span className="shrink-0 tabular-nums">{item.literature.year}</span>}
                                     </div>
                                 </article>
                             ))}

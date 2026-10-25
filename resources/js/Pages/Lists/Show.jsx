@@ -39,7 +39,7 @@ export default function ShowList({ list, canEdit, successMessage }) {
                             <article key={item.id} className="relative min-w-0">
                                 {list.is_ranked && <span className="absolute -left-1.5 -top-1.5 z-10 grid size-7 place-items-center bg-ink-950 font-serif text-sm font-bold text-brand-cream shadow">{item.position}</span>}
                                 <Link href={item.literature.url}><LiteratureCover literature={item.literature} className="aspect-[2/3]" /></Link>
-                                <Link href={item.literature.url} className="mt-1.5 block truncate text-xs font-bold text-ink-950 hover:text-brand-coral">{item.literature.title}</Link>
+                                <Link href={item.literature.url} title={item.literature.title} className="mt-1.5 line-clamp-2 text-xs font-bold leading-5 text-ink-950 [overflow-wrap:anywhere] hover:text-brand-coral sm:text-[13px]">{item.literature.title}</Link>
                                 {canEdit && <div className="mt-1 flex items-center justify-between text-[0.65rem]"><button type="button" disabled={index === 0} onClick={() => move(index, -1)} className="disabled:opacity-20">←</button><button type="button" onClick={() => router.delete(item.remove_url, { preserveScroll: true })} className="text-brand-coral">Remove</button><button type="button" disabled={index === list.items.data.length - 1} onClick={() => move(index, 1)} className="disabled:opacity-20">→</button></div>}
                             </article>
                         ))}

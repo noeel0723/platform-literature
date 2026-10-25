@@ -38,7 +38,7 @@ function QuickAdd({ suggestions, catalogUrl }) {
                     {visibleSuggestions.map((literature) => (
                         <article key={literature.id} className="flex items-center gap-2 border-b border-ink-950/10 py-2 last:border-b-0" data-readlist-suggestion data-suggestion-literature-id={literature.id}>
                             <Link href={literature.url} className="block shrink-0"><LiteratureCover literature={literature} alt={false} className="h-12 w-8 rounded-sm" /></Link>
-                            <div className="min-w-0 flex-1"><Link href={literature.url} className="block truncate text-xs font-bold text-ink-950 hover:text-brand-coral">{literature.title}</Link><p className="mt-0.5 truncate text-[0.65rem] text-ink-950/45">{literature.author}</p></div>
+                            <div className="min-w-0 flex-1"><Link href={literature.url} title={literature.title} className="line-clamp-2 text-xs font-bold leading-5 text-ink-950 [overflow-wrap:anywhere] hover:text-brand-coral">{literature.title}</Link><p title={literature.author} className="mt-0.5 truncate text-xs leading-5 text-ink-950/75">{literature.author}</p></div>
                             <button type="button" disabled={processingId === literature.id} onClick={() => add(literature)} className="grid size-7 shrink-0 place-items-center rounded-full border border-ink-950/15 text-base text-ink-950 transition hover:border-brand-coral hover:bg-brand-coral hover:text-white disabled:opacity-40" aria-label={`Add ${literature.title} to Readlist`}>+</button>
                         </article>
                     ))}
@@ -65,8 +65,8 @@ export default function ProfileReadlist({ profile, navigation, readlist, suggest
                             <div className="mt-4 grid grid-cols-3 gap-x-2.5 gap-y-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-5">
                                 {readlist.data.map((item) => (
                                     <article key={item.id} className="group min-w-0" data-readlist-item>
-                                        <Link href={item.literature.url} className="block"><LiteratureCover literature={item.literature} className="aspect-[2/3] rounded-sm shadow-[0_3px_10px_rgba(47,58,85,0.06)] transition duration-200 group-hover:-translate-y-0.5 group-hover:border-brand-coral" /><h2 className="mt-1 truncate text-[0.7rem] font-bold text-ink-950 transition group-hover:text-brand-coral">{item.literature.title}</h2><p className="mt-0.5 truncate text-[0.62rem] text-ink-950/50">{item.literature.author}</p></Link>
-                                        <p className="mt-0.5 truncate text-[0.6rem] text-ink-950/40">Saved <TimeLabel value={item.saved_at} /></p>
+                                        <Link href={item.literature.url} className="block"><LiteratureCover literature={item.literature} className="aspect-[2/3] rounded-sm shadow-[0_3px_10px_rgba(47,58,85,0.06)] transition duration-200 group-hover:-translate-y-0.5 group-hover:border-brand-coral" /><h2 title={item.literature.title} className="mt-1 line-clamp-2 text-xs font-bold leading-5 text-ink-950 [overflow-wrap:anywhere] transition group-hover:text-brand-coral sm:text-sm">{item.literature.title}</h2><p title={item.literature.author} className="mt-0.5 truncate text-xs leading-5 text-ink-950/75">{item.literature.author}</p></Link>
+                                        <p className="mt-0.5 truncate text-[11px] leading-4 text-ink-950/65">Saved <TimeLabel value={item.saved_at} /></p>
                                     </article>
                                 ))}
                             </div>

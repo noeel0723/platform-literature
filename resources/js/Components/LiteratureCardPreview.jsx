@@ -211,7 +211,7 @@ export default function LiteratureCardPreview({ literature, compact = false, chi
             {open && createPortal(
                 <div ref={menuRef} id={menuId} role="dialog" aria-modal="false" aria-label={`Quick actions for ${literature.title}`} tabIndex={-1} style={{ width: Math.min(256, window.innerWidth - 24), ...position, visibility: position ? 'visible' : 'hidden' }} className="fixed z-50 max-h-[calc(100dvh-1.5rem)] overflow-y-auto rounded-lg border border-ink-950/15 bg-brand-cream text-ink-950 shadow-xl shadow-ink-950/20 outline-none" onPointerEnter={clearTimers} onPointerLeave={scheduleClose} onFocusCapture={clearTimers} onBlurCapture={onBlur}>
                     <div className="flex items-start justify-between gap-2 border-b border-ink-950/10 px-4 py-3">
-                        <div className="min-w-0"><p className="line-clamp-2 text-sm font-bold">{literature.title}</p><p className="mt-0.5 truncate text-[0.65rem] text-ink-950/55">{[literature.type_label, literature.year].filter(Boolean).join(' · ')}</p></div>
+                        <div className="min-w-0"><p className="line-clamp-2 text-sm font-bold leading-5 [overflow-wrap:anywhere]">{literature.title}</p><p className="mt-0.5 truncate text-xs leading-5 text-ink-950/70">{[literature.type_label, literature.year].filter(Boolean).join(' · ')}</p></div>
                         <button type="button" onClick={() => close(true)} aria-label="Close preview" className="-mr-1 grid size-6 shrink-0 place-items-center rounded-sm text-lg leading-none text-ink-950/45 hover:bg-brand-sky/20 hover:text-ink-950">×</button>
                     </div>
                     {loading ? <p role="status" className="px-4 py-5 text-center text-xs text-ink-950/55">Loading your actions…</p> : preview && (
@@ -219,7 +219,7 @@ export default function LiteratureCardPreview({ literature, compact = false, chi
                             <fieldset disabled={processing} className="border-b border-ink-950/10 px-4 py-2 text-center">
                                 <legend className="sr-only">Your rating</legend>
                                 <div className="flex justify-center"><RatingInput compact value={preview.literature.review?.rating ?? ''} onChange={() => {}} onCommit={review} /></div>
-                                {preview.literature.review && <p className="pb-1 text-[0.65rem] text-ink-950/55">Your rating: {Number(preview.literature.review.rating).toFixed(1)} / 5</p>}
+                                {preview.literature.review && <p className="pb-1 text-xs leading-5 text-ink-950/70">Your rating: {Number(preview.literature.review.rating).toFixed(1)} / 5</p>}
                             </fieldset>
                             {preview.viewer.authenticated ? (
                                 <div className="divide-y divide-ink-950/10">
