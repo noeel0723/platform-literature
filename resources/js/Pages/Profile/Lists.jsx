@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 
 import ProfileSubNavigation from '../../Components/ProfileSubNavigation';
+import EmptyState from '../../Components/EmptyState';
 import { LiteratureCover, Pagination, ProfileContentContainer } from '../../Components/ProfilePageUi';
 
 export default function ProfileLists({ profile, navigation, lists, isOwner, createUrl }) {
@@ -20,11 +21,12 @@ export default function ProfileLists({ profile, navigation, lists, isOwner, crea
                     </div>
 
                     {lists.data.length === 0 ? (
-                        <div className="mt-5 rounded-xl border border-dashed border-ink-950/15 bg-white/50 px-5 py-10 text-center">
-                            <p className="font-serif text-lg font-bold text-ink-950">No custom lists yet.</p>
-                            <p className="mt-1 text-sm text-ink-950/55">Create your first list to organize literature your way.</p>
-                            {isOwner && <Link href={createUrl} className="mt-4 inline-flex min-h-9 items-center rounded-md bg-ink-950 px-4 text-xs font-bold text-brand-cream transition hover:bg-brand-coral">New list</Link>}
-                        </div>
+                        <EmptyState
+                            className="mt-5"
+                            title="No custom lists yet."
+                            description={isOwner ? 'Create your first list to organize literature your way.' : 'This reader has not shared any public lists yet.'}
+                            action={isOwner ? { href: createUrl, label: 'New list' } : null}
+                        />
                     ) : (
                         <div className="mt-5 divide-y divide-ink-950/10 overflow-hidden rounded-xl border border-ink-950/10 bg-white/50">
                             {lists.data.map((list) => (

@@ -2,10 +2,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import ProfileSubNavigation from '../../Components/ProfileSubNavigation';
 import { plural, ReportForm, StarRating, TimeLabel } from '../../Components/LiteratureDetail/DetailUi';
 import SiteContainer from '../../Components/SiteContainer';
-
-function EmptyState({ children, className = '' }) {
-    return <div className={`border-y border-dashed border-ink-950/20 px-4 py-7 text-sm text-ink-950/55 ${className}`}>{children}</div>;
-}
+import EmptyState from '../../Components/EmptyState';
 
 function Cover({ literature, className = '', loading = 'lazy' }) {
     return (
@@ -138,6 +135,8 @@ function RecentReviews({ items, moreUrl }) {
 }
 
 function RatingDistribution({ distribution }) {
+    if (!distribution.some((item) => item.count > 0)) return <EmptyState compact className="mt-4" title="No ratings yet." />;
+
     return (
         <div className="mt-4">
             <div className="flex h-20 items-end gap-1" aria-label="Rating distribution from half a star to five stars">
@@ -174,9 +173,9 @@ function ProfileSidebar({ profile, readlist, reviews, activities, distribution, 
             <a href={routes.readlist} className="mt-3 flex items-center justify-between border border-ink-950/15 bg-ink-950 px-3 py-2 text-xs font-bold text-brand-cream transition hover:bg-brand-coral"><span>View full Readlist</span><span aria-hidden="true">→</span></a>
             {profile.is_owner && <a href={routes.diary} className="mt-2 flex items-center justify-between border border-ink-950/15 bg-brand-cream/70 px-3 py-2 text-xs font-bold text-ink-950 transition hover:border-brand-coral"><span>Open activity Diary</span><span aria-hidden="true">→</span></a>}
 
-            <section className="mt-6" aria-labelledby="profile-diary-heading" data-profile-diary-preview><SectionHeader title="Diary" id="profile-diary-heading" aside={<span className="text-xs text-ink-950/45">{profile.stats.reviews}</span>} /><ol className="mt-2.5 grid gap-1.5">{reviews.length ? reviews.map((review) => <li key={review.id} className="flex min-w-0 items-center justify-between gap-2 text-xs"><Link href={review.literature.url} className="truncate text-ink-950/65 hover:text-brand-coral">{review.literature.title}</Link><span className="shrink-0 font-bold text-brand-coral">{Number(review.rating).toFixed(1)}</span></li>) : <li className="text-xs text-ink-950/45">No rated literature yet.</li>}</ol></section>
+            <section className="mt-6" aria-labelledby="profile-diary-heading" data-profile-diary-preview><SectionHeader title="Diary" id="profile-diary-heading" aside={<span className="text-xs text-ink-950/45">{profile.stats.reviews}</span>} /><ol className="mt-2.5 grid gap-1.5">{reviews.length ? reviews.map((review) => <li key={review.id} className="flex min-w-0 items-center justify-between gap-2 text-xs"><Link href={review.literature.url} className="truncate text-ink-950/65 hover:text-brand-coral">{review.literature.title}</Link><span className="shrink-0 font-bold text-brand-coral">{Number(review.rating).toFixed(1)}</span></li>) : <EmptyState as="li" compact title="No rated literature yet." />}</ol></section>
             <section className="mt-6" aria-labelledby="profile-ratings-heading" data-profile-ratings><SectionHeader title="Ratings" id="profile-ratings-heading" aside={<span className="text-xs text-ink-950/45">{profile.stats.reviews}</span>} /><RatingDistribution distribution={distribution} /></section>
-            <section className="mt-6" aria-labelledby="profile-activity-heading" data-profile-activity-preview><SectionHeader title="Activity" id="profile-activity-heading" aside={profile.is_owner ? <Link href={routes.activity} className="text-xs font-bold uppercase tracking-wider text-brand-coral hover:underline">All</Link> : null} /><ol className="mt-3 border-l border-ink-950/20 pl-3.5">{activities.length ? activities.map((activity) => <li key={activity.id} className="relative pb-3 text-xs last:pb-0 before:absolute before:-left-[1.06rem] before:top-1.5 before:size-1.5 before:rounded-full before:bg-brand-coral"><p className="leading-5 text-ink-950/55">{activity.label} <Link href={activity.literature.url} className="font-semibold text-ink-950 hover:text-brand-coral">{activity.literature.title}</Link></p><TimeLabel value={activity.occurred_at} className="mt-0.5 block text-[0.65rem] text-ink-950/35" /></li>) : <li className="text-xs text-ink-950/45">No activity yet.</li>}</ol></section>
+            <section className="mt-6" aria-labelledby="profile-activity-heading" data-profile-activity-preview><SectionHeader title="Activity" id="profile-activity-heading" aside={profile.is_owner ? <Link href={routes.activity} className="text-xs font-bold uppercase tracking-wider text-brand-coral hover:underline">All</Link> : null} /><ol className={`mt-3 ${activities.length ? 'border-l border-ink-950/20 pl-3.5' : ''}`}>{activities.length ? activities.map((activity) => <li key={activity.id} className="relative pb-3 text-xs last:pb-0 before:absolute before:-left-[1.06rem] before:top-1.5 before:size-1.5 before:rounded-full before:bg-brand-coral"><p className="leading-5 text-ink-950/55">{activity.label} <Link href={activity.literature.url} className="font-semibold text-ink-950 hover:text-brand-coral">{activity.literature.title}</Link></p><TimeLabel value={activity.occurred_at} className="mt-0.5 block text-[0.65rem] text-ink-950/35" /></li>) : <EmptyState as="li" compact title="No activity yet." />}</ol></section>
         </aside>
     );
 }

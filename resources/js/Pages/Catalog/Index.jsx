@@ -2,6 +2,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 
 import LiteratureCard from '../../Components/LiteratureCard';
+import EmptyState from '../../Components/EmptyState';
 import SiteContainer from '../../Components/SiteContainer';
 
 function SearchIcon() {
@@ -130,13 +131,11 @@ export default function CatalogIndex({
                 )}
 
                 {literatures.length === 0 ? (
-                    <div className="border border-ink-950/10 bg-white/35 px-6 py-14 text-center">
-                        <p className="font-serif text-2xl font-bold text-ink-950">No matching titles found.</p>
-                        <p className="mt-2 text-ink-950/60">Try another keyword or choose a different format.</p>
-                        <Link href={routes.catalog} className="mt-6 inline-block bg-ink-950 px-5 py-3 font-bold text-brand-cream transition hover:bg-brand-coral hover:text-brand-cream">
-                            Clear search
-                        </Link>
-                    </div>
+                    <EmptyState
+                        title={query || selectedType ? 'No matching titles found.' : 'No literature available yet.'}
+                        description={query || selectedType ? 'Try another keyword or choose a different format.' : 'New titles will appear here as the catalog grows.'}
+                        action={query || selectedType ? { href: routes.catalog, label: 'Clear search' } : null}
+                    />
                 ) : (
                     <div className="mx-auto grid w-full max-w-3xl grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-4 sm:gap-x-4" data-catalog-results>
                         {literatures.map((literature) => (

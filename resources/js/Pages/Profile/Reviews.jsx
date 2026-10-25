@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 
 import ProfileSubNavigation from '../../Components/ProfileSubNavigation';
+import EmptyState from '../../Components/EmptyState';
 import { plural, SpoilerContent, StarRating, TimeLabel } from '../../Components/LiteratureDetail/DetailUi';
 import { LiteratureCover, Pagination, ProfileContentContainer, ProfilePageHeading } from '../../Components/ProfilePageUi';
 
@@ -57,10 +58,7 @@ export default function ProfileReviews({ profile, navigation, reviews, summary }
 
                     <div data-profile-review-list data-density="compact">
                         {reviews.data.length ? reviews.data.map((review) => <ReviewItem key={review.id} review={review} />) : (
-                            <div className="border-b border-ink-950/12 py-9 text-center">
-                                <p className="text-xl font-bold text-ink-950">No reviews yet.</p>
-                                <p className="mt-2 text-sm text-ink-950/55">Written reviews and rating-only entries will appear here.</p>
-                            </div>
+                            <EmptyState compact title="No reviews yet." description="Written reviews and rating-only entries will appear here." />
                         )}
                     </div>
                     <Pagination paginator={reviews} label="Profile reviews pagination" />

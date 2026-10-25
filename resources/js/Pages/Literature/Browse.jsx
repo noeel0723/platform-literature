@@ -3,9 +3,12 @@ import { Head, Link } from '@inertiajs/react';
 import CatalogPagination from '../../Components/CatalogPagination';
 import LiteratureBrowseFilters, { LiteratureBrowseSearch } from '../../Components/LiteratureBrowseFilters';
 import LiteratureCard from '../../Components/LiteratureCard';
+import EmptyState from '../../Components/EmptyState';
 import SiteContainer from '../../Components/SiteContainer';
 
 export default function LiteratureBrowse({ literatures, filters, options, routes }) {
+    const hasActiveFilters = Boolean(filters.q || filters.decade || filters.rating || filters.genre || (filters.sort && filters.sort !== 'popularity'));
+
     return (
         <>
             <Head title="Browse Literature" />
@@ -37,12 +40,11 @@ export default function LiteratureBrowse({ literatures, filters, options, routes
                         <CatalogPagination pagination={literatures} label="Global literature pagination" />
                     </>
                 ) : (
-                    <div className="border border-ink-950/10 bg-white/35 px-6 py-14 text-center">
-                        <p className="font-serif text-2xl font-bold text-ink-950">No local literature matches these filters.</p>
-                        <Link href={routes.browse} className="mt-5 inline-flex min-h-10 items-center bg-ink-950 px-5 text-sm font-bold text-brand-cream transition hover:bg-brand-coral">
-                            Clear filters
-                        </Link>
-                    </div>
+                    <EmptyState
+                        title={hasActiveFilters ? 'No literature matches these filters.' : 'No literature available yet.'}
+                        description={hasActiveFilters ? 'Try another keyword or adjust the filters.' : 'New titles will appear here as the catalog grows.'}
+                        action={hasActiveFilters ? { href: routes.browse, label: 'Clear filters' } : null}
+                    />
                 )}
             </SiteContainer>
         </>

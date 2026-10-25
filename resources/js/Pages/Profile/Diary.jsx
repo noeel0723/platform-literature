@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 
 import ProfileSubNavigation from '../../Components/ProfileSubNavigation';
+import EmptyState from '../../Components/EmptyState';
 import { StarRating } from '../../Components/LiteratureDetail/DetailUi';
 import { LiteratureCover, ProfileContentContainer, ProfilePageHeading } from '../../Components/ProfilePageUi';
 
@@ -26,11 +27,11 @@ export default function ProfileDiary({ profile, navigation, activities }) {
 
             <ProfileContentContainer className="py-7 lg:py-9" aria-labelledby="activity-history-heading">
                 <div className="mt-4 overflow-x-auto" data-diary-activity-history>
-                    <div className="hidden min-w-[760px] grid-cols-[72px_54px_minmax(230px,1fr)_70px_125px_65px_50px] border-y border-ink-950/15 px-2 py-2 text-[0.65rem] font-bold uppercase tracking-wider text-ink-950/45 md:grid" role="row">
+                    {activities.length > 0 && <div className="hidden min-w-[760px] grid-cols-[72px_54px_minmax(230px,1fr)_70px_125px_65px_50px] border-y border-ink-950/15 px-2 py-2 text-[0.65rem] font-bold uppercase tracking-wider text-ink-950/45 md:grid" role="row">
                         <span>Month</span><span>Day</span><span>Literature</span><span>Released</span><span>Rating</span><span>Review</span><span>Edit</span>
-                    </div>
+                    </div>}
 
-                    <ol className="min-w-0 md:min-w-[760px]">
+                    <ol className={activities.length ? 'min-w-0 md:min-w-[760px]' : 'min-w-0'}>
                         {activities.length ? activities.map((activity) => (
                             <li key={activity.review_id} className="grid grid-cols-[54px_minmax(0,1fr)] border-b border-ink-950/10 px-2 py-3 md:grid-cols-[72px_54px_minmax(230px,1fr)_70px_125px_65px_50px] md:items-center md:py-2.5" data-diary-rating-row>
                                 <DateParts value={activity.occurred_at} />
@@ -43,7 +44,7 @@ export default function ProfileDiary({ profile, navigation, activities }) {
                                 <span className="hidden text-xs font-semibold text-ink-950/55 md:block">{activity.review ? (activity.contains_spoiler ? 'Spoiler' : 'Written') : '—'}</span>
                                 {activity.edit_url ? <Link href={activity.edit_url} className="hidden text-xs font-bold text-brand-coral hover:underline md:inline" aria-label={`Edit rating or review for ${activity.literature.title}`}>Edit</Link> : <span className="hidden text-xs text-ink-950/25 md:inline">—</span>}
                             </li>
-                        )) : <li className="border-b border-ink-950/10 px-5 py-9 text-center text-sm text-ink-950/60">No rated literature yet. Give a title a rating to add it to your Diary.</li>}
+                        )) : <EmptyState as="li" compact title="No rated literature yet." description="Give a title a rating to add it to your Diary." />}
                     </ol>
                 </div>
             </ProfileContentContainer>

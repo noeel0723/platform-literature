@@ -2,6 +2,7 @@ import { Link, router } from '@inertiajs/react';
 
 import SiteContainer from '../SiteContainer';
 import CatalogPagination from '../CatalogPagination';
+import EmptyState from '../EmptyState';
 import { ReportForm, SectionHeading, SpoilerContent, StarRating, TimeLabel, UserAvatar, plural } from './DetailUi';
 
 export default function ReviewSection({ reviews, pagination, ratingSummary, viewer, reportReasons, reportAction }) {
@@ -50,7 +51,7 @@ export default function ReviewSection({ reviews, pagination, ratingSummary, view
                                     </div>
                                 </div>
                             </article>
-                        )) : <div className="py-7 text-sm text-ink-950/65">No reviews yet. Be the first reader to share a rating.</div>}
+                        )) : <EmptyState compact title="No written reviews yet." description="Reader reviews of this literature will appear here." />}
                     </div>
                     {pagination?.last_page > 1 && <CatalogPagination pagination={pagination} label="Review pagination" />}
                 </div>

@@ -2,6 +2,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 
 import ProfileSubNavigation from '../../Components/ProfileSubNavigation';
+import EmptyState from '../../Components/EmptyState';
 import { StarRating } from '../../Components/LiteratureDetail/DetailUi';
 import { LiteratureCover, Pagination, ProfileContentContainer, ProfilePageHeading } from '../../Components/ProfilePageUi';
 
@@ -166,12 +167,7 @@ export default function ProfileLiterature({ profile, navigation, completedLitera
                 <ProfilePageHeading count={<span className="inline-flex flex-wrap items-center gap-2"><GenreFilter genres={genres} activeGenre={activeGenre} /><RatingFilter activeRating={activeRating} /></span>} />
 
                 {completedLiterature.data.length === 0 ? (
-                    <div className="mt-5 border-y border-dashed border-ink-950/20 px-5 py-10 text-center">
-                        <p className="text-lg font-bold text-ink-950">
-                            {activeGenre ? `No completed ${activeGenre.name} literature yet.` : 'No completed literature yet.'}
-                        </p>
-                        <p className="mt-1.5 text-sm text-ink-950/55">Titles marked Completed will appear on this shelf.</p>
-                    </div>
+                    <EmptyState className="mt-5" title={activeGenre ? `No completed ${activeGenre.name} literature yet.` : 'No completed literature yet.'} description="Titles marked Completed will appear on this shelf." />
                 ) : (
                     <>
                         <div className="mt-4 grid grid-cols-3 gap-x-2.5 gap-y-4 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-10" data-profile-literature-grid data-density="compact">

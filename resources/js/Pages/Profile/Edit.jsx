@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import AvatarCropDialog from '../../Components/AvatarCropDialog';
 import ProfileSubNavigation from '../../Components/ProfileSubNavigation';
+import EmptyState from '../../Components/EmptyState';
 
 function FieldError({ message }) {
     return message ? <p className="mt-1.5 text-xs font-semibold text-red-700">{message}</p> : null;
@@ -163,13 +164,11 @@ function FavoritePickerDialog({ picker, searchUrl, selectedValues, currentValue,
                         {String(item.id) === String(currentValue ?? '') && <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-brand-coral">Current</span>}
                     </button>
                 )) : (
-                    <p className="px-5 py-10 text-center text-sm text-ink-950/55">
-                        {query.trim().length < 2
-                            ? `Type at least 2 characters to search ${isLiterature ? 'literature' : 'authors'}.`
-                            : searching || !hasSearched
-                                ? 'Searching...'
-                                : `No ${isLiterature ? 'literature' : 'authors'} matched your search.`}
-                    </p>
+                    query.trim().length < 2 || searching || !hasSearched ? (
+                        <p className="px-4 py-4 text-center text-sm text-ink-950/70">
+                            {query.trim().length < 2 ? `Type at least 2 characters to search ${isLiterature ? 'literature' : 'authors'}.` : 'Searching...'}
+                        </p>
+                    ) : <EmptyState compact title={`No ${isLiterature ? 'literature' : 'authors'} matched your search.`} description={isLiterature ? 'Try another title or author.' : 'Try another author name.'} />
                 )}
             </div>
 

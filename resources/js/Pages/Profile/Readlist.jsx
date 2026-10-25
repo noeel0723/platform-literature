@@ -2,6 +2,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 
 import ProfileSubNavigation from '../../Components/ProfileSubNavigation';
+import EmptyState from '../../Components/EmptyState';
 import { plural, TimeLabel } from '../../Components/LiteratureDetail/DetailUi';
 import { LiteratureCover, Pagination, ProfileContentContainer, ProfilePageHeading } from '../../Components/ProfilePageUi';
 
@@ -43,7 +44,7 @@ function QuickAdd({ suggestions, catalogUrl }) {
                         </article>
                     ))}
                 </div>
-                {visibleSuggestions.length === 0 && <p className="py-4 text-xs text-ink-950/50" data-readlist-no-results>No matching literature in these suggestions.</p>}
+                {visibleSuggestions.length === 0 && <EmptyState compact data-readlist-no-results title={query.trim() ? 'No matching suggestions.' : 'No suggestions available.'} description={query.trim() ? 'Try another title or author.' : undefined} />}
                 <Link href={catalogUrl} className="mt-3 block border border-ink-950/15 px-3 py-2 text-center text-xs font-bold text-ink-950 transition hover:border-brand-coral hover:bg-brand-yogurt/45">Browse the full catalog</Link>
             </div>
         </section>
@@ -59,7 +60,7 @@ export default function ProfileReadlist({ profile, navigation, readlist, suggest
             <ProfileContentContainer className="grid gap-7 py-7 lg:grid-cols-[minmax(0,1fr)_220px] lg:gap-6 lg:py-9">
                 <div className="min-w-0" aria-labelledby="readlist-heading">
                     {readlist.data.length === 0 ? (
-                        <div className="mt-5 border-y border-dashed border-ink-950/20 px-5 py-10 text-center"><p className="text-lg font-bold text-ink-950">This Readlist is empty.</p><p className="mt-1.5 text-sm text-ink-950/60">{isOwner ? 'Use Quick add to save your next read.' : 'This reader has not saved any literature for later.'}</p></div>
+                        <EmptyState className="mt-5" title="This Readlist is empty." description={isOwner ? 'Use Quick add to save your next read.' : 'This reader has not saved any literature for later.'} action={isOwner ? { href: routes.catalog, label: 'Explore literature' } : null} />
                     ) : (
                         <>
                             <div className="mt-4 grid grid-cols-3 gap-x-2.5 gap-y-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-5">

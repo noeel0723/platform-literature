@@ -2,6 +2,7 @@ import { Head, Link, router } from '@inertiajs/react';
 
 import { LiteratureCover, Pagination } from '../../Components/ProfilePageUi';
 import SiteContainer from '../../Components/SiteContainer';
+import EmptyState from '../../Components/EmptyState';
 
 export default function ShowList({ list, canEdit, successMessage }) {
     const move = (index, direction) => {
@@ -33,7 +34,7 @@ export default function ShowList({ list, canEdit, successMessage }) {
                     {list.description && <p className="mt-4 max-w-3xl text-sm leading-6 text-ink-950/65">{list.description}</p>}
                 </header>
 
-                {list.items.data.length === 0 ? <div className="py-12 text-center text-sm text-ink-950/50">This list is empty. Add literature from its detail page.</div> : (
+                {list.items.data.length === 0 ? <EmptyState className="mt-5" title="This list is empty." description={canEdit ? 'Add literature from the list editor or a literature detail page.' : 'Titles added by the list owner will appear here.'} action={canEdit ? { href: list.edit_url, label: 'Add literature' } : null} /> : (
                     <div className="mt-5 grid grid-cols-3 gap-x-3 gap-y-5 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-9">
                         {list.items.data.map((item, index) => item.literature && (
                             <article key={item.id} className="relative min-w-0">

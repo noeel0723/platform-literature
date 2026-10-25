@@ -2,6 +2,7 @@ import { Head, router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 
 import ProfileSubNavigation from '../../Components/ProfileSubNavigation';
+import EmptyState from '../../Components/EmptyState';
 import { ProfileContentContainer } from '../../Components/ProfilePageUi';
 
 const BREAKDOWN_TABS = [
@@ -48,7 +49,7 @@ function HorizontalBarList({ items, valueKey = 'count', showZeroRows = false }) 
     const hasData = values.some((value) => value > 0);
 
     if (items.length === 0 || (!hasData && !showZeroRows)) {
-        return <p className="rounded-md border border-dashed border-ink-950/15 bg-brand-cream/45 px-4 py-6 text-center text-sm text-ink-950/45">Not enough reading data yet.</p>;
+        return <EmptyState compact title="Not enough reading data yet." />;
     }
 
     return (

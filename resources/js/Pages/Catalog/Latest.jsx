@@ -1,6 +1,7 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 
 import CatalogPagination from '../../Components/CatalogPagination';
+import EmptyState from '../../Components/EmptyState';
 import LiteratureCard from '../../Components/LiteratureCard';
 import SiteContainer from '../../Components/SiteContainer';
 
@@ -18,12 +19,11 @@ export default function CatalogLatest({ literatures, query, routes }) {
                 </div>
 
                 {literatures.data.length === 0 ? (
-                    <div className="border border-ink-950/10 bg-white/35 px-6 py-14 text-center">
-                        <p className="text-xl font-bold text-ink-950">No matching literature is available.</p>
-                        <Link href={routes.catalog} className="mt-5 inline-flex min-h-10 items-center bg-ink-950 px-5 text-sm font-bold text-brand-cream transition hover:bg-brand-coral">
-                            Back to catalog
-                        </Link>
-                    </div>
+                    <EmptyState
+                        title="No matching literature found."
+                        description="Browse the catalog to explore other titles."
+                        action={{ href: routes.catalog, label: 'Back to catalog' }}
+                    />
                 ) : (
                     <>
                         <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 sm:gap-x-4 md:grid-cols-4 lg:grid-cols-5" data-latest-literature-grid>

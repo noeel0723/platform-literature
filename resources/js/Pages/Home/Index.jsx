@@ -7,6 +7,7 @@ import { TimeLabel } from '../../Components/LiteratureDetail/DetailUi';
 import PopularThisWeek from '../../Components/PopularThisWeek';
 import RegisterDialog from '../../Components/RegisterDialog';
 import SiteContainer from '../../Components/SiteContainer';
+import EmptyState from '../../Components/EmptyState';
 
 function Cover({ literature }) {
     return literature.cover_url ? (
@@ -33,20 +34,14 @@ function ReaderAvatar({ reader, className = 'size-7' }) {
 
 function EmptyActivity({ viewer, routes }) {
     return (
-        <div className="mt-4 border-y border-dashed border-ink-950/20 px-5 py-9 text-center">
-            <p className="text-lg font-bold text-ink-950">No new activity from friends yet.</p>
-            <p className="mx-auto mt-1.5 max-w-xl text-sm leading-6 text-ink-950/60">
-                {viewer
-                    ? 'Follow readers from their profile. Their completed reads, ratings, and reviews will appear here.'
-                    : 'Log in to see completed reads, ratings, and reviews from readers you follow.'}
-            </p>
-            <Link
-                href={viewer ? routes.catalog : routes.login}
-                className="mt-4 inline-flex bg-ink-950 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-brand-cream transition hover:bg-brand-coral"
-            >
-                {viewer ? 'Explore literature' : 'Log in'}
-            </Link>
-        </div>
+        <EmptyState
+            className="mt-4"
+            title="No new activity from friends yet."
+            description={viewer
+                ? 'Follow readers to see their completed reads, ratings, and reviews here.'
+                : 'Log in to see activity from readers you follow.'}
+            action={{ href: viewer ? routes.catalog : routes.login, label: viewer ? 'Explore literature' : 'Log in' }}
+        />
     );
 }
 
@@ -123,9 +118,7 @@ export default function HomeIndex({ activities, popularLiteratures, recommendati
                             </div>
 
                             {recommendations.length === 0 ? (
-                                <div className="mt-4 border-y border-dashed border-ink-950/20 px-5 py-8 text-center text-sm text-ink-950/60">
-                                    Recommendations will appear as the catalog grows.
-                                </div>
+                                <EmptyState className="mt-4" title="No recommendations yet." description="Explore literature and rate what you read to help shape future recommendations." action={{ href: routes.catalog, label: 'Explore literature' }} />
                             ) : (
                                 <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-4 lg:grid-cols-8">
                                     {recommendations.map((literature) => (
@@ -148,9 +141,7 @@ export default function HomeIndex({ activities, popularLiteratures, recommendati
                         </div>
 
                         {popularLiteratures.length === 0 ? (
-                            <div className="mt-4 border-y border-dashed border-ink-950/20 px-5 py-8 text-center text-sm text-ink-950/60">
-                                Literature your friends are reading or have completed will appear here.
-                            </div>
+                            <EmptyState className="mt-4" title="No popular reads from friends yet." description="Literature your friends are reading or have completed will appear here." />
                         ) : (
                             <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
                                 {popularLiteratures.map((literature) => (

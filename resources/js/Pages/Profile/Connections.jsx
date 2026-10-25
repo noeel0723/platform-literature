@@ -2,6 +2,7 @@ import { Head, Link, router } from '@inertiajs/react';
 
 import { Pagination, ProfileContentContainer } from '../../Components/ProfilePageUi';
 import ProfileSubNavigation from '../../Components/ProfileSubNavigation';
+import EmptyState from '../../Components/EmptyState';
 
 function ConnectionMetric({ type, value, compact = false }) {
     const isCompleted = type === 'completed';
@@ -111,7 +112,7 @@ export default function Connections({ profile, navigation, connections, relation
                                     </article>
                                 ))}
                             </div>
-                        ) : <p className="px-4 py-7 text-center text-sm text-ink-950/55">No readers in {title.toLowerCase()} yet.</p>}
+                        ) : <EmptyState compact title={`No readers in ${title.toLowerCase()} yet.`} />}
                     </div>
                     <Pagination paginator={connections} label={`${title} pagination`} />
                 </div>

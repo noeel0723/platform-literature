@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 
 import { LiteratureCover } from '../../Components/ProfilePageUi';
 import SiteContainer from '../../Components/SiteContainer';
+import EmptyState from '../../Components/EmptyState';
 
 function SearchResult({ literature, onAdd }) {
     return (
@@ -179,17 +180,14 @@ export default function EditList({ list, formUrl, profileUrl, searchUrl, items: 
                             </form>
                             {editing && (query.trim().length >= 2 || searching) && (
                                 <div className="absolute z-20 mt-1 max-h-80 w-full overflow-y-auto rounded-md border border-ink-950/15 bg-brand-cream shadow-lg shadow-ink-950/10">
-                                    {searching ? <p className="px-3 py-4 text-sm text-ink-950/50">Searching…</p> : results.length > 0 ? results.map((literature) => <SearchResult key={literature.id} literature={literature} onAdd={addLiterature} />) : <p className="px-3 py-4 text-sm text-ink-950/50">No matching literature.</p>}
+                                    {searching ? <p className="px-3 py-4 text-sm text-ink-950/50">Searching…</p> : results.length > 0 ? results.map((literature) => <SearchResult key={literature.id} literature={literature} onAdd={addLiterature} />) : <EmptyState compact title="No matching literature." description="Try another title." />}
                                 </div>
                             )}
                         </div>
                     </section>
 
                     {!editing || items.length === 0 ? (
-                        <div className="mt-4 rounded-xl border border-dashed border-ink-950/15 bg-white/40 px-5 py-8 text-center">
-                            <p className="font-serif text-base font-bold text-ink-950">No literature yet</p>
-                            <p className="mt-1 text-sm text-ink-950/55">{editing ? 'Search above to add your first title to this list.' : 'Create the list first, then add and order its literature here.'}</p>
-                        </div>
+                        <EmptyState className="mt-4" title="No literature yet." description={editing ? 'Search above to add your first title to this list.' : 'Create the list first, then add and order its literature here.'} />
                     ) : (
                         <section className="mt-4 divide-y divide-ink-950/10 overflow-hidden rounded-xl border border-ink-950/10 bg-white/50" aria-label="Editable list items">
                             {items.map((item, index) => (

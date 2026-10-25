@@ -2,6 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 
 import LiteratureBrowseFilters, { LiteratureBrowseSearch } from '../../Components/LiteratureBrowseFilters';
 import LiteratureCard from '../../Components/LiteratureCard';
+import EmptyState from '../../Components/EmptyState';
 import SiteContainer from '../../Components/SiteContainer';
 
 export default function LiteratureIndex({ popularLiteratures, options, routes }) {
@@ -36,10 +37,7 @@ export default function LiteratureIndex({ popularLiteratures, options, routes })
                         {popularLiteratures.map((literature) => <LiteratureCard key={literature.id} literature={literature} />)}
                     </div>
                 ) : (
-                    <div className="border border-ink-950/10 bg-white/35 px-6 py-14 text-center">
-                        <p className="font-serif text-2xl font-bold text-ink-950">No local literature is available yet.</p>
-                        <p className="mt-2 text-sm text-ink-950/60">Synced literature will appear here without making another provider request.</p>
-                    </div>
+                    <EmptyState title="No literature available yet." description="New titles will appear here as the catalog grows." />
                 )}
             </SiteContainer>
         </>
