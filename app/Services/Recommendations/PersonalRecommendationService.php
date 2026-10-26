@@ -58,6 +58,7 @@ final class PersonalRecommendationService
             ->flip();
         $taste = $this->tasteProfile($user);
         $coldStart = $taste['meaningful_keys']->count() < 2;
+        $initialFormats = $coldStart ? $user->preferredFormats() : [];
         $similarity = $coldStart
             ? collect()
             : $this->similarReaderPopularity($user, $taste['meaningful_keys']);
@@ -65,6 +66,7 @@ final class PersonalRecommendationService
             ->merge($this->authorCandidateIds($taste['authors']))
             ->merge($this->representativeIdsForKeys($similarity->sortDesc()->keys()->take(self::CANDIDATES_PER_SOURCE)))
             ->merge($this->popularCandidateIds())
+            ->merge($this->formatCandidateIds($initialFormats))
             ->unique()
             ->values();
 
@@ -125,11 +127,32 @@ final class PersonalRecommendationService
             ->sortByDesc(fn (array $item): string => sprintf('%012.4f-%010d', $item['score'], $item['literature']->id))
             ->values();
 
+        if ($initialFormats !== []) {
+            $preferred = $ranked->filter(fn (array $item): bool => in_array($item['literature']->type, $initialFormats, true))
+                ->map(fn (array $item): array => [...$item, 'reason' => 'Based on the formats you chose']);
+            $ranked = $preferred->concat($ranked->reject(fn (array $item): bool => in_array($item['literature']->type, $initialFormats, true)))->values();
+        }
+
         return $this->diversify(
             $ranked,
             $taste['genres'],
             max(1, min($limit, 12)),
         );
+    }
+
+    /** @param list<string> $formats */
+    private function formatCandidateIds(array $formats): Collection
+    {
+        if ($formats === []) {
+            return collect();
+        }
+
+        $perFormat = (int) ceil(self::CANDIDATES_PER_SOURCE / count($formats));
+
+        return collect($formats)->flatMap(fn (string $format): Collection => $this->canonicalSearch
+            ->representativeQuery('', $format)
+            ->orderBy('literatures.id')->limit($perFormat)->pluck('literatures.id'))
+            ->unique()->take(self::CANDIDATES_PER_SOURCE)->values();
     }
 
     /** @param array<string, float> $genreScores */

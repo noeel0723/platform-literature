@@ -83,7 +83,7 @@ class EmailVerificationTest extends TestCase
         $this->assertCount(1, $messages);
         $this->assertSame('reader@example.com', $messages->first()->getOriginalMessage()->getTo()[0]->getAddress());
         $this->assertStringContainsString(htmlspecialchars($mail->actionUrl, ENT_QUOTES), $messages->first()->getOriginalMessage()->getHtmlBody());
-        $this->get($mail->actionUrl)->assertRedirect(route('literatures.index'));
+        $this->get($mail->actionUrl)->assertRedirect(route('onboarding.show'));
         $this->assertTrue($reader->fresh()->hasVerifiedEmail());
     }
 

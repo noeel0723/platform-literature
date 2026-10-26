@@ -26,6 +26,18 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public const ROLE_ADMIN = 'admin';
 
+    public function needsOnboarding(): bool
+    {
+        return $this->onboarding_required && $this->onboarding_completed_at === null
+            && $this->hasVerifiedEmail() && $this->isActive();
+    }
+
+    /** @return list<string> */
+    public function preferredFormats(): array
+    {
+        return array_values(array_intersect($this->preferred_formats ?? [], Literature::supportedTypes()));
+    }
+
     /** @return HasMany<ReadingList, $this> */
     public function readingLists(): HasMany
     {
@@ -173,6 +185,10 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return [
             'email_verified_at' => 'datetime',
+            'onboarding_required' => 'boolean',
+            'onboarding_step' => 'integer',
+            'onboarding_completed_at' => 'datetime',
+            'preferred_formats' => 'array',
             'deactivated_at' => 'datetime',
             'password' => 'hashed',
         ];

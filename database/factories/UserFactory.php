@@ -46,4 +46,13 @@ class UserFactory extends Factory
             'email_verified_at' => null,
         ]);
     }
+
+    public function pendingOnboarding(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'onboarding_required' => true,
+            'onboarding_step' => 1,
+            'onboarding_completed_at' => null,
+        ]);
+    }
 }

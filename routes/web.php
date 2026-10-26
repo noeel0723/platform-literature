@@ -17,6 +17,7 @@ use App\Http\Controllers\LikeController;
 use App\Http\Controllers\LiteratureBrowseController;
 use App\Http\Controllers\LiteratureController;
 use App\Http\Controllers\LiteraturePreviewController;
+use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfileFavoriteSearchController;
@@ -78,6 +79,8 @@ Route::middleware('auth')->group(function (): void {
 });
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
+    Route::get('/onboarding', [OnboardingController::class, 'show'])->name('onboarding.show');
+    Route::patch('/onboarding', [OnboardingController::class, 'update'])->middleware('throttle:60,1')->name('onboarding.update');
     Route::post('/action-feedback/{token}/undo', UndoActionController::class)
         ->whereUuid('token')->middleware('throttle:30,1')->name('action-feedback.undo');
     Route::get('/quick-log/literatures', QuickLogController::class)

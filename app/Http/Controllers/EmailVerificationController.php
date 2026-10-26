@@ -14,7 +14,7 @@ class EmailVerificationController extends Controller
     public function notice(Request $request): Response|RedirectResponse
     {
         if ($request->user()->hasVerifiedEmail()) {
-            return redirect()->route('literatures.index');
+            return redirect()->route($request->user()->needsOnboarding() ? 'onboarding.show' : 'literatures.index');
         }
 
         return Inertia::render('Auth/VerifyEmail', [
@@ -33,13 +33,13 @@ class EmailVerificationController extends Controller
     {
         $request->fulfill();
 
-        return redirect()->route('literatures.index');
+        return redirect()->route($request->user()->needsOnboarding() ? 'onboarding.show' : 'literatures.index');
     }
 
     public function send(Request $request): RedirectResponse
     {
         if ($request->user()->hasVerifiedEmail()) {
-            return redirect()->route('literatures.index');
+            return redirect()->route($request->user()->needsOnboarding() ? 'onboarding.show' : 'literatures.index');
         }
 
         try {

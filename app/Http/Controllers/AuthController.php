@@ -24,7 +24,8 @@ class AuthController extends Controller
 
     public function register(RegisterRequest $request): RedirectResponse
     {
-        $user = User::query()->create($request->safe()->only(['name', 'username', 'email', 'password']));
+        $user = new User($request->safe()->only(['name', 'username', 'email', 'password']));
+        $user->forceFill(['onboarding_required' => true])->save();
 
         Auth::login($user);
         $request->session()->regenerate();
@@ -74,6 +75,10 @@ class AuthController extends Controller
 
         if (! $request->user()->hasVerifiedEmail()) {
             return redirect()->route('verification.notice');
+        }
+
+        if ($request->user()->needsOnboarding()) {
+            return redirect()->route('onboarding.show');
         }
 
         return redirect()->intended(route('literatures.index'))

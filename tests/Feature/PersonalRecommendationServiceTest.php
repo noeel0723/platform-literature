@@ -22,6 +22,85 @@ class PersonalRecommendationServiceTest extends TestCase
 {
     use LazilyRefreshDatabase;
 
+    public function test_initial_formats_prioritize_matching_cold_start_candidates_without_changing_popularity_scores(): void
+    {
+        $newUser = User::factory()->create(['preferred_formats' => ['manga']]);
+        $baselineUser = User::factory()->create();
+        $manga = Literature::factory()->create(['type' => 'manga']);
+        $popularNovel = Literature::factory()->create(['type' => 'novel']);
+        ReadingList::factory()->for($popularNovel)->create(['status' => 'completed', 'completed_at' => now()]);
+        $service = app(PersonalRecommendationService::class);
+        $baseline = $service->recommend($baselineUser, 2);
+
+        $results = $service->recommend($newUser, 2);
+
+        $this->assertSame($manga->id, $results->first()['literature']->id);
+        $this->assertSame('Based on the formats you chose', $results->first()['reason']);
+        $this->assertTrue($results->first()['cold_start']);
+        $this->assertSame($baseline->firstWhere('literature.id', $popularNovel->id)['score'], $results->firstWhere('literature.id', $popularNovel->id)['score']);
+        $this->assertTrue($results->pluck('literature.id')->contains($popularNovel->id));
+    }
+
+    public function test_initial_format_candidates_are_not_lost_outside_the_default_candidate_limit(): void
+    {
+        $user = User::factory()->create(['preferred_formats' => ['manhwa']]);
+        Literature::factory()->count(101)->create(['type' => 'novel']);
+        $manhwa = Literature::factory()->create(['type' => 'manhwa']);
+
+        $results = app(PersonalRecommendationService::class)->recommend($user, 1);
+
+        $this->assertSame($manhwa->id, $results->sole()['literature']->id);
+    }
+
+    public function test_missing_preferred_formats_fall_back_to_the_existing_catalog_pool(): void
+    {
+        $user = User::factory()->create(['preferred_formats' => ['western-comic']]);
+        $novel = Literature::factory()->create(['type' => 'novel']);
+
+        $results = app(PersonalRecommendationService::class)->recommend($user, 2);
+
+        $this->assertSame($novel->id, $results->sole()['literature']->id);
+        $this->assertSame('Trending with Literahaven readers', $results->sole()['reason']);
+    }
+
+    public function test_format_seeds_remain_available_until_the_existing_cold_start_threshold_is_met(): void
+    {
+        $user = User::factory()->create(['preferred_formats' => ['manga']]);
+        $completed = Literature::factory()->create(['type' => 'novel']);
+        ReadingList::factory()->for($user)->for($completed)->create(['status' => 'completed', 'completed_at' => now()]);
+        $manga = Literature::factory()->create(['type' => 'manga']);
+        Literature::factory()->create(['type' => 'novel']);
+
+        $results = app(PersonalRecommendationService::class)->recommend($user, 1);
+
+        $this->assertSame($manga->id, $results->sole()['literature']->id);
+        $this->assertTrue($results->sole()['cold_start']);
+    }
+
+    public function test_real_reading_taste_takes_over_without_onboarding_formats_changing_learned_scores(): void
+    {
+        $user = User::factory()->create(['preferred_formats' => ['manga']]);
+        $genre = Category::factory()->create(['name' => 'Fantasy']);
+        $first = Literature::factory()->create(['type' => 'novel']);
+        $second = Literature::factory()->create(['type' => 'novel']);
+        foreach ([$first, $second] as $literature) {
+            $literature->categories()->attach($genre);
+            ReadingList::factory()->for($user)->for($literature)->create(['status' => 'completed', 'completed_at' => now()]);
+        }
+        $candidate = Literature::factory()->create(['type' => 'novel']);
+        $candidate->categories()->attach($genre);
+        Literature::factory()->create(['type' => 'manga']);
+        $service = app(PersonalRecommendationService::class);
+        $seeded = $service->recommend($user, 2);
+        $user->forceFill(['preferred_formats' => []])->save();
+
+        $withoutSeed = $service->recommend($user, 2);
+
+        $this->assertSame($seeded->pluck('literature.id')->all(), $withoutSeed->pluck('literature.id')->all());
+        $this->assertSame($seeded->pluck('score')->all(), $withoutSeed->pluck('score')->all());
+        $this->assertFalse($seeded->first()['cold_start']);
+    }
+
     public function test_it_scores_matching_tastes_and_excludes_tracked_literature(): void
     {
         $user = User::factory()->create();
