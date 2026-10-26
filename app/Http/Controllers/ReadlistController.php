@@ -2,15 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Literature;
 use App\Models\User;
+use App\Services\Recommendations\PersonalRecommendationService;
 use App\Support\ProfilePagePresenter;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ReadlistController extends Controller
 {
-    public function __invoke(User $user, ProfilePagePresenter $presenter): Response
+    public function __invoke(User $user, ProfilePagePresenter $presenter, PersonalRecommendationService $recommendations): Response
     {
         $isOwner = auth()->id() === $user->id;
         $readlist = $user->readingLists()
@@ -20,12 +20,7 @@ class ReadlistController extends Controller
             ->paginate(24);
 
         $readlistSuggestions = $isOwner
-            ? Literature::query()
-                ->whereDoesntHave('readingLists', fn ($query) => $query->whereBelongsTo($user))
-                ->with(['authors', 'metadataOverride', 'sourceMapping.canonicalWork.metadataOverride'])
-                ->latest()
-                ->limit(12)
-                ->get()
+            ? $recommendations->recommend($user, 12)
             : collect();
 
         $readlist->through(fn ($item): array => [
@@ -39,9 +34,10 @@ class ReadlistController extends Controller
             'navigation' => $presenter->navigation($user, 'readlist', request()->user()),
             'readlist' => $readlist,
             'suggestions' => $readlistSuggestions
-                ->map(fn (Literature $literature): array => [
-                    ...$presenter->literature($literature),
-                    'update_url' => route('reading-list.update', $literature),
+                ->map(fn (array $recommendation): array => [
+                    ...$presenter->literature($recommendation['literature']),
+                    'reason' => $recommendation['reason'],
+                    'update_url' => route('reading-list.update', $recommendation['literature']),
                 ])
                 ->values()
                 ->all(),

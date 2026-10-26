@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\CanonicalWork;
 use App\Models\Literature;
+use App\Models\LiteratureSourceMapping;
 use App\Models\ReadingList;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
@@ -108,6 +110,75 @@ class ReadlistPageTest extends TestCase
             'literature_id' => $literature->id,
             'status' => 'want_to_read',
         ]);
+
+        $response = $this->get(route('profiles.readlist', $user))->assertOk();
+        $this->assertNotContains($literature->id, collect($response->inertiaProps('suggestions'))->pluck('id'));
+    }
+
+    public function test_owner_gets_personal_recommendations_using_their_initial_format_preferences(): void
+    {
+        $user = User::factory()->create(['preferred_formats' => ['manga']]);
+        $manga = Literature::factory()->create(['title' => 'Recommended Manga', 'type' => 'manga']);
+        Literature::factory()->create(['title' => 'More Recently Added Novel', 'type' => 'novel']);
+
+        $response = $this->actingAs($user)->get(route('profiles.readlist', $user))->assertOk();
+
+        $response->assertInertia(fn (Assert $page) => $page
+            ->where('suggestions.0.id', $manga->id)
+            ->where('suggestions.0.reason', 'Based on the formats you chose')
+            ->where('suggestions.0.update_url', route('reading-list.update', $manga))
+        );
+    }
+
+    public function test_readlist_recommendations_deduplicate_canonical_works_and_exclude_tracked_editions(): void
+    {
+        $user = User::factory()->create();
+        $available = null;
+
+        foreach (['available', 'tracked'] as $status) {
+            $preferred = Literature::factory()->create();
+            $sibling = Literature::factory()->create();
+            $canonical = CanonicalWork::factory()->create(['preferred_literature_id' => $preferred->id]);
+            foreach ([$preferred, $sibling] as $literature) {
+                LiteratureSourceMapping::factory()->create([
+                    'canonical_work_id' => $canonical->id,
+                    'literature_id' => $literature->id,
+                    'api_source_id' => $literature->api_source_id,
+                ]);
+            }
+            if ($status === 'tracked') {
+                ReadingList::factory()->for($user)->for($sibling)->create(['status' => 'want_to_read']);
+            } else {
+                $available = $preferred;
+            }
+        }
+
+        $response = $this->actingAs($user)->get(route('profiles.readlist', $user))->assertOk();
+
+        $this->assertSame([$available->id], collect($response->inertiaProps('suggestions'))->pluck('id')->all());
+    }
+
+    public function test_signed_in_visitors_do_not_receive_another_readers_recommendations(): void
+    {
+        $owner = User::factory()->create(['preferred_formats' => ['manga']]);
+        $visitor = User::factory()->create();
+        Literature::factory()->create(['type' => 'manga']);
+
+        $response = $this->actingAs($visitor)->get(route('profiles.readlist', $owner))->assertOk();
+
+        $this->assertFalse($response->inertiaProps('isOwner'));
+        $this->assertSame([], $response->inertiaProps('suggestions'));
+    }
+
+    public function test_owner_can_view_an_empty_readlist_when_no_recommendations_are_available(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->get(route('profiles.readlist', $user))->assertOk();
+
+        $this->assertSame([], $response->inertiaProps('suggestions'));
+        $this->assertSame(0, $response->inertiaProps('readlist.total'));
+        $this->assertSame(route('literatures.index'), $response->inertiaProps('routes.catalog'));
     }
 
     public function test_public_reader_does_not_see_another_users_quick_add_form(): void
