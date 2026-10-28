@@ -32,6 +32,12 @@ class User extends Authenticatable implements MustVerifyEmail
             && $this->hasVerifiedEmail() && $this->isActive();
     }
 
+    public function canCancelRegistration(): bool
+    {
+        return $this->onboarding_required && ! $this->hasVerifiedEmail()
+            && ! $this->isAdmin() && $this->isActive();
+    }
+
     /** @return list<string> */
     public function preferredFormats(): array
     {

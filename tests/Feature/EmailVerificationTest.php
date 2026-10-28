@@ -100,6 +100,87 @@ class EmailVerificationTest extends TestCase
         Event::assertDispatchedTimes(Verified::class, 1);
     }
 
+    public function test_a_signed_link_verifies_and_signs_in_a_new_reader_without_an_existing_session(): void
+    {
+        $reader = User::factory()->unverified()->pendingOnboarding()->create();
+        Event::fake([Verified::class]);
+        $this->withSession(['url.intended' => route('verification.notice')]);
+        $oldSessionId = session()->getId();
+
+        $this->get($this->verificationUrl($reader))
+            ->assertRedirect(route('onboarding.show'))->assertSessionMissing('url.intended');
+
+        $this->assertAuthenticatedAs($reader);
+        $this->assertTrue($reader->fresh()->hasVerifiedEmail());
+        $this->assertNotSame($oldSessionId, session()->getId());
+        Event::assertDispatchedTimes(Verified::class, 1);
+        $this->get(route('verification.notice'))->assertRedirect(route('onboarding.show'));
+    }
+
+    public function test_a_consumed_verification_link_cannot_be_reused_to_sign_in_after_logout(): void
+    {
+        $reader = User::factory()->unverified()->create();
+        $url = $this->verificationUrl($reader);
+        Event::fake([Verified::class]);
+        $this->get($url)->assertRedirect(route('literatures.index'));
+        $this->post(route('logout'))->assertRedirect(route('home'));
+
+        $this->get($url)->assertRedirect(route('home', ['login' => 1]));
+
+        $this->assertGuest();
+        $this->assertTrue($reader->fresh()->hasVerifiedEmail());
+        Event::assertDispatchedTimes(Verified::class, 1);
+    }
+
+    public function test_a_guest_cannot_verify_with_an_expired_link(): void
+    {
+        $this->freezeTime();
+        $reader = User::factory()->unverified()->create();
+        $url = $this->verificationUrl($reader);
+        $this->travel(61)->minutes();
+
+        $this->get($url)->assertForbidden();
+
+        $this->assertGuest();
+        $this->assertFalse($reader->fresh()->hasVerifiedEmail());
+    }
+
+    public function test_a_guest_cannot_verify_with_an_unsigned_or_tampered_link(): void
+    {
+        $reader = User::factory()->unverified()->create();
+
+        $this->get(route('verification.verify', ['id' => $reader->id, 'hash' => sha1($reader->email)]))->assertForbidden();
+        $this->get($this->verificationUrl($reader).'&tampered=1')->assertForbidden();
+        $this->get(URL::temporarySignedRoute('verification.verify', now()->addHour(), [
+            'id' => $reader->id, 'hash' => sha1('wrong@example.com'),
+        ]))->assertForbidden();
+
+        $this->assertGuest();
+        $this->assertFalse($reader->fresh()->hasVerifiedEmail());
+    }
+
+    public function test_a_link_for_an_old_email_address_cannot_verify_or_sign_in_a_guest(): void
+    {
+        $reader = User::factory()->unverified()->create();
+        $url = $this->verificationUrl($reader);
+        $reader->forceFill(['email' => 'changed@example.com'])->save();
+
+        $this->get($url)->assertForbidden();
+
+        $this->assertGuest();
+        $this->assertFalse($reader->fresh()->hasVerifiedEmail());
+    }
+
+    public function test_a_deactivated_account_cannot_be_verified_or_signed_in_through_email(): void
+    {
+        $reader = User::factory()->unverified()->create(['deactivated_at' => now()]);
+
+        $this->get($this->verificationUrl($reader))->assertForbidden();
+
+        $this->assertGuest();
+        $this->assertFalse($reader->fresh()->hasVerifiedEmail());
+    }
+
     public function test_expired_verification_link_is_rejected_without_verifying_the_reader(): void
     {
         $this->freezeTime();

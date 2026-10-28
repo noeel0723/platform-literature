@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\ModerationController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AuthorController;
 use App\Http\Controllers\BlockController;
+use App\Http\Controllers\CancelRegistrationController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\CustomListController;
 use App\Http\Controllers\CustomListItemController;
@@ -69,11 +70,14 @@ Route::middleware('guest')->group(function (): void {
         ->name('password.update');
 });
 
+Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+    ->whereNumber('id')->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
+
 Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/email/verify', [EmailVerificationController::class, 'notice'])->name('verification.notice');
-    Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
-        ->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
+    Route::delete('/register', CancelRegistrationController::class)
+        ->middleware('throttle:6,1')->name('registration.cancel');
     Route::post('/email/verification-notification', [EmailVerificationController::class, 'send'])
         ->middleware('throttle:verification')->name('verification.send');
 });
