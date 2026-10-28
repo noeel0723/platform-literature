@@ -36,26 +36,22 @@ const features = [
 export default function GuestLandingFeatures() {
     return (
         <section aria-labelledby="guest-features-heading">
-            <SiteContainer className="pb-12 pt-2 sm:pb-14">
-                <div className="mb-5 border-b border-ink-950/15 pb-3">
-                    <p className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-brand-coral">Made for readers</p>
-                    <h2 id="guest-features-heading" className="mt-1 font-serif text-xl font-bold tracking-tight text-ink-950 sm:text-2xl">
-                        Your reading life, in one place
-                    </h2>
-                </div>
+            <SiteContainer className="pb-12 pt-4 sm:pb-16 sm:pt-6">
+                <h2 id="guest-features-heading" className="mb-4 text-sm font-medium uppercase tracking-[0.14em] text-ink-700">
+                    Made for readers
+                </h2>
 
-                <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <ul className="grid auto-rows-fr gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {features.map((feature) => (
-                        <li key={feature.title} className="flex min-h-28 items-start gap-3 rounded-lg border border-ink-950/10 bg-white/55 p-4 transition-colors hover:border-brand-sky hover:bg-white/75">
-                            <span className="grid size-9 shrink-0 place-items-center rounded-md bg-brand-sky/25 text-ink-950" aria-hidden="true">
-                                <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                        <li key={feature.title} className="flex min-h-36 items-start gap-4 rounded-sm border border-ink-950/10 bg-brand-yogurt px-5 py-6 sm:min-h-44 sm:gap-5 sm:p-6">
+                            <span className="mt-0.5 shrink-0 text-ink-700" aria-hidden="true">
+                                <svg className="size-10 sm:size-11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                                     {feature.icon}
                                 </svg>
                             </span>
-                            <div className="min-w-0">
-                                <h3 className="text-sm font-bold text-ink-950">{feature.title}</h3>
-                                <p className="mt-1 text-xs leading-5 text-ink-950/65">{feature.description}</p>
-                            </div>
+                            <p className="min-w-0 text-base leading-6 text-ink-950/85">
+                                <strong className="font-semibold text-ink-950">{feature.title}.</strong>{' '}{feature.description}
+                            </p>
                         </li>
                     ))}
                 </ul>
