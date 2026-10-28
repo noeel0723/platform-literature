@@ -1,7 +1,8 @@
 import { Head, useForm } from '@inertiajs/react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { FormatPreferences, OnboardingProgress, ReadingActionsIntro } from '../../Components/OnboardingSteps';
+import OnboardingDiscovery from '../../Components/OnboardingDiscovery';
 import SiteContainer from '../../Components/SiteContainer';
 import { feedbackVisitOptions } from '../../Support/actionFeedback';
 
@@ -11,11 +12,11 @@ const copy = {
     3: { title: 'Make room for your stories', text: 'Your literature pages give you a few simple ways to remember, organize, and share every read.' },
 };
 
-export default function Onboarding({ step, preferredFormats, formats, routes }) {
+export default function Onboarding({ step, preferredFormats, formats, routes, discovery = { query: '', groups: [], results: [] } }) {
     const form = useForm({ formats: preferredFormats });
+    const search = useForm({ q: discovery.query });
     const submitting = useRef(false);
     const heading = useRef(null);
-    const [query, setQuery] = useState('');
 
     useEffect(() => { heading.current?.focus({ preventScroll: true }); }, [step]);
 
@@ -49,16 +50,11 @@ export default function Onboarding({ step, preferredFormats, formats, routes }) 
 
                     <div className="mt-5">
                         {step === 1 && <FormatPreferences formats={formats} selected={form.data.formats} onChange={toggleFormat} disabled={form.processing} />}
-                        {step === 2 && (
-                            <form action={routes.catalog} method="get" target="_blank" rel="noopener noreferrer" onSubmit={(event) => { if (!query.trim()) event.preventDefault(); }}>
-                                <label htmlFor="onboarding-search" className="mb-2 block text-xs font-semibold text-ink-950">Find literature</label>
-                                <div className="flex min-w-0 overflow-hidden rounded-md border border-ink-950/20 bg-white/70 focus-within:border-brand-coral focus-within:ring-2 focus-within:ring-brand-coral/20">
-                                    <input id="onboarding-search" name="q" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Title or author…" autoComplete="off" className="h-10 min-w-0 flex-1 bg-transparent px-3 text-sm text-ink-950 outline-none placeholder:text-ink-950/40" />
-                                    <button type="submit" disabled={!query.trim()} className="shrink-0 bg-ink-950 px-4 text-xs font-bold text-brand-cream transition-colors hover:bg-brand-coral disabled:opacity-50">Search<span className="sr-only"> (opens in a new tab)</span></button>
-                                </div>
-                                <p className="mt-2 text-xs leading-5 text-ink-950/50">Explore in a new tab, then come back here. You can also keep going and search later.</p>
-                            </form>
-                        )}
+                        {step === 2 && <OnboardingDiscovery discovery={discovery} search={search} disabled={form.processing} browseUrl={routes.browse} onSearch={(event) => {
+                            event.preventDefault();
+                            if (search.processing || form.processing) return;
+                            search.get(routes.discovery, feedbackVisitOptions({ preserveState: true, preserveScroll: true, replace: true }));
+                        }} />}
                         {step === 3 && <ReadingActionsIntro />}
                     </div>
 

@@ -72,7 +72,8 @@ function ModerationActions({ report }) {
     });
 
     const submit = (action) => {
-        form.transform((data) => ({ ...data, action })).patch(report.update_url, {
+        form.transform((data) => ({ ...data, action }));
+        form.patch(report.update_url, {
             preserveScroll: true,
             onSuccess: () => {
                 form.reset();

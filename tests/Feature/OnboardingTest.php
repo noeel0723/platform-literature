@@ -2,9 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Models\Activity;
+use App\Models\Author;
+use App\Models\CanonicalWork;
+use App\Models\Literature;
+use App\Models\LiteratureSourceMapping;
 use App\Models\User;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\URL;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -230,6 +236,112 @@ class OnboardingTest extends TestCase
         $this->actingAs($user)->get(route('home'))->assertOk();
         $this->get(route('literatures.index'))->assertOk();
         $this->get(route('profiles.edit'))->assertOk();
+    }
+
+    public function test_discovery_shows_popular_local_titles_only_in_the_selected_formats(): void
+    {
+        $this->freezeTime();
+        Http::preventStrayRequests();
+        $user = User::factory()->pendingOnboarding()->create(['onboarding_step' => 2, 'preferred_formats' => ['novel', 'manga']]);
+        $popular = Literature::factory()->create(['type' => 'novel', 'title' => 'Popular Novel']);
+        Literature::factory()->create(['type' => 'novel', 'title' => 'Quiet Novel']);
+        $manga = Literature::factory()->create(['type' => 'manga']);
+        Literature::factory()->create(['type' => 'manhwa']);
+        Activity::factory()->for($popular)->create(['type' => Activity::TYPE_STARTED_READING]);
+
+        $response = $this->actingAs($user)->get(route('onboarding.show'))->assertOk();
+
+        $response->assertInertia(fn (Assert $page) => $page
+            ->has('discovery.groups', 2)
+            ->where('discovery.groups.0.format', 'Novel')
+            ->where('discovery.groups.0.literatures.0.id', $popular->id)
+            ->where('discovery.groups.1.format', 'Manga')
+            ->where('discovery.groups.1.literatures.0.id', $manga->id)
+            ->where('routes.discovery', route('onboarding.show')));
+        Http::assertNothingSent();
+    }
+
+    public function test_discovery_uses_all_four_formats_when_no_preference_was_selected(): void
+    {
+        Http::preventStrayRequests();
+        $user = User::factory()->pendingOnboarding()->create(['onboarding_step' => 2]);
+
+        $response = $this->actingAs($user)->get(route('onboarding.show'))->assertOk();
+
+        $this->assertSame(['Novel', 'Manga', 'Manhwa', 'Western Comic'], collect($response->inertiaProps('discovery.groups'))->pluck('format')->all());
+        Http::assertNothingSent();
+    }
+
+    public function test_an_unavailable_selected_format_does_not_show_unselected_formats_instead(): void
+    {
+        $user = User::factory()->pendingOnboarding()->create(['onboarding_step' => 2, 'preferred_formats' => ['manhwa']]);
+        Literature::factory()->create(['type' => 'novel']);
+
+        $response = $this->actingAs($user)->get(route('onboarding.show'))->assertOk();
+
+        $this->assertSame([['format' => 'Manhwa', 'literatures' => []]], $response->inertiaProps('discovery.groups'));
+    }
+
+    public function test_popular_discovery_deduplicates_editions_of_the_same_canonical_work(): void
+    {
+        $user = User::factory()->pendingOnboarding()->create(['onboarding_step' => 2, 'preferred_formats' => ['novel']]);
+        $preferred = Literature::factory()->create(['type' => 'novel']);
+        $sibling = Literature::factory()->create(['type' => 'novel']);
+        $canonical = CanonicalWork::factory()->create(['preferred_literature_id' => $preferred->id]);
+        foreach ([$preferred, $sibling] as $literature) {
+            LiteratureSourceMapping::factory()->create([
+                'canonical_work_id' => $canonical->id, 'literature_id' => $literature->id, 'api_source_id' => $literature->api_source_id,
+            ]);
+        }
+
+        $response = $this->actingAs($user)->get(route('onboarding.show'))->assertOk();
+
+        $this->assertSame([$preferred->id], collect($response->inertiaProps('discovery.groups.0.literatures'))->pluck('id')->all());
+    }
+
+    #[TestWith(['Earth Chronicles'])]
+    #[TestWith(['Local Writer'])]
+    public function test_discovery_searches_local_titles_and_authors_without_calling_catalog_apis(string $query): void
+    {
+        Http::preventStrayRequests();
+        $user = User::factory()->pendingOnboarding()->create(['onboarding_step' => 2, 'preferred_formats' => ['novel']]);
+        $literature = Literature::factory()->create(['title' => 'Earth Chronicles', 'type' => 'manga']);
+        $author = Author::factory()->create(['name' => 'Local Writer']);
+        $literature->authors()->attach($author);
+        Literature::factory()->create(['title' => 'An Unrelated Work']);
+
+        $response = $this->actingAs($user)->get(route('onboarding.show', ['q' => $query]))->assertOk();
+
+        $this->assertSame([$literature->id], collect($response->inertiaProps('discovery.results'))->pluck('id')->all());
+        $this->assertSame($query, $response->inertiaProps('discovery.query'));
+        $this->assertSame([], $response->inertiaProps('discovery.groups'));
+        $this->assertSame(route('literature.browse', ['q' => $query]), $response->inertiaProps('routes.browse'));
+        $this->assertSame(2, $user->fresh()->onboarding_step);
+        $this->assertSame(['novel'], $user->fresh()->preferred_formats);
+        Http::assertNothingSent();
+    }
+
+    public function test_discovery_search_is_bounded_and_an_unknown_local_title_has_no_results(): void
+    {
+        Http::preventStrayRequests();
+        $user = User::factory()->pendingOnboarding()->create(['onboarding_step' => 2]);
+        Literature::factory()->count(8)->sequence(fn ($sequence) => ['title' => 'Earth Volume '.$sequence->index])->create();
+
+        $response = $this->actingAs($user)->get(route('onboarding.show', ['q' => 'Earth']))->assertOk();
+        $this->assertCount(6, $response->inertiaProps('discovery.results'));
+        $response = $this->get(route('onboarding.show', ['q' => 'No Such Local Title']))->assertOk();
+        $this->assertSame([], $response->inertiaProps('discovery.results'));
+        Http::assertNothingSent();
+    }
+
+    public function test_discovery_rejects_a_malformed_search_without_changing_preferences(): void
+    {
+        $user = User::factory()->pendingOnboarding()->create(['onboarding_step' => 2, 'preferred_formats' => ['manga']]);
+
+        $this->actingAs($user)->getJson(route('onboarding.show', ['q' => ['invalid']]))
+            ->assertUnprocessable()->assertJsonValidationErrors('q');
+
+        $this->assertSame(['manga'], $user->fresh()->preferred_formats);
     }
 
     private function verificationUrl(User $user): string

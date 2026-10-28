@@ -153,11 +153,14 @@ final class LiteratureBrowseService
      * or delay new activity/moderation. Cache only with complete invalidation and
      * an expiry tied to the next signal leaving the rolling window.
      *
+     * @param  list<string>  $formats
      * @return Collection<int, Literature>
      */
-    public function popular(int $limit = 4): Collection
+    public function popular(int $limit = 4, array $formats = []): Collection
     {
-        $query = $this->queryWithMetrics();
+        $base = $this->canonicalSearch->representativeQuery()
+            ->when($formats !== [], fn (Builder $query) => $query->whereIn('literatures.type', $formats));
+        $query = $this->queryWithMetrics(base: $base);
         $this->applySort($query, 'popularity');
 
         return $this->hydrateResults($query->limit($limit)->get());
