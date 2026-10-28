@@ -5,13 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\CanonicalWorkLink;
 use App\Models\Literature;
 use App\Services\Literature\CanonicalWorkIdentity;
+use App\Services\Literature\LiteraturePresenter;
 use App\Support\ReviewDraftContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class LiteraturePreviewController extends Controller
 {
-    public function __invoke(Request $request, Literature $literature, CanonicalWorkIdentity $identity, ReviewDraftContext $draftContext): JsonResponse
+    public function __invoke(Request $request, Literature $literature, CanonicalWorkIdentity $identity, ReviewDraftContext $draftContext, LiteraturePresenter $presenter): JsonResponse
     {
         $literature = $identity->representative($literature);
         $literature->loadMissing(['authors', 'metadataOverride', 'sourceMapping.canonicalWork.metadataOverride']);
@@ -70,6 +71,7 @@ class LiteraturePreviewController extends Controller
                     'contains_spoiler' => $review->contains_spoiler,
                 ],
             ],
+            'sources' => $presenter->sources($literature),
             'viewer' => [
                 'authenticated' => $user !== null,
                 'reading_status' => $reading?->status,

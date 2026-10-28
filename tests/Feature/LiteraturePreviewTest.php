@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\ApiSource;
 use App\Models\CanonicalWork;
 use App\Models\CustomList;
 use App\Models\CustomListItem;
@@ -71,6 +72,63 @@ class LiteraturePreviewTest extends TestCase
             ->assertJsonMissing(['body' => 'Do not expose this review.']);
     }
 
+    public function test_preview_lists_only_the_mapped_catalog_sources_without_duplicate_providers(): void
+    {
+        Http::preventStrayRequests();
+        $aniList = ApiSource::factory()->create(['key' => 'anilist', 'name' => 'AniList']);
+        $kitsu = ApiSource::factory()->create(['key' => 'kitsu', 'name' => 'Kitsu']);
+        $preferred = Literature::factory()->for($aniList)->create();
+        $sibling = Literature::factory()->for($kitsu)->create();
+        $edition = Literature::factory()->for($aniList)->create();
+        Literature::factory()->for(ApiSource::factory()->create(['name' => 'Unrelated provider']))->create();
+        $work = CanonicalWork::factory()->create(['preferred_literature_id' => $preferred->id]);
+
+        foreach ([$preferred, $sibling, $edition] as $literature) {
+            LiteratureSourceMapping::factory()->for($literature)->create(['canonical_work_id' => $work->id]);
+        }
+
+        $this->getJson(route('literatures.preview', $sibling))->assertOk()
+            ->assertJsonPath('sources.catalog', ['AniList', 'Kitsu'])
+            ->assertJsonPath('sources.synopsis', 'AniList');
+
+        Http::assertNothingSent();
+    }
+
+    public function test_unmapped_preview_uses_its_own_catalog_provider_and_explicit_synopsis_attribution(): void
+    {
+        $source = ApiSource::factory()->create(['name' => 'Hardcover']);
+        $literature = Literature::factory()->for($source)->create(['synopsis_source_name' => 'Wikipedia EN']);
+
+        $this->getJson(route('literatures.preview', $literature))->assertOk()
+            ->assertJsonPath('sources.catalog', ['Hardcover'])
+            ->assertJsonPath('sources.synopsis', 'Wikipedia EN');
+
+        $this->assertDatabaseCount('literature_source_mappings', 0);
+    }
+
+    public function test_missing_synopsis_does_not_claim_a_synopsis_source(): void
+    {
+        $literature = Literature::factory()->create(['synopsis' => null, 'synopsis_source_name' => 'Wikipedia EN']);
+
+        $this->getJson(route('literatures.preview', $literature))->assertOk()
+            ->assertJsonPath('sources.synopsis', null);
+    }
+
+    public function test_synopsis_attribution_respects_the_existing_english_metadata_visibility(): void
+    {
+        $source = ApiSource::factory()->create(['key' => 'google-books', 'name' => 'Google Books']);
+        $literature = Literature::factory()->for($source)->create(['language' => 'id', 'synopsis_source_name' => 'Google Books']);
+
+        $this->getJson(route('literatures.preview', $literature))->assertOk()
+            ->assertJsonPath('sources.catalog', ['Google Books'])
+            ->assertJsonPath('sources.synopsis', null);
+
+        $literature->update(['synopsis_source_name' => 'Wikipedia EN']);
+
+        $this->getJson(route('literatures.preview', $literature))->assertOk()
+            ->assertJsonPath('sources.synopsis', 'Wikipedia EN');
+    }
+
     public function test_preview_uses_the_canonical_representative_curated_metadata_and_sibling_interactions(): void
     {
         $viewer = User::factory()->create();
@@ -89,6 +147,7 @@ class LiteraturePreviewTest extends TestCase
             ->assertOk()
             ->assertJsonPath('literature.id', $preferred->id)
             ->assertJsonPath('literature.title', 'Curated canonical title')
+            ->assertJsonPath('sources.synopsis', 'Literahaven curated metadata')
             ->assertJsonPath('literature.review.rating', 3.5)
             ->assertJsonPath('literature.completed_at', '2026-09-03')
             ->assertJsonPath('viewer.reading_status', 'completed')

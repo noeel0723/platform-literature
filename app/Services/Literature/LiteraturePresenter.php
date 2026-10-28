@@ -17,11 +17,7 @@ final class LiteraturePresenter
         $displayLanguage = $literature->displayLanguage();
         $metadataOverride = $literature->effectiveMetadataOverride();
         $hasCuratedSynopsis = filled($metadataOverride?->synopsis);
-        $metadataIsEnglish = $hasCuratedSynopsis
-            || $literature->apiSource->key !== 'google-books'
-            || $displayLanguage === null
-            || $displayLanguage === 'en'
-            || $literature->synopsis_source_name === 'Wikipedia EN';
+        $metadataIsEnglish = $this->metadataIsEnglish($literature);
         $formatLabels = [
             'Book' => 'Novel',
             'Buku' => 'Novel',
@@ -84,6 +80,43 @@ final class LiteraturePresenter
             'is_curated' => $literature->hasCuratedMetadata(),
             'initials' => $this->initials($displayTitle),
         ];
+    }
+
+    /** @return array{catalog: list<string>, synopsis: string|null} */
+    public function sources(Literature $literature): array
+    {
+        $literature->loadMissing([
+            'apiSource:id,key,name',
+            'metadataOverride',
+            'sourceMapping.canonicalWork.metadataOverride',
+            'sourceMapping.canonicalWork.sourceMappings.apiSource:id,key,name',
+        ]);
+        $catalogSources = collect([$literature->apiSource?->name])
+            ->merge($literature->sourceMapping?->canonicalWork?->sourceMappings->pluck('apiSource.name') ?? [])
+            ->filter(fn (?string $name): bool => filled($name))
+            ->unique()
+            ->values()
+            ->all();
+        $synopsisSource = null;
+
+        if (filled($literature->displaySynopsis()) && $this->metadataIsEnglish($literature)) {
+            $synopsisSource = filled($literature->effectiveMetadataOverride()?->synopsis)
+                ? 'Literahaven curated metadata'
+                : (filled($literature->synopsis_source_name) ? $literature->synopsis_source_name : $literature->apiSource?->name);
+        }
+
+        return ['catalog' => $catalogSources, 'synopsis' => $synopsisSource];
+    }
+
+    private function metadataIsEnglish(Literature $literature): bool
+    {
+        $displayLanguage = $literature->displayLanguage();
+
+        return filled($literature->effectiveMetadataOverride()?->synopsis)
+            || $literature->apiSource->key !== 'google-books'
+            || $displayLanguage === null
+            || $displayLanguage === 'en'
+            || $literature->synopsis_source_name === 'Wikipedia EN';
     }
 
     /** @return Collection<int, Category> */

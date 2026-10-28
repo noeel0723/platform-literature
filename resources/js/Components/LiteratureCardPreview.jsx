@@ -7,6 +7,7 @@ import { actionFeedback, requestAction, ACTION_RESTORED_EVENT } from '../Support
 import { focusablePreviewActions, previewActionIndex, previewPosition, previewTabBoundary } from '../Support/literatureCardPreview';
 import { RatingInput } from './LiteratureDetail/DetailUi';
 import QuickLogDialog from './QuickLogDialog';
+import LiteraturePreviewSources from './LiteraturePreviewSources';
 
 const OPEN_PREVIEW_EVENT = 'literahaven:open-cover-preview';
 const actionClass = 'flex min-h-11 w-full items-center justify-between gap-3 px-4 py-2 text-left text-xs font-semibold transition hover:bg-brand-sky/20 focus-visible:bg-brand-sky/20 focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-brand-coral disabled:cursor-wait disabled:opacity-50';
@@ -341,6 +342,7 @@ export default function LiteratureCardPreview({ literature, compact = false, chi
                                 </div>
                             ) : <button type="button" onClick={requireLogin} className={`${actionClass} text-brand-coral`}>{preview.routes.verification ? 'Verify email to rate and track' : 'Log in to rate and track'}</button>}
                             {preview.routes.where_to_read && <Link href={preview.routes.where_to_read} className={`${actionClass} border-t border-ink-950/10`} onClick={() => close()}>Where to read</Link>}
+                            <LiteraturePreviewSources sources={preview.sources} />
                         </>
                     )}
                     {error && <p role="alert" className="px-4 py-3 text-xs leading-5 text-red-700">{error}</p>}
