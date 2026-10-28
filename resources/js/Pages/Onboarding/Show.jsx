@@ -23,7 +23,8 @@ export default function Onboarding({ step, preferredFormats, formats, routes }) 
         if (submitting.current || form.processing) return;
         submitting.current = true;
         form.clearErrors();
-        form.transform((data) => ({ ...data, action })).patch(routes.update, feedbackVisitOptions({
+        form.transform((data) => ({ ...data, action }));
+        form.patch(routes.update, feedbackVisitOptions({
             preserveScroll: true,
             onFinish: () => { submitting.current = false; },
         }));
