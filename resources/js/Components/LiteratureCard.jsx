@@ -10,7 +10,7 @@ const posterThemes = {
     mixed: 'from-brand-cream via-brand-coral to-brand-sky text-ink-950',
 };
 
-export default function LiteratureCard({ literature, compact = false }) {
+export default function LiteratureCard({ literature, compact = false, rank = null }) {
     const posterTheme = posterThemes[literature.theme]
         ?? 'from-brand-cream via-brand-sky to-brand-coral text-ink-950';
     const badgeSpacing = compact
@@ -73,9 +73,12 @@ export default function LiteratureCard({ literature, compact = false }) {
             </LiteratureCardPreview>
             <Link href={literature.url} className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-coral focus-visible:ring-offset-4 focus-visible:ring-offset-brand-cream">
                 <div className={compact ? 'pt-2' : 'pt-3'}>
-                    <h3 title={literature.title} className={`line-clamp-2 font-semibold text-ink-950 [overflow-wrap:anywhere] transition group-hover:text-brand-coral ${compact ? 'text-sm leading-5' : 'text-base leading-6'}`}>
-                        {literature.title}
-                    </h3>
+                    <div className="flex items-start gap-1.5">
+                        {rank !== null && <span aria-label={`Rank ${rank}`} className="grid size-5 shrink-0 place-items-center rounded-full bg-ink-950 text-[11px] font-bold tabular-nums text-brand-cream">{rank}</span>}
+                        <h3 title={literature.title} className={`min-w-0 line-clamp-2 font-semibold text-ink-950 [overflow-wrap:anywhere] transition group-hover:text-brand-coral ${compact ? 'text-sm leading-5' : 'text-base leading-6'}`}>
+                            {literature.title}
+                        </h3>
+                    </div>
                     <p title={literature.author} className={`truncate leading-5 text-ink-950/75 ${compact ? 'mt-0.5 text-xs sm:text-[13px]' : 'mt-1 text-[13px] sm:text-sm'}`}>
                         {literature.author}
                     </p>

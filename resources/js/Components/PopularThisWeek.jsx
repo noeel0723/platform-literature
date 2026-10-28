@@ -25,11 +25,8 @@ export default function PopularThisWeek({ literatures, browseUrl }) {
 
                 <ol className="mt-5 grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 lg:grid-cols-6">
                     {literatures.map((literature, index) => (
-                        <li key={literature.id} className="relative min-w-0">
-                            <span className="absolute left-1.5 top-1.5 z-10 grid size-6 place-items-center rounded-full bg-ink-950 text-[0.65rem] font-bold text-brand-cream shadow-sm" aria-label={`Rank ${index + 1}`}>
-                                {index + 1}
-                            </span>
-                            <LiteratureCard literature={literature} compact />
+                        <li key={literature.id} className="min-w-0">
+                            <LiteratureCard literature={literature} compact rank={index + 1} />
                         </li>
                     ))}
                 </ol>
