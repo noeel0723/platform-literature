@@ -40,10 +40,7 @@ export default function LiteratureCardPreview({ literature, compact = false, chi
     const coverRef = useRef(null);
     const menuRef = useRef(null);
     const triggerRef = useRef(null);
-    const openTimer = useRef(null);
-    const closeTimer = useRef(null);
     const focusRequested = useRef(false);
-    const pinned = useRef(false);
     const returnFocusRef = useRef(null);
     const processingRef = useRef(false);
     const restoreQuickLogFocus = useRef(false);
@@ -57,21 +54,13 @@ export default function LiteratureCardPreview({ literature, compact = false, chi
     const [quickLog, setQuickLog] = useState(null);
     const readingStatus = preview?.viewer.reading_status;
 
-    const clearTimers = () => {
-        window.clearTimeout(openTimer.current);
-        window.clearTimeout(closeTimer.current);
-    };
     const close = (restoreFocus = false) => {
-        clearTimers();
-        pinned.current = false;
         focusRequested.current = false;
         setOpen(false);
         setPosition(null);
         if (restoreFocus) (returnFocusRef.current ?? triggerRef.current)?.focus({ preventScroll: true });
     };
     const show = (focus = false, source = triggerRef.current) => {
-        clearTimers();
-        pinned.current = true;
         returnFocusRef.current = source;
         focusRequested.current = focus;
         setOpen(true);
@@ -79,23 +68,6 @@ export default function LiteratureCardPreview({ literature, compact = false, chi
             menuRef.current?.focus({ preventScroll: true });
             focusRequested.current = false;
         }
-    };
-    const scheduleOpen = () => {
-        clearTimers();
-        openTimer.current = window.setTimeout(() => {
-            if (document.querySelector('dialog[open]')) return;
-            const focusedPanel = document.activeElement?.closest('[data-preview-panel]');
-            if (focusedPanel && focusedPanel !== menuRef.current) return;
-            returnFocusRef.current = triggerRef.current;
-            setOpen(true);
-        }, 180);
-    };
-    const scheduleClose = () => {
-        clearTimers();
-        if (pinned.current) return;
-        closeTimer.current = window.setTimeout(() => {
-            if (!menuRef.current?.contains(document.activeElement) && !coverRef.current?.contains(document.activeElement)) close();
-        }, 300);
     };
     const onBlur = (event) => {
         if (event.relatedTarget && !coverRef.current?.contains(event.relatedTarget) && !menuRef.current?.contains(event.relatedTarget)) close();
@@ -134,7 +106,6 @@ export default function LiteratureCardPreview({ literature, compact = false, chi
         };
         window.addEventListener(OPEN_PREVIEW_EVENT, closeOther);
         return () => {
-            clearTimers();
             window.removeEventListener(OPEN_PREVIEW_EVENT, closeOther);
         };
     }, [menuId]);
@@ -296,14 +267,14 @@ export default function LiteratureCardPreview({ literature, compact = false, chi
 
     return (
         <>
-            <div ref={coverRef} className="literature-card-cover relative" data-preview-open={open} onPointerEnter={(event) => { if (event.pointerType === 'mouse' && window.matchMedia('(hover: hover) and (pointer: fine)').matches) scheduleOpen(); }} onPointerLeave={(event) => { if (event.pointerType === 'mouse') scheduleClose(); }} onFocusCapture={clearTimers} onBlurCapture={onBlur}>
+            <div ref={coverRef} className="literature-card-cover relative" data-preview-open={open} onBlurCapture={onBlur}>
                 {children}
                 <div className="literature-card-controls absolute inset-x-0 bottom-0 flex justify-end gap-1 bg-linear-to-t from-ink-950/95 to-transparent p-2 pt-8 text-brand-cream">
                     {!compact && <>
                     <button type="button" data-cover-status-action disabled={processing} onClick={(event) => toggleReading('completed', event.currentTarget)} aria-label={readingStatus === 'completed' ? `Remove completed status for ${literature.title}` : `Mark ${literature.title} as completed`} title="Completed" aria-pressed={readingStatus === 'completed'} className={`${controlClass} ${readingStatus === 'completed' ? 'text-brand-coral' : ''}`}><ActionIcon name="completed" /></button>
                     <button type="button" data-cover-status-action disabled={processing} onClick={(event) => toggleReading('want_to_read', event.currentTarget)} aria-label={readingStatus === 'want_to_read' ? `Remove ${literature.title} from Readlist` : `Add ${literature.title} to Readlist`} title="Readlist" aria-pressed={readingStatus === 'want_to_read'} className={`${controlClass} ${readingStatus === 'want_to_read' ? 'text-brand-coral' : ''}`}><ActionIcon name="readlist" /></button>
                     </>}
-                    <button ref={triggerRef} type="button" onClick={() => { if (open && pinned.current) close(true); else show(true); }} onKeyDown={(event) => {
+                    <button ref={triggerRef} type="button" onClick={() => { if (open) close(true); else show(true); }} onKeyDown={(event) => {
                         if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || (event.key === 'Tab' && !event.shiftKey && open)) {
                             event.preventDefault();
                             show(true);
@@ -313,7 +284,7 @@ export default function LiteratureCardPreview({ literature, compact = false, chi
             </div>
 
             {open && createPortal(
-                <div ref={menuRef} id={menuId} data-preview-panel role="dialog" aria-modal="false" aria-labelledby={`${menuId}-title`} aria-describedby={`${menuId}-metadata`} aria-busy={loading || processing} tabIndex={-1} style={{ width: 256, ...position, visibility: position ? 'visible' : 'hidden' }} className="fixed z-50 max-h-[calc(100dvh-1.5rem)] max-w-[calc(100vw_-_1.5rem)] overflow-y-auto overscroll-contain rounded-lg border border-ink-950/15 bg-brand-cream text-ink-950 shadow-xl shadow-ink-950/20 outline-none focus-visible:ring-2 focus-visible:ring-brand-coral" onKeyDown={onPanelKeyDown} onPointerEnter={clearTimers} onPointerLeave={(event) => { if (event.pointerType === 'mouse') scheduleClose(); }} onFocusCapture={clearTimers} onBlurCapture={onBlur}>
+                <div ref={menuRef} id={menuId} data-preview-panel role="dialog" aria-modal="false" aria-labelledby={`${menuId}-title`} aria-describedby={`${menuId}-metadata`} aria-busy={loading || processing} tabIndex={-1} style={{ width: 256, ...position, visibility: position ? 'visible' : 'hidden' }} className="fixed z-50 max-h-[calc(100dvh-1.5rem)] max-w-[calc(100vw_-_1.5rem)] overflow-y-auto overscroll-contain rounded-lg border border-ink-950/15 bg-brand-cream text-ink-950 shadow-xl shadow-ink-950/20 outline-none focus-visible:ring-2 focus-visible:ring-brand-coral" onKeyDown={onPanelKeyDown} onBlurCapture={onBlur}>
                     <div className="flex items-start justify-between gap-2 border-b border-ink-950/10 px-4 py-3">
                         <div className="min-w-0"><p id={`${menuId}-title`} className="line-clamp-2 text-sm font-bold leading-5 [overflow-wrap:anywhere]"><span className="sr-only">Quick actions for </span>{literature.title}</p><p id={`${menuId}-metadata`} className="mt-0.5 truncate text-xs leading-5 text-ink-950/70">{[literature.type_label, literature.year].filter(Boolean).join(' · ')}</p></div>
                         <button type="button" onClick={() => close(true)} aria-label={`Close preview for ${literature.title}`} className="-mr-1 grid size-11 shrink-0 place-items-center rounded-sm text-lg leading-none text-ink-950/65 hover:bg-brand-sky/20 hover:text-ink-950 focus-visible:outline-2 focus-visible:outline-brand-coral">×</button>
