@@ -83,6 +83,17 @@
         backdrop-filter: none !important;
     }
 
+    body:has([data-profile-banner]) [data-app-header] {
+        position: absolute !important;
+        inset-inline: 0;
+        top: 0;
+        width: 100%;
+        border-bottom: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+    }
+
     .poster-shine::after {
         position: absolute;
         inset: 0;
