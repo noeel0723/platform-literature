@@ -36,22 +36,23 @@ const features = [
 export default function GuestLandingFeatures() {
     return (
         <section aria-labelledby="guest-features-heading">
-            <SiteContainer className="pb-12 pt-4 sm:pb-16 sm:pt-6">
-                <h2 id="guest-features-heading" className="mb-4 text-sm font-medium uppercase tracking-[0.14em] text-ink-700">
+            <SiteContainer className="pb-8 pt-2 sm:pb-10 sm:pt-4">
+                <h2 id="guest-features-heading" className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-ink-700">
                     Made for readers
                 </h2>
 
-                <ul className="grid auto-rows-fr gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <ul className="grid gap-x-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-8">
                     {features.map((feature) => (
-                        <li key={feature.title} className="flex min-h-36 items-start gap-4 rounded-sm border border-ink-950/10 bg-brand-yogurt px-5 py-6 sm:min-h-44 sm:gap-5 sm:p-6">
+                        <li key={feature.title} className="flex items-start gap-3 border-t border-ink-950/10 py-4">
                             <span className="mt-0.5 shrink-0 text-ink-700" aria-hidden="true">
-                                <svg className="size-10 sm:size-11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                <svg className="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                                     {feature.icon}
                                 </svg>
                             </span>
-                            <p className="min-w-0 text-base leading-6 text-ink-950/85">
-                                <strong className="font-semibold text-ink-950">{feature.title}.</strong>{' '}{feature.description}
-                            </p>
+                            <div className="min-w-0">
+                                <h3 className="text-sm font-semibold leading-5 text-ink-950">{feature.title}</h3>
+                                <p className="mt-1 text-[13px] leading-5 text-ink-700">{feature.description}</p>
+                            </div>
                         </li>
                     ))}
                 </ul>

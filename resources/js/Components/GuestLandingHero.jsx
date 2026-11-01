@@ -11,7 +11,7 @@ export default function GuestLandingHero({ literature, onRegisterOpen, registerT
     const backdropUrl = guestHeroBackdrop(literature, failedBackdrop);
 
     return (
-        <section data-guest-hero data-backdrop-state={backdropUrl ? 'image' : 'fallback'} style={guestHeroFocalStyle(literature?.focal_position)} className="relative isolate min-h-[420px] overflow-hidden bg-ink-950 text-brand-plate sm:min-h-[450px] lg:min-h-[480px]">
+        <section data-guest-hero data-backdrop-state={backdropUrl ? 'image' : 'fallback'} style={guestHeroFocalStyle(literature?.focal_position)} className="relative isolate overflow-hidden bg-ink-950 text-brand-plate">
             <div
                 className="absolute inset-0 bg-ink-950 [background-image:radial-gradient(ellipse_at_75%_20%,rgba(143,200,255,0.22),transparent_55%),linear-gradient(135deg,rgba(255,107,88,0.12),transparent_60%)]"
                 aria-hidden="true"
@@ -29,21 +29,21 @@ export default function GuestLandingHero({ literature, onRegisterOpen, registerT
                 />
             )}
 
-            <div className="pointer-events-none absolute inset-0 bg-black/20" aria-hidden="true" />
-            <div className="pointer-events-none absolute inset-0 bg-linear-to-r from-black/85 via-black/75 to-black/65 sm:from-black/80 sm:via-black/55 sm:to-black/20" aria-hidden="true" />
+            <div className="pointer-events-none absolute inset-0 bg-black/25" aria-hidden="true" />
+            <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/85 via-black/50 to-black/10" aria-hidden="true" />
             <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-linear-to-b from-black/60 to-transparent" aria-hidden="true" />
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-linear-to-b from-transparent via-brand-cream/30 to-brand-cream sm:h-24 lg:h-28" aria-hidden="true" />
 
-            <SiteContainer className="relative z-10 flex min-h-[420px] items-center pb-24 pt-28 sm:min-h-[450px] lg:min-h-[480px] lg:pt-24">
-                <div className="max-w-xl lg:max-w-2xl">
+            <SiteContainer className="relative z-10 flex min-h-[520px] items-end justify-center pb-24 pt-36 text-center sm:min-h-[600px] sm:pb-28 lg:min-h-[680px] lg:pt-44">
+                <div className="w-full max-w-3xl">
                     <h1 className="font-serif text-4xl font-bold leading-[1.02] tracking-[-0.045em] text-brand-plate drop-shadow-sm sm:text-5xl lg:text-6xl">
                         <span className="block sm:whitespace-nowrap">Track every story</span>
                         <span className="block">you read.</span>
                     </h1>
-                    <p className="mt-6 max-w-lg text-sm leading-7 text-brand-plate/90 sm:text-base">
+                    <p className="mx-auto mt-5 max-w-xl text-sm leading-7 text-brand-plate/90 sm:text-base">
                         Keep a diary of the novels, manga, manhwa, and comics you love. Rate them, review them, discover new literature, and see what other readers are exploring.
                     </p>
-                    <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
+                    <div className="mt-7 flex flex-col items-center justify-center gap-x-5 gap-y-3 sm:flex-row sm:flex-wrap">
                         <button
                             ref={registerTriggerRef}
                             type="button"
