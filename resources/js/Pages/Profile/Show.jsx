@@ -186,7 +186,7 @@ export default function ProfileShow({ profile, navigation, favoriteLiteratures, 
         <>
             <Head title={profile.name} />
             {!profile.banner_url && <ProfileSubNavigation navigation={navigation} />}
-            <ProfileBanner profile={profile} editUrl={routes.edit} />
+            <ProfileBanner profile={profile} />
             <ProfileOverview profile={profile} routes={routes} reportReasons={reportReasons} />
             {profile.banner_url && <ProfileSubNavigation navigation={navigation} />}
             <SiteContainer as="section" id="favorites" className="grid scroll-mt-24 gap-8 py-7 lg:grid-cols-[minmax(0,1fr)_220px] lg:gap-6 lg:py-9">

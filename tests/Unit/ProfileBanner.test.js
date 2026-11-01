@@ -29,7 +29,7 @@ before(async () => {
 after(async () => { await server?.close(); });
 
 const profile = { name: 'Reader', banner_url: '/storage/profile-banners/sample.jpg', has_banner: true, banner_position_x: 35, banner_position_y: 70, is_owner: true };
-const render = (overrides = {}) => renderToStaticMarkup(React.createElement(ProfileBanner, { profile: { ...profile, ...overrides }, editUrl: '/profile/edit' }));
+const render = (overrides = {}) => renderToStaticMarkup(React.createElement(ProfileBanner, { profile: { ...profile, ...overrides } }));
 function elements(element, type) {
     if (!React.isValidElement(element)) return [];
     return [...(element.type === type ? [element] : []), ...React.Children.toArray(element.props.children).flatMap((child) => elements(child, type))];
@@ -40,9 +40,9 @@ function editor(overrides = {}) {
     return { changes, tree: ProfileBannerEditor({ profile, form }), form };
 }
 
-test('public banner uses the saved focal position and hides owner editing controls from visitors', () => {
+test('public banner uses the saved focal position without inline editing controls for owners or visitors', () => {
     assert.match(render(), /object-position:35% 70%/);
-    assert.match(render(), /Edit banner/);
+    assert.doesNotMatch(render(), /Edit banner|<a\b/);
     assert.doesNotMatch(render({ is_owner: false }), /Edit banner|<a\b/);
     assert.equal(render({ banner_url: null }), '');
 });
