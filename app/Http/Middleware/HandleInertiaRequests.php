@@ -39,6 +39,7 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'actionFeedback' => fn () => $request->session()->get('action_feedback'),
             'reviewDraftUserId' => fn () => $request->user()?->id,
+            'emailVerificationRequired' => fn () => $request->user()?->requiresEmailVerification() ?? false,
         ];
     }
 }

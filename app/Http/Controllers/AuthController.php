@@ -39,7 +39,9 @@ class AuthController extends Controller
                 ->with('status', 'verification-send-failed');
         }
 
-        return redirect()->route('verification.notice');
+        return redirect()->route($user->requiresEmailVerification()
+            ? 'verification.notice'
+            : ($user->needsOnboarding() ? 'onboarding.show' : 'literatures.index'));
     }
 
     public function showLogin(): Response
@@ -73,7 +75,7 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
-        if (! $request->user()->hasVerifiedEmail()) {
+        if ($request->user()->requiresEmailVerification()) {
             return redirect()->route('verification.notice');
         }
 

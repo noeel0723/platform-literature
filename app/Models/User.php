@@ -26,15 +26,32 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public const ROLE_ADMIN = 'admin';
 
+    public function requiresEmailVerification(): bool
+    {
+        return (bool) config('auth.verification.enabled', true) && ! $this->hasVerifiedEmail();
+    }
+
+    public function canUseInteractiveFeatures(): bool
+    {
+        return $this->isActive() && ! $this->requiresEmailVerification();
+    }
+
+    public function sendEmailVerificationNotification(): void
+    {
+        if ($this->requiresEmailVerification() && $this->isActive()) {
+            parent::sendEmailVerificationNotification();
+        }
+    }
+
     public function needsOnboarding(): bool
     {
         return $this->onboarding_required && $this->onboarding_completed_at === null
-            && $this->hasVerifiedEmail() && $this->isActive();
+            && $this->canUseInteractiveFeatures();
     }
 
     public function canCancelRegistration(): bool
     {
-        return $this->onboarding_required && ! $this->hasVerifiedEmail()
+        return $this->onboarding_required && $this->onboarding_completed_at === null && $this->requiresEmailVerification()
             && ! $this->isAdmin() && $this->isActive();
     }
 

@@ -16,7 +16,7 @@ class EmailVerificationController extends Controller
 {
     public function notice(Request $request): Response|RedirectResponse
     {
-        if ($request->user()->hasVerifiedEmail()) {
+        if (! $request->user()->requiresEmailVerification()) {
             return redirect()->route($request->user()->needsOnboarding() ? 'onboarding.show' : 'literatures.index');
         }
 
@@ -67,7 +67,7 @@ class EmailVerificationController extends Controller
 
     public function send(Request $request): RedirectResponse
     {
-        if ($request->user()->hasVerifiedEmail()) {
+        if (! $request->user()->requiresEmailVerification()) {
             return redirect()->route($request->user()->needsOnboarding() ? 'onboarding.show' : 'literatures.index');
         }
 

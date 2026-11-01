@@ -147,7 +147,7 @@ class LiteratureController extends Controller
 
     public function show(Literature $literature, CanonicalWorkIdentity $identity, CanonicalReviewQuery $reviewQuery, ReviewDraftContext $draftContext): Response
     {
-        $viewer = request()->user()?->hasVerifiedEmail() ? request()->user() : null;
+        $viewer = request()->user()?->canUseInteractiveFeatures() ? request()->user() : null;
         $userId = $viewer?->id ?? 0;
 
         $literature->load([
@@ -349,7 +349,7 @@ class LiteratureController extends Controller
             'routes' => [
                 'catalog' => route('literatures.index'),
                 'login' => route('login'),
-                'verification' => request()->user() !== null && ! request()->user()->hasVerifiedEmail() ? route('verification.notice') : null,
+                'verification' => request()->user()?->requiresEmailVerification() ? route('verification.notice') : null,
                 'admin_edit_metadata' => $viewer?->isAdmin()
                     ? route('admin.literatures.metadata.edit', $literature)
                     : null,

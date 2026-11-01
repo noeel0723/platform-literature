@@ -74,7 +74,7 @@ final class ActionFeedback
         try {
             $scope = DB::transaction(function () use ($user, $token): string {
                 $currentUser = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
-                abort_unless($currentUser->isActive() && $currentUser->hasVerifiedEmail(), 403);
+                abort_unless($currentUser->canUseInteractiveFeatures(), 403);
                 $record = Cache::get($this->key($token));
                 abort_unless(is_array($record) && $record['user_id'] === $user->id, 404, 'This Undo is no longer available.');
                 abort_if($record['expires_at'] <= now()->timestamp, 410, 'This Undo has expired.');

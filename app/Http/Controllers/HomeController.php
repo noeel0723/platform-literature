@@ -22,7 +22,7 @@ class HomeController extends Controller
         CanonicalWorkIdentity $canonicalIdentity,
         LiteratureBrowseService $literatureBrowser,
     ): Response {
-        $viewer = $request->user()?->hasVerifiedEmail() ? $request->user() : null;
+        $viewer = $request->user()?->canUseInteractiveFeatures() ? $request->user() : null;
         $friendIds = $viewer?->following()
             ->whereNull('deactivated_at')
             ->pluck('users.id') ?? collect();
@@ -116,7 +116,7 @@ class HomeController extends Controller
                 'literature' => route('literature.browse', ['sort' => 'popularity']),
                 'login' => route('login'),
                 'register' => route('register'),
-                'verification' => $request->user() !== null && ! $request->user()->hasVerifiedEmail()
+                'verification' => $request->user()?->requiresEmailVerification()
                     ? route('verification.notice')
                     : null,
             ],

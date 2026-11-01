@@ -142,8 +142,9 @@ export default function AppHeader({ routes, user, logo_url: logoUrl, csrf_token:
     const [quickLogOpen, setQuickLogOpen] = useState(false);
     const [currentPath, setCurrentPath] = useState(window.location.pathname);
     const [guestLanding, setGuestLanding] = useState(isGuestLanding);
+    const [verificationRequired, setVerificationRequired] = useState(user?.requires_email_verification ?? false);
     const openQuickLog = () => {
-        if (user?.email_verified === false) {
+        if (verificationRequired) {
             window.location.assign(routes.verification);
             return;
         }
@@ -164,10 +165,12 @@ export default function AppHeader({ routes, user, logo_url: logoUrl, csrf_token:
     };
 
     useEffect(() => {
-        const syncPath = () => {
+        const syncPath = (event) => {
             const path = window.location.pathname;
             setCurrentPath(path);
             setGuestLanding(!user && path === new URL(routes.home, window.location.origin).pathname);
+            const required = event.detail?.page?.props?.emailVerificationRequired;
+            if (typeof required === 'boolean') setVerificationRequired(required);
         };
         document.addEventListener('inertia:navigate', syncPath);
         window.addEventListener('popstate', syncPath);
@@ -195,7 +198,7 @@ export default function AppHeader({ routes, user, logo_url: logoUrl, csrf_token:
 
     return (
         <header data-app-header className={headerClassName}>
-            {user?.email_verified === false && <div className="bg-ink-950 px-4 py-2 text-center text-xs text-brand-cream/80">Verify your email to use interactive features. <a href={routes.verification} className="font-semibold text-brand-cream underline decoration-brand-coral underline-offset-4">Verify email</a></div>}
+            {verificationRequired && <div className="bg-ink-950 px-4 py-2 text-center text-xs text-brand-cream/80">Verify your email to use interactive features. <a href={routes.verification} className="font-semibold text-brand-cream underline decoration-brand-coral underline-offset-4">Verify email</a></div>}
             <SiteContainer>
                 <div className={`relative flex min-w-0 items-center gap-3 lg:gap-5 ${!user && loginOpen ? 'flex-wrap lg:min-h-20 lg:flex-nowrap' : 'h-18'}`}>
                     <div className={`shrink-0 ${!user && loginOpen ? 'flex h-18 items-center lg:h-auto' : ''}`}><BrandMark href={routes.home} logoUrl={logoUrl} /></div>

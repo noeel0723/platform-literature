@@ -13,7 +13,7 @@ class CreateAdminAccount extends Command
 {
     protected $signature = 'accounts:create-admin';
 
-    protected $description = 'Interactively create a new admin who must verify their email before using protected features';
+    protected $description = 'Interactively create a new admin using the configured email verification requirement';
 
     public function handle(): int
     {
@@ -54,7 +54,9 @@ class CreateAdminAccount extends Command
             return self::FAILURE;
         }
 
-        $this->info('Admin created. Verify the email address before accessing admin features.');
+        $this->info($user->requiresEmailVerification()
+            ? 'Admin created. Verify the email address before accessing admin features.'
+            : 'Admin created. You can now log in.');
 
         return self::SUCCESS;
     }

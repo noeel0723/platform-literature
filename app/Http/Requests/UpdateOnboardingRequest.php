@@ -14,7 +14,7 @@ class UpdateOnboardingRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()?->hasVerifiedEmail() && $this->user()->isActive();
+        return $this->user()?->canUseInteractiveFeatures() ?? false;
     }
 
     /**

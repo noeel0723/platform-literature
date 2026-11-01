@@ -42,6 +42,7 @@
                 'id' => $headerUser->id,
                 'name' => $headerUser->name,
                 'email_verified' => $headerUser->hasVerifiedEmail(),
+                'requires_email_verification' => $headerUser->requiresEmailVerification(),
                 'username' => $headerUser->username,
                 'avatar_url' => $headerUser->avatarUrl(),
                 'initials' => Str::of($headerUser->name)->squish()->explode(' ')->filter()->take(2)->map(fn (string $part): string => Str::upper(Str::substr($part, 0, 1)))->implode('') ?: '?',

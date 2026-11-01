@@ -20,7 +20,7 @@ class CustomListPolicy
      */
     public function view(?User $user, CustomList $customList): bool
     {
-        return ! $customList->is_private || ($user?->hasVerifiedEmail() && $user->is($customList->user));
+        return ! $customList->is_private || ($user?->canUseInteractiveFeatures() && $user->is($customList->user));
     }
 
     /**
@@ -28,7 +28,7 @@ class CustomListPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasVerifiedEmail() && $user->isActive();
+        return $user->canUseInteractiveFeatures();
     }
 
     /**
@@ -36,7 +36,7 @@ class CustomListPolicy
      */
     public function update(User $user, CustomList $customList): bool
     {
-        return $user->hasVerifiedEmail() && $user->is($customList->user) && $user->isActive();
+        return $user->canUseInteractiveFeatures() && $user->is($customList->user);
     }
 
     /**
@@ -44,7 +44,7 @@ class CustomListPolicy
      */
     public function delete(User $user, CustomList $customList): bool
     {
-        return $user->hasVerifiedEmail() && $user->is($customList->user) && $user->isActive();
+        return $user->canUseInteractiveFeatures() && $user->is($customList->user);
     }
 
     /**

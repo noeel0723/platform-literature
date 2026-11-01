@@ -25,7 +25,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        RateLimiter::for('verification', fn (Request $request): array => [
+        RateLimiter::for('verification', fn (Request $request): array => ! $request->user()->requiresEmailVerification() ? [Limit::none()] : [
             Limit::perMinute(1)->by('verification-user:'.$request->user()->id)->response(
                 fn (Request $request, array $headers) => back()->withErrors(['verification' => 'Please wait before requesting another verification email.'])->withHeaders($headers),
             ),

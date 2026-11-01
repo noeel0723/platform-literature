@@ -16,7 +16,7 @@ class LiteraturePreviewController extends Controller
     {
         $literature = $identity->representative($literature);
         $literature->loadMissing(['authors', 'metadataOverride', 'sourceMapping.canonicalWork.metadataOverride']);
-        $user = $request->user()?->hasVerifiedEmail() ? $request->user() : null;
+        $user = $request->user()?->canUseInteractiveFeatures() ? $request->user() : null;
         $equivalentIds = $user === null ? collect() : $identity->equivalentLiteratureIds($literature);
         $review = $user?->reviews()
             ->whereIn('literature_id', $equivalentIds)
@@ -78,7 +78,7 @@ class LiteraturePreviewController extends Controller
             ],
             'lists' => $lists?->values()->all() ?? [],
             'routes' => [
-                'verification' => $request->user() !== null && ! $request->user()->hasVerifiedEmail() ? route('verification.notice') : null,
+                'verification' => $request->user()?->requiresEmailVerification() ? route('verification.notice') : null,
                 'details' => route('literatures.show', $literature),
                 'where_to_read' => $hasReadingLinks ? route('literatures.show', $literature).'#where-to-read' : null,
                 'reading_update' => $user === null ? null : route('reading-list.update', $literature),

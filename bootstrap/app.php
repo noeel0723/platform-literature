@@ -5,6 +5,7 @@ use App\Console\Commands\BackfillComicCreators;
 use App\Console\Commands\BackfillKitsuCreators;
 use App\Console\Commands\BackfillWhereToRead;
 use App\Http\Middleware\EnsureAccountIsActive;
+use App\Http\Middleware\EnsureEmailVerificationIsSatisfied;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
@@ -30,6 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
             EnsureAccountIsActive::class,
         ]);
         $middleware->alias([
+            'verified' => EnsureEmailVerificationIsSatisfied::class,
             'admin' => EnsureUserIsAdmin::class,
         ]);
     })

@@ -115,6 +115,7 @@ return [
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
     'verification' => [
+        'enabled' => (bool) env('AUTH_EMAIL_VERIFICATION_ENABLED', true),
         'expire' => (int) env('AUTH_VERIFICATION_EXPIRE', 60),
     ],
 

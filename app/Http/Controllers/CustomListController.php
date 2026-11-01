@@ -24,7 +24,7 @@ class CustomListController extends Controller
      */
     public function index(Request $request, User $user, ProfilePagePresenter $presenter): Response
     {
-        $isOwner = $request->user()?->hasVerifiedEmail() && $request->user()->is($user);
+        $isOwner = $request->user()?->canUseInteractiveFeatures() && $request->user()->is($user);
         $lists = $user->customLists()
             ->when(! $isOwner, fn ($query) => $query->where('is_private', false))
             ->with(['items' => fn ($query) => $query
