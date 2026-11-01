@@ -104,11 +104,13 @@ class UserAccountReset
     /** @return list<string> */
     public function avatarPaths(): array
     {
-        $paths = User::query()->whereNotNull('avatar_path')->pluck('avatar_path')->unique()->values()->all();
+        $paths = User::query()->get(['avatar_path', 'banner_path'])
+            ->flatMap(fn (User $user): array => [$user->avatar_path, $user->banner_path])
+            ->filter()->unique()->values()->all();
 
         foreach ($paths as $path) {
-            if (! preg_match('#\Aavatars/[a-zA-Z0-9_-]+\.(?:jpg|jpeg|png|webp)\z#', $path)) {
-                throw new RuntimeException('An unexpected avatar path was found. Review it before resetting accounts.');
+            if (! preg_match('#\A(?:avatars|profile-banners)/[a-zA-Z0-9_-]+\.(?:jpg|jpeg|png|webp)\z#', $path)) {
+                throw new RuntimeException('An unexpected profile image path was found. Review it before resetting accounts.');
             }
         }
 

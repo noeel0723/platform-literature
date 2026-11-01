@@ -88,8 +88,9 @@ class UserAccountResetTest extends TestCase
     {
         Storage::fake('public');
         Storage::disk('public')->put('avatars/reader.png', 'avatar-image');
+        Storage::disk('public')->put('profile-banners/reader.png', 'banner-image');
         Storage::disk('public')->put('catalog/cover.png', 'catalog-image');
-        $admin = User::factory()->create(['role' => User::ROLE_ADMIN, 'avatar_path' => 'avatars/reader.png']);
+        $admin = User::factory()->create(['role' => User::ROLE_ADMIN, 'avatar_path' => 'avatars/reader.png', 'banner_path' => 'profile-banners/reader.png']);
         $reader = User::factory()->create(['deactivated_by' => $admin->id]);
         $literature = Literature::factory()->create();
         $author = Author::factory()->create();
@@ -143,10 +144,12 @@ class UserAccountResetTest extends TestCase
         $this->assertSame([], DB::select('PRAGMA foreign_key_check'));
         $this->assertDatabaseHas('cache', ['key' => 'catalog-api-cache', 'value' => 'metadata']);
         Storage::disk('public')->assertMissing('avatars/reader.png');
+        Storage::disk('public')->assertMissing('profile-banners/reader.png');
         Storage::disk('public')->assertExists('catalog/cover.png');
         $directories = File::directories($this->backupRoot);
         $this->assertCount(1, $directories);
         $this->assertFileExists($directories[0].'/avatars/reader.png');
+        $this->assertFileExists($directories[0].'/profile-banners/reader.png');
         $backup = new PDO('sqlite:'.$directories[0].'/database.sqlite');
         $this->assertSame(2, (int) $backup->query('SELECT COUNT(*) FROM users')->fetchColumn());
         $this->assertSame(1, (int) $backup->query('SELECT COUNT(*) FROM reviews')->fetchColumn());

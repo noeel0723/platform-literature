@@ -15,7 +15,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
 
-#[Fillable(['name', 'username', 'email', 'location', 'bio', 'avatar_path', 'password', 'role', 'deactivated_at', 'deactivated_by'])]
+#[Fillable(['name', 'username', 'email', 'location', 'bio', 'avatar_path', 'banner_path', 'banner_position_x', 'banner_position_y', 'password', 'role', 'deactivated_at', 'deactivated_by'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -182,6 +182,13 @@ class User extends Authenticatable implements MustVerifyEmail
         return 'username';
     }
 
+    public function bannerUrl(): ?string
+    {
+        return $this->banner_path === null
+            ? null
+            : Storage::disk('public')->url($this->banner_path);
+    }
+
     /**
      * Get the attributes that should be cast.
      *
@@ -191,6 +198,8 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return [
             'email_verified_at' => 'datetime',
+            'banner_position_x' => 'integer',
+            'banner_position_y' => 'integer',
             'onboarding_required' => 'boolean',
             'onboarding_step' => 'integer',
             'onboarding_completed_at' => 'datetime',

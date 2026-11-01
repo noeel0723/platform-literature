@@ -109,6 +109,9 @@ class ProfileController extends Controller
                 'name' => $user->name,
                 'username' => $user->username,
                 'avatar_url' => $user->avatarUrl(),
+                'banner_url' => $user->bannerUrl(),
+                'banner_position_x' => $user->banner_position_x,
+                'banner_position_y' => $user->banner_position_y,
                 'initials' => $this->initials($user->name),
                 'bio' => $user->bio,
                 'location' => $user->location,
@@ -212,6 +215,10 @@ class ProfileController extends Controller
                 'location' => $user->location,
                 'bio' => $user->bio,
                 'has_avatar' => $user->avatar_path !== null,
+                'banner_url' => $user->bannerUrl(),
+                'has_banner' => $user->banner_path !== null,
+                'banner_position_x' => $user->banner_position_x,
+                'banner_position_y' => $user->banner_position_y,
             ],
             'navigation' => $presenter->navigation($user, 'profile', $user),
             'favoriteLiteratures' => $user->favoriteLiteratures
@@ -241,7 +248,7 @@ class ProfileController extends Controller
     public function update(UpdateProfileRequest $request, CanonicalWorkIdentity $canonicalIdentity, ActionFeedback $feedback): RedirectResponse
     {
         $user = $request->user();
-        $profileData = $request->safe()->only(['name', 'username', 'location', 'bio']);
+        $profileData = $request->safe()->only(['name', 'username', 'location', 'bio', 'banner_position_x', 'banner_position_y']);
 
         if ($request->hasFile('avatar')) {
             $newAvatarPath = $request->file('avatar')->storePublicly('avatars', 'public');
@@ -260,7 +267,38 @@ class ProfileController extends Controller
             $profileData['avatar_path'] = null;
         }
 
-        $user->update($profileData);
+        $oldBannerPath = $user->banner_path;
+        $newBannerPath = null;
+
+        if ($request->hasFile('banner')) {
+            $newBannerPath = $request->file('banner')->storePublicly('profile-banners', 'public');
+
+            if (! is_string($newBannerPath)) {
+                abort(500, 'The profile banner could not be stored.');
+            }
+
+            $profileData['banner_path'] = $newBannerPath;
+            $profileData['banner_position_x'] ??= 50;
+            $profileData['banner_position_y'] ??= 50;
+        } elseif ($request->boolean('remove_banner')) {
+            $profileData['banner_path'] = null;
+            $profileData['banner_position_x'] = 50;
+            $profileData['banner_position_y'] = 50;
+        }
+
+        try {
+            $user->update($profileData);
+        } catch (\Throwable $exception) {
+            if (is_string($newBannerPath)) {
+                Storage::disk('public')->delete($newBannerPath);
+            }
+
+            throw $exception;
+        }
+
+        if ($oldBannerPath !== null && $oldBannerPath !== $user->banner_path) {
+            Storage::disk('public')->delete($oldBannerPath);
+        }
 
         $favoriteLiteratureIds = Literature::query()
             ->whereKey($request->validated('favorite_literature_ids', []))

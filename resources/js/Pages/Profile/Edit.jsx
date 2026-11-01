@@ -2,6 +2,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import AvatarCropDialog from '../../Components/AvatarCropDialog';
+import ProfileBannerEditor from '../../Components/ProfileBannerEditor';
 import ProfileSubNavigation from '../../Components/ProfileSubNavigation';
 import EmptyState from '../../Components/EmptyState';
 import { actionFeedback, feedbackVisitOptions } from '../../Support/actionFeedback';
@@ -192,6 +193,10 @@ export default function ProfileEdit({ profile, navigation, favoriteLiteratures, 
         bio: profile.bio ?? '',
         avatar: null,
         remove_avatar: false,
+        banner: null,
+        remove_banner: false,
+        banner_position_x: profile.banner_position_x ?? 50,
+        banner_position_y: profile.banner_position_y ?? 50,
         favorite_literature_ids: favoriteLiteratureIds.map(String),
         favorite_author_ids: favoriteAuthorIds.map(String),
     });
@@ -295,6 +300,9 @@ export default function ProfileEdit({ profile, navigation, favoriteLiteratures, 
                     <section className="border border-ink-950/10 bg-white/30 p-5 sm:p-6" aria-labelledby="reader-information-heading">
                         <h2 id="reader-information-heading" className="text-sm font-semibold uppercase tracking-[0.14em] text-ink-950">Reader information</h2>
                         <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                            <div className="border-b border-ink-950/10 pb-4 sm:col-span-2">
+                                <ProfileBannerEditor profile={profile} form={form} />
+                            </div>
                             <div className="flex items-center gap-4 border-b border-ink-950/10 pb-4 sm:col-span-2">
                                 <div className="size-20 shrink-0 overflow-hidden rounded-full border border-ink-950/15 bg-ink-950">{avatarPreview ? <img src={avatarPreview} alt="Profile preview" className="size-full object-cover" /> : <Initials value={profile.initials} className="text-xl" />}</div>
                                 <div className="min-w-0 flex-1">

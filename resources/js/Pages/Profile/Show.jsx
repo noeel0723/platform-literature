@@ -1,5 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import ProfileSubNavigation from '../../Components/ProfileSubNavigation';
+import ProfileBanner from '../../Components/ProfileBanner';
 import { plural, ReportForm, StarRating, TimeLabel } from '../../Components/LiteratureDetail/DetailUi';
 import SiteContainer from '../../Components/SiteContainer';
 import EmptyState from '../../Components/EmptyState';
@@ -57,7 +58,7 @@ function ProfileOverview({ profile, routes, reportReasons }) {
         : router.post(routes.follow, {}, { preserveScroll: true });
 
     return (
-        <section id="profile-overview" data-profile-header data-profile-compact-header className="catalog-grid border-b border-ink-950/10">
+        <section id="profile-overview" data-profile-header data-profile-compact-header className={`border-b border-ink-950/10 ${profile.banner_url ? 'relative -mt-16' : 'catalog-grid'}`}>
             <SiteContainer className="py-6 lg:py-7">
                 <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-7">
                     <div className="flex min-w-0 flex-wrap items-start gap-3.5 sm:items-center sm:gap-4">
@@ -184,8 +185,10 @@ export default function ProfileShow({ profile, navigation, favoriteLiteratures, 
     return (
         <>
             <Head title={profile.name} />
-            <ProfileSubNavigation navigation={navigation} />
+            {!profile.banner_url && <ProfileSubNavigation navigation={navigation} />}
+            <ProfileBanner profile={profile} editUrl={routes.edit} />
             <ProfileOverview profile={profile} routes={routes} reportReasons={reportReasons} />
+            {profile.banner_url && <ProfileSubNavigation navigation={navigation} />}
             <SiteContainer as="section" id="favorites" className="grid scroll-mt-24 gap-8 py-7 lg:grid-cols-[minmax(0,1fr)_220px] lg:gap-6 lg:py-9">
                 <div className="min-w-0"><FavoriteLiteratures items={favoriteLiteratures} /><FavoriteAuthors items={favoriteAuthors} /><RecentCompletions items={recentCompletions} /><RecentReviews items={recentReviews} moreUrl={routes.reviews} /></div>
                 <ProfileSidebar profile={profile} readlist={readlistPreview} reviews={recentReviews} activities={recentActivities} distribution={ratingDistribution} routes={routes} />
