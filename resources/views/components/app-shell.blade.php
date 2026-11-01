@@ -31,6 +31,7 @@
                 'home' => route('home'),
                 'literature' => route('literature.index'),
                 'catalog' => route('literatures.index'),
+                'readers' => route('readers.index'),
                 'search' => route('search.index'),
                 'login' => route('login'),
                 'register' => route('register'),

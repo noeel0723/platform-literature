@@ -26,6 +26,7 @@ use App\Http\Controllers\ProfileLiteratureController;
 use App\Http\Controllers\ProfileReviewController;
 use App\Http\Controllers\ProfileStatsController;
 use App\Http\Controllers\QuickLogController;
+use App\Http\Controllers\ReaderController;
 use App\Http\Controllers\ReadingDiaryController;
 use App\Http\Controllers\ReadingListController;
 use App\Http\Controllers\ReadlistController;
@@ -37,6 +38,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
 Route::get('/search', SearchController::class)->name('search.index');
+Route::get('/readers', ReaderController::class)->name('readers.index');
 Route::get('/catalog', [LiteratureController::class, 'index'])->name('literatures.index');
 Route::get('/catalog/latest', [LiteratureController::class, 'latest'])->name('literatures.latest');
 Route::get('/literature', [LiteratureBrowseController::class, 'index'])->name('literature.index');

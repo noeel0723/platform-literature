@@ -1,0 +1,167 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Literature;
+use App\Models\Review;
+use App\Models\User;
+use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Inertia\Testing\AssertableInertia as Assert;
+use PHPUnit\Framework\Attributes\TestWith;
+use Tests\TestCase;
+
+class ReadersPageTest extends TestCase
+{
+    use LazilyRefreshDatabase;
+
+    public function test_public_directory_shows_active_readers_with_public_counts_and_ordered_favorites(): void
+    {
+        Http::preventStrayRequests();
+        $reader = User::factory()->create(['name' => 'A Reader', 'username' => 'reader', 'avatar_path' => 'avatars/reader.webp']);
+        $follower = User::factory()->create(['name' => 'Z Follower']);
+        $inactive = User::factory()->create(['deactivated_at' => now()]);
+        $reader->followers()->attach([$follower->id, $inactive->id]);
+        $favorites = Literature::factory()->count(5)->create(['type' => 'novel', 'original_title' => null]);
+        foreach ($favorites as $position => $literature) {
+            $reader->favoriteLiteratures()->attach($literature, ['position' => 4 - $position]);
+        }
+        Review::factory()->for($reader)->create(['body' => 'A public review.']);
+        Review::factory()->for($reader)->create(['body' => 'Hidden review.', 'hidden_at' => now()]);
+        Review::factory()->for($reader)->create(['body' => '   ']);
+
+        $response = $this->get(route('readers.index'))->assertInertia(fn (Assert $page) => $page
+            ->component('Readers/Index')
+            ->where('readers.total', 2)
+            ->where('readers.data.0.username', 'reader')
+            ->where('readers.data.0.followers_count', 1)
+            ->where('readers.data.0.reviews_count', 1)
+            ->where('readers.data.0.favorites.0.id', $favorites[4]->id)
+            ->where('readers.data.0.favorites.3.id', $favorites[1]->id)
+            ->has('readers.data.0.favorites', 4)
+            ->where('readers.data.0.follow_url', null)
+            ->where('readers.data.0.viewer_follows', false));
+
+        $row = $response->inertiaProps('readers.data.0');
+        $this->assertSame(route('profiles.show', $reader), $row['url']);
+        $this->assertStringEndsWith('/storage/avatars/reader.webp', $row['avatar_url']);
+        foreach (['email', 'password', 'role', 'email_verified_at', 'bio', 'remember_token'] as $privateField) {
+            $this->assertArrayNotHasKey($privateField, $row);
+        }
+        preg_match('/data-react-header-props>(.*?)<\/script>/s', $response->getContent(), $matches);
+        $header = json_decode($matches[1], true, flags: JSON_THROW_ON_ERROR);
+        $this->assertSame(route('readers.index'), $header['routes']['readers']);
+        Http::assertNothingSent();
+    }
+
+    public function test_directory_searches_names_and_usernames_and_normalizes_at_prefix(): void
+    {
+        User::factory()->create(['name' => 'Alex Bookworm', 'username' => 'quiet_reader']);
+        User::factory()->create(['name' => 'Other Reader', 'username' => 'alex_reads']);
+        User::factory()->create(['name' => 'Unrelated Reader', 'username' => 'unrelated']);
+
+        $this->get(route('readers.index', ['q' => '  aLeX  ']))->assertInertia(fn (Assert $page) => $page
+            ->where('query', 'aLeX')->where('readers.total', 2));
+        $this->get(route('readers.index', ['q' => '@quiet_reader']))->assertInertia(fn (Assert $page) => $page
+            ->where('query', 'quiet_reader')->where('readers.total', 1)->where('readers.data.0.username', 'quiet_reader'));
+        $this->get(route('readers.index', ['q' => "' OR 1=1 --"]))->assertInertia(fn (Assert $page) => $page->has('readers.data', 0));
+    }
+
+    public function test_search_pagination_is_stable_and_keeps_the_query(): void
+    {
+        User::factory()->count(23)->create(['name' => 'Matching Reader']);
+        User::factory()->create(['name' => 'Different Person']);
+
+        $first = $this->get(route('readers.index', ['q' => 'Matching']))->assertInertia(fn (Assert $page) => $page
+            ->where('readers.total', 23)->where('readers.last_page', 2)->has('readers.data', 20));
+        $second = $this->get($first->inertiaProps('readers.next_page_url'))->assertInertia(fn (Assert $page) => $page
+            ->where('query', 'Matching')->where('readers.current_page', 2)->has('readers.data', 3));
+
+        $firstIds = collect($first->inertiaProps('readers.data'))->pluck('username');
+        $secondIds = collect($second->inertiaProps('readers.data'))->pluck('username');
+        $this->assertCount(23, $firstIds->merge($secondIds)->unique());
+    }
+
+    public function test_empty_directory_and_unmatched_search_return_empty_paginators(): void
+    {
+        $this->get(route('readers.index'))->assertInertia(fn (Assert $page) => $page->where('readers.total', 0)->has('readers.data', 0));
+        User::factory()->create(['name' => 'Existing Reader']);
+        $this->get(route('readers.index', ['q' => 'NotPresentHere']))->assertInertia(fn (Assert $page) => $page->where('query', 'NotPresentHere')->where('readers.total', 0));
+    }
+
+    public function test_invalid_search_parameters_are_rejected(): void
+    {
+        $this->getJson(route('readers.index', ['q' => ['invalid']]))->assertUnprocessable()->assertJsonValidationErrors('q');
+        $this->getJson(route('readers.index', ['q' => str_repeat('x', 101)]))->assertUnprocessable()->assertJsonValidationErrors('q');
+    }
+
+    public function test_readers_blocked_in_either_direction_are_excluded_even_for_unverified_viewers(): void
+    {
+        $viewer = User::factory()->unverified()->create();
+        $blocked = User::factory()->create();
+        $blocker = User::factory()->create();
+        $visible = User::factory()->create();
+        $viewer->blockedUsers()->attach($blocked);
+        $blocker->blockedUsers()->attach($viewer);
+
+        $response = $this->actingAs($viewer)->get(route('readers.index'))->assertInertia(fn (Assert $page) => $page->where('readers.total', 2));
+        $this->assertEqualsCanonicalizing([$viewer->username, $visible->username], collect($response->inertiaProps('readers.data'))->pluck('username')->all());
+    }
+
+    public function test_follow_back_and_unfollow_use_existing_routes_and_refresh_relationships(): void
+    {
+        $viewer = User::factory()->create();
+        $other = User::factory()->create();
+        $other->following()->attach($viewer);
+        $url = route('readers.index', ['q' => $other->username]);
+
+        $this->actingAs($viewer)->get($url)->assertInertia(fn (Assert $page) => $page
+            ->where('readers.data.0.viewer_follows', false)->where('readers.data.0.follows_viewer', true)
+            ->where('readers.data.0.follow_url', route('profiles.follow.store', $other)));
+        $this->from($url)->post(route('profiles.follow.store', $other))->assertRedirect($url);
+        $this->assertDatabaseHas('follows', ['follower_id' => $viewer->id, 'followed_id' => $other->id]);
+        $this->get($url)->assertInertia(fn (Assert $page) => $page->where('readers.data.0.viewer_follows', true)->where('readers.data.0.follows_viewer', true));
+        $this->from($url)->delete(route('profiles.follow.destroy', $other))->assertRedirect($url);
+        $this->assertDatabaseMissing('follows', ['follower_id' => $viewer->id, 'followed_id' => $other->id]);
+    }
+
+    #[TestWith([true])]
+    #[TestWith([false])]
+    public function test_follow_controls_respect_optional_verification_and_never_allow_self_follow(bool $enabled): void
+    {
+        config()->set('auth.verification.enabled', $enabled);
+        $viewer = User::factory()->unverified()->create();
+        $other = User::factory()->create();
+
+        $response = $this->actingAs($viewer)->get(route('readers.index'));
+        $rows = collect($response->inertiaProps('readers.data'))->keyBy('username');
+        $this->assertSame($enabled ? null : route('profiles.follow.store', $other), $rows[$other->username]['follow_url']);
+        $this->assertNull($rows[$viewer->username]['follow_url']);
+        $this->assertTrue($rows[$viewer->username]['is_self']);
+        $this->assertSame($enabled ? route('verification.notice') : null, $response->inertiaProps('routes.verification'));
+    }
+
+    public function test_directory_eager_loads_favorites_and_relationships_without_queries_per_reader(): void
+    {
+        $viewer = User::factory()->create();
+        $first = User::factory()->create();
+        $favorites = Literature::factory()->count(4)->create();
+        $favoritePositions = $favorites->mapWithKeys(fn (Literature $literature, int $position): array => [$literature->id => ['position' => $position]])->all();
+        $first->favoriteLiteratures()->attach($favoritePositions);
+        DB::enableQueryLog();
+        $this->actingAs($viewer)->get(route('readers.index'))->assertOk();
+        $smallCount = count(DB::getQueryLog());
+        DB::disableQueryLog();
+
+        User::factory()->count(18)->create()->each(fn (User $reader) => $reader->favoriteLiteratures()->attach($favoritePositions));
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $response = $this->get(route('readers.index'))->assertOk();
+        $largeCount = count(DB::getQueryLog());
+        DB::disableQueryLog();
+
+        $this->assertCount(20, $response->inertiaProps('readers.data'));
+        $this->assertLessThanOrEqual($smallCount + 1, $largeCount, 'Discovery query count must not grow per reader.');
+    }
+}

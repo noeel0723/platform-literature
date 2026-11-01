@@ -156,7 +156,8 @@ export default function AppHeader({ routes, user, logo_url: logoUrl, csrf_token:
     };
     const activeNavigation = matchesRoute(routes.home) ? 'home'
         : matchesRoute(routes.literature) ? 'literature'
-            : matchesRoute(routes.catalog) ? 'catalog' : null;
+            : matchesRoute(routes.catalog) ? 'catalog'
+                : routes.readers && matchesRoute(routes.readers) ? 'readers' : null;
     const mainLinkClass = (key) => `whitespace-nowrap border-b-2 py-1 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-coral ${activeNavigation === key ? 'border-brand-coral text-white' : 'border-transparent hover:border-brand-plate/50 hover:text-white'}`;
     const mobileLinkClass = (key) => `border-l-2 px-3 py-3 transition ${activeNavigation === key ? 'border-brand-coral bg-brand-plate/15 text-white' : 'border-transparent hover:bg-brand-plate/10'}`;
     const toggleLogin = () => {
@@ -218,6 +219,7 @@ export default function AppHeader({ routes, user, logo_url: logoUrl, csrf_token:
                                 <a href={routes.home} className={mainLinkClass('home')} aria-current={activeNavigation === 'home' ? 'page' : undefined}>Home</a>
                                 <a href={routes.literature} className={mainLinkClass('literature')} aria-current={activeNavigation === 'literature' ? 'page' : undefined}>Literature</a>
                                 <a href={routes.catalog} className={mainLinkClass('catalog')} aria-current={activeNavigation === 'catalog' ? 'page' : undefined}>Catalog</a>
+                                {routes.readers && <a href={routes.readers} className={mainLinkClass('readers')} aria-current={activeNavigation === 'readers' ? 'page' : undefined}>Readers</a>}
                             </nav>
                             <Search action={routes.search} initialQuery={searchQuery} />
                             {user && <button type="button" className="inline-flex h-8 shrink-0 items-center gap-1 rounded-sm bg-[#00c030] px-3 text-[0.7rem] font-extrabold uppercase tracking-[0.08em] text-white shadow-sm transition-colors hover:bg-[#00a628] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00c030]" aria-label="Log a rating or review" onClick={openQuickLog}><span className="text-base leading-none" aria-hidden="true">+</span><span>Log</span></button>}
@@ -233,6 +235,7 @@ export default function AppHeader({ routes, user, logo_url: logoUrl, csrf_token:
                         <a href={routes.home} className={mobileLinkClass('home')} aria-current={activeNavigation === 'home' ? 'page' : undefined}>Home</a>
                         <a href={routes.literature} className={mobileLinkClass('literature')} aria-current={activeNavigation === 'literature' ? 'page' : undefined}>Literature</a>
                         <a href={routes.catalog} className={mobileLinkClass('catalog')} aria-current={activeNavigation === 'catalog' ? 'page' : undefined}>Catalog</a>
+                        {routes.readers && <a href={routes.readers} className={mobileLinkClass('readers')} aria-current={activeNavigation === 'readers' ? 'page' : undefined}>Readers</a>}
                         {user ? (
                             <>
                                 {user.navigation.filter((item) => item.label !== 'Home').map((item) => <a key={item.label} href={item.url} className="px-3 py-3 transition hover:bg-brand-plate/10">{item.label}</a>)}
