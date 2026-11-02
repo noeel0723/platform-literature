@@ -198,6 +198,26 @@ class SocialConnectionTest extends TestCase
                 ->where('connections.data.1.follows_viewer', false));
     }
 
+    public function test_friend_indicators_receive_refreshed_relationships_after_follow_and_unfollow(): void
+    {
+        $viewer = User::factory()->create();
+        $other = User::factory()->create();
+        $other->following()->attach($viewer);
+        $this->actingAs($viewer)->get(route('profiles.show', $other))->assertInertia(fn (Assert $page) => $page->where('profile.is_friend', false));
+
+        $this->post(route('profiles.follow.store', $other))->assertRedirect();
+        $this->get(route('profiles.show', $other))->assertInertia(fn (Assert $page) => $page->where('profile.is_friend', true));
+        $this->get(route('profiles.followers', $viewer))->assertInertia(fn (Assert $page) => $page
+            ->where('connections.data.0.viewer_follows', true)->where('connections.data.0.follows_viewer', true)->where('connections.data.0.is_blocked', false));
+        $this->get(route('readers.index', ['q' => '@'.$other->username]))->assertInertia(fn (Assert $page) => $page
+            ->where('readers.data.0.viewer_follows', true)->where('readers.data.0.follows_viewer', true));
+
+        $this->delete(route('profiles.follow.destroy', $other))->assertRedirect();
+        $this->get(route('profiles.show', $other))->assertInertia(fn (Assert $page) => $page->where('profile.is_friend', false));
+        $this->get(route('readers.index', ['q' => '@'.$other->username]))->assertInertia(fn (Assert $page) => $page
+            ->where('readers.data.0.viewer_follows', false)->where('readers.data.0.follows_viewer', true));
+    }
+
     public function test_blocked_connections_have_no_follow_action_and_other_viewers_cannot_manage_connections(): void
     {
         $owner = User::factory()->create();

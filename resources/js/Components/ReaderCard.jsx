@@ -3,6 +3,7 @@ import { Link } from '@inertiajs/react';
 import { openLoginPanel } from '../Support/loginPanel';
 import useFeedbackAction from '../Support/useFeedbackAction';
 import { LiteratureCover } from './ProfilePageUi';
+import RelationshipBadge from './RelationshipBadge';
 
 export default function ReaderCard({ reader, routes }) {
     const action = useFeedbackAction();
@@ -28,7 +29,7 @@ export default function ReaderCard({ reader, routes }) {
             <p className="mt-0.5 w-full truncate text-xs text-ink-950/60">@{reader.username}</p>
             <p className="mt-2 text-[11px] leading-5 text-ink-950/65">{reader.followers_count} {reader.followers_count === 1 ? 'follower' : 'followers'} <span aria-hidden="true">·</span> {reader.is_official ? `${reader.lists_count} ${reader.lists_count === 1 ? 'list' : 'lists'}` : `${reader.reviews_count} ${reader.reviews_count === 1 ? 'review' : 'reviews'}`}</p>
             <div className="mt-2 grid min-h-5 place-items-center text-[10px] font-semibold text-ink-950/65">
-                {reader.is_self ? 'Your profile' : reader.viewer_follows ? <span>✓ Following</span> : reader.follows_viewer ? <span className="rounded-full bg-brand-sky/25 px-2 py-0.5">Follows you</span> : null}
+                {reader.is_self ? 'Your profile' : <RelationshipBadge following={reader.viewer_follows} followsYou={reader.follows_viewer} showFollowing />}
             </div>
             {!reader.is_official && <div className="mt-2 grid w-full max-w-44 grid-cols-4 gap-1" aria-label={`Favorite literature of ${reader.name}`}>
                 {reader.favorites.map((literature) => (

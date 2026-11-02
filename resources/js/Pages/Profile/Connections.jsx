@@ -3,6 +3,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { Pagination, ProfileContentContainer } from '../../Components/ProfilePageUi';
 import ProfileSubNavigation from '../../Components/ProfileSubNavigation';
 import EmptyState from '../../Components/EmptyState';
+import RelationshipBadge from '../../Components/RelationshipBadge';
 
 function ConnectionMetric({ type, value, compact = false }) {
     const isCompleted = type === 'completed';
@@ -83,7 +84,7 @@ export default function Connections({ profile, navigation, connections, relation
                                             <span className="min-w-0">
                                                 <span className="flex min-w-0 flex-wrap items-center gap-1.5">
                                                     <span className="truncate text-sm font-bold text-ink-950 transition group-hover:text-brand-coral">{connection.name}</span>
-                                                    {connection.follows_viewer && <span className="shrink-0 rounded-full bg-brand-sky/30 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-ink-950/75">Follows you</span>}
+                                                    <RelationshipBadge following={connection.viewer_follows} followsYou={connection.follows_viewer} hidden={relationship === 'blocked' || connection.is_blocked} />
                                                 </span>
                                                 <span className="block truncate text-xs leading-5 text-ink-950/50">@{connection.username} · {connection.followers_count} followers · following {connection.following_count}</span>
                                                 <span className="flex gap-3 md:hidden"><ConnectionMetric type="completed" value={connection.completed_count} compact /><ConnectionMetric type="readlist" value={connection.readlist_count} compact /></span>

@@ -58,7 +58,7 @@ test('reader cards link to real profiles and favorite literature with readable p
     assert.match(html, /2 reviews/);
     assert.match(html, /href="\/literatures\/earth"/);
     assert.match(html, /aria-label="Follow A Reader"/);
-    assert.doesNotMatch(html, /Follows you|✓ Following/);
+    assert.doesNotMatch(html, /Follows you|>Following<|>Friends</);
     assert.match(render({ name: '<script>unsafe</script>' }), /&lt;script&gt;unsafe&lt;\/script&gt;/);
 });
 
@@ -73,8 +73,9 @@ test('follow back and following reflect server relationships and submit the corr
     const following = ReaderCard({ reader: { ...reader, viewer_follows: true }, routes });
     elements(following, 'button')[0].props.onClick();
     assert.deepEqual(controls.calls[1], ['delete', '/members/reader/follow']);
-    assert.match(render({ viewer_follows: true }), /✓ Following/);
+    assert.match(render({ viewer_follows: true }), />Following</);
     assert.match(render({ follows_viewer: true }), /Follows you/);
+    assert.match(render({ viewer_follows: true, follows_viewer: true }), />Friends</);
 });
 
 test('a pending follow disables the control and announces busy state', () => {

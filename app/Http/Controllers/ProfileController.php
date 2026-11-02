@@ -489,6 +489,7 @@ class ProfileController extends Controller
                 'readlist_count' => $connection->readlist_count,
                 'viewer_follows' => isset($viewerFollowingIds[$connectionId]),
                 'follows_viewer' => isset($viewerFollowerIds[$connectionId]),
+                'is_blocked' => $isBlocked,
                 'follow_url' => $canManageFollow ? route('profiles.follow.store', $connection) : null,
                 'unfollow_url' => $canManageFollow ? route('profiles.follow.destroy', $connection) : null,
                 'block_url' => $isOwner && $relationship !== 'blocked' && ! $viewer->is($connection)

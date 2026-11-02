@@ -4,6 +4,7 @@ import ProfileBanner from '../../Components/ProfileBanner';
 import { plural, ReportForm, StarRating, TimeLabel } from '../../Components/LiteratureDetail/DetailUi';
 import SiteContainer from '../../Components/SiteContainer';
 import EmptyState from '../../Components/EmptyState';
+import RelationshipBadge from '../../Components/RelationshipBadge';
 
 function Cover({ literature, className = '', loading = 'lazy' }) {
     return (
@@ -72,6 +73,7 @@ export function ProfileOverview({ profile, routes, reportReasons }) {
                             <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-brand-coral">{profile.is_official ? 'Literahaven official' : 'Profile'}</p>
                             <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5">
                                 <h1 className="max-w-full truncate text-2xl font-bold leading-none text-ink-950 sm:text-3xl">{profile.name}</h1>
+                                <RelationshipBadge following={profile.is_following} followsYou={profile.is_friend} hidden={profile.is_owner || profile.follow_blocked} />
                                 {profile.is_official && <span className="rounded-sm bg-brand-coral/15 px-1.5 py-1 text-[10px] font-bold uppercase tracking-wide text-ink-950">Official</span>}
                                 {profile.is_owner && routes.edit && <a href={routes.edit} className="rounded-sm border border-ink-950/15 bg-brand-cream/65 px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-wider text-ink-950 transition hover:border-brand-coral hover:bg-brand-coral hover:text-white">Edit profile</a>}
                                 <p className="w-full truncate text-sm font-semibold text-ink-950/50">@{profile.username}</p>
