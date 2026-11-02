@@ -9,6 +9,7 @@ use App\Services\Literature\CanonicalWorkIdentity;
 use App\Services\Literature\LiteratureBrowseService;
 use App\Services\Recommendations\PersonalRecommendationService;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -21,7 +22,11 @@ class HomeController extends Controller
         ActivityRatingLookup $activityRatings,
         CanonicalWorkIdentity $canonicalIdentity,
         LiteratureBrowseService $literatureBrowser,
-    ): Response {
+    ): Response|RedirectResponse {
+        if ($request->user()?->isAdmin()) {
+            return redirect()->route('admin.moderation.index');
+        }
+
         $viewer = $request->user()?->canUseInteractiveFeatures() ? $request->user() : null;
         $friendIds = $viewer?->following()
             ->whereNull('deactivated_at')

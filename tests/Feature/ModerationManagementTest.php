@@ -14,6 +14,45 @@ class ModerationManagementTest extends TestCase
 {
     use LazilyRefreshDatabase;
 
+    public function test_admin_home_and_header_home_open_moderation(): void
+    {
+        $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+        $this->actingAs($admin)->get(route('home'))->assertRedirect(route('admin.moderation.index'));
+        $response = $this->get(route('admin.moderation.index'))->assertInertia(fn (Assert $page) => $page->component('Admin/Moderation/Index'));
+        preg_match('/data-react-header-props>(.*?)<\/script>/s', $response->getContent(), $matches);
+        $header = json_decode($matches[1], true, flags: JSON_THROW_ON_ERROR);
+        $this->assertSame(route('admin.moderation.index'), $header['routes']['home']);
+        $this->assertSame(route('admin.moderation.index'), collect($header['user']['navigation'])->firstWhere('label', 'Home')['url']);
+    }
+
+    public function test_admin_login_defaults_to_moderation_without_reader_onboarding(): void
+    {
+        $admin = User::factory()->pendingOnboarding()->create(['role' => User::ROLE_ADMIN]);
+        $this->post(route('login'), ['email' => $admin->username, 'password' => 'password'])->assertRedirect(route('admin.moderation.index'));
+        $this->assertAuthenticatedAs($admin);
+    }
+
+    public function test_admin_home_keeps_verification_and_account_status_protection(): void
+    {
+        $admin = User::factory()->unverified()->create(['role' => User::ROLE_ADMIN]);
+        $this->actingAs($admin)->get(route('home'))->assertRedirect(route('admin.moderation.index'));
+        $this->get(route('admin.moderation.index'))->assertRedirect(route('verification.notice'));
+        config()->set('auth.verification.enabled', false);
+        $this->get(route('admin.moderation.index'))->assertOk();
+        $this->assertNull($admin->fresh()->email_verified_at);
+        $admin->forceFill(['deactivated_at' => now()])->save();
+        $this->get(route('home'))->assertRedirect(route('login'));
+        $this->assertGuest();
+    }
+
+    public function test_regular_readers_keep_their_personal_home_and_cannot_use_admin_home(): void
+    {
+        $reader = User::factory()->create();
+        $this->actingAs($reader)->get(route('home'))->assertInertia(fn (Assert $page) => $page
+            ->component('Home/Index')->where('viewer.name', $reader->name));
+        $this->get(route('admin.moderation.index'))->assertForbidden();
+    }
+
     public function test_authenticated_user_can_report_another_users_review_once(): void
     {
         $reporter = User::factory()->create();

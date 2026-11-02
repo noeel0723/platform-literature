@@ -79,11 +79,11 @@ class AuthController extends Controller
             return redirect()->route('verification.notice');
         }
 
-        if ($request->user()->needsOnboarding()) {
+        if (! $request->user()->isAdmin() && $request->user()->needsOnboarding()) {
             return redirect()->route('onboarding.show');
         }
 
-        return redirect()->intended(route('literatures.index'))
+        return redirect()->intended(route($request->user()->isAdmin() ? 'admin.moderation.index' : 'literatures.index'))
             ->with('success', 'Welcome back.');
     }
 

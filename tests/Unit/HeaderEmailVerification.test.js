@@ -24,8 +24,9 @@ before(async () => {
                 if (id === quickLogId) return 'export default function QuickLogDialog() { return null; }';
                 if (id !== `\0${moduleId}`) return;
                 return `export const effects = [], updates = [];
-                    export const reset = () => { effects.length = 0; updates.length = 0; };
-                    export const useState = (initial) => [typeof initial === 'function' ? initial() : initial, (value) => updates.push(value)];
+                    let stateIndex = 0, mobileOpen = false;
+                    export const reset = (mobile = false) => { stateIndex = 0; mobileOpen = mobile; effects.length = 0; updates.length = 0; };
+                    export const useState = (initial) => [stateIndex++ === 0 ? mobileOpen : typeof initial === 'function' ? initial() : initial, (value) => updates.push(value)];
                     export const useEffect = (callback) => effects.push(callback);
                     export const useRef = (value) => ({ current: value });`;
             },
@@ -46,18 +47,18 @@ function elements(element, type) {
     return [...(element.type === type ? [element] : []), ...React.Children.toArray(element.props.children).flatMap((child) => elements(child, type))];
 }
 
-function withHeader(required, callback) {
+function withHeader(required, callback, { mobileOpen = false, pathname = '/', home = '/' } = {}) {
     const previousWindow = globalThis.window;
     const previousDocument = globalThis.document;
     const redirects = [];
     const listeners = {};
-    globalThis.window = { location: { origin: 'http://literahaven.test', pathname: '/', search: '', assign: (url) => redirects.push(url) }, addEventListener() {}, removeEventListener() {} };
+    globalThis.window = { location: { origin: 'http://literahaven.test', pathname, search: '', assign: (url) => redirects.push(url) }, addEventListener() {}, removeEventListener() {} };
     globalThis.document = { addEventListener: (name, callback) => { listeners[name] = callback; }, removeEventListener() {} };
-    bindings.reset();
+    bindings.reset(mobileOpen);
     try {
         const tree = AppHeader({
             user: { name: 'Unverified reader', username: 'reader', email_verified: false, requires_email_verification: required, initials: 'UR', navigation: [], edit_url: '/profile/edit', logout_url: '/logout' },
-            routes: { home: '/', literature: '/literature', catalog: '/catalog', search: '/search', verification: '/email/verify', quick_log_search: '/quick-log/literatures' },
+            routes: { home, literature: '/literature', readers: '/readers', catalog: '/catalog', search: '/search', verification: '/email/verify', quick_log_search: '/quick-log/literatures' },
             logo_url: '/literahaven-logo.png',
         });
         callback({ tree, redirects, listeners });
@@ -97,4 +98,25 @@ test('Inertia navigation refreshes verification requirements in the separately m
         assert.equal(bindings.updates.at(-1), false);
         cleanup();
     });
+});
+
+test('desktop and mobile navigation show Home Literature Readers Catalog in that order', () => {
+    withHeader(false, ({ tree }) => {
+        const desktop = elements(tree, 'nav').find((nav) => nav.props['aria-label'] === 'Main navigation');
+        const mobile = elements(tree, 'nav').find((nav) => nav.props['aria-label'] === 'Mobile navigation');
+        for (const nav of [desktop, mobile]) {
+            const links = elements(nav, 'a').slice(0, 4);
+            assert.deepEqual(links.map((link) => link.props.children), ['Home', 'Literature', 'Readers', 'Catalog']);
+            assert.deepEqual(links.map((link) => link.props.href), ['/', '/literature', '/readers', '/catalog']);
+        }
+    }, { mobileOpen: true });
+});
+
+test('Home is marked active when the admin Home destination is moderation', () => {
+    withHeader(false, ({ tree }) => {
+        const desktop = elements(tree, 'nav').find((nav) => nav.props['aria-label'] === 'Main navigation');
+        const home = elements(desktop, 'a')[0];
+        assert.equal(home.props.href, '/admin/moderation');
+        assert.equal(home.props['aria-current'], 'page');
+    }, { home: '/admin/moderation', pathname: '/admin/moderation' });
 });

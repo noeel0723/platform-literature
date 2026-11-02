@@ -22,16 +22,17 @@
 
     @php
         $headerUser = auth()->user();
+        $homeUrl = $headerUser?->isAdmin() ? route('admin.moderation.index') : route('home');
         $headerProps = [
             'logo_url' => asset('literahaven-logo.png'),
             'csrf_token' => csrf_token(),
             'is_guest_landing' => request()->routeIs('home') && ! $headerUser,
             'search_query' => request()->routeIs('search.index') ? request('q') : '',
             'routes' => [
-                'home' => route('home'),
+                'home' => $homeUrl,
                 'literature' => route('literature.index'),
-                'catalog' => route('literatures.index'),
                 'readers' => route('readers.index'),
+                'catalog' => route('literatures.index'),
                 'search' => route('search.index'),
                 'login' => route('login'),
                 'register' => route('register'),
@@ -48,7 +49,7 @@
                 'avatar_url' => $headerUser->avatarUrl(),
                 'initials' => Str::of($headerUser->name)->squish()->explode(' ')->filter()->take(2)->map(fn (string $part): string => Str::upper(Str::substr($part, 0, 1)))->implode('') ?: '?',
                 'navigation' => [
-                    ['label' => 'Home', 'url' => route('home')],
+                    ['label' => 'Home', 'url' => $homeUrl],
                     ['label' => 'Profile', 'url' => route('profiles.show', $headerUser)],
                     ['label' => 'Stats', 'url' => route('profiles.stats', $headerUser)],
                     ['label' => 'Activity', 'url' => route('activity.index')],
