@@ -35,7 +35,7 @@ final class LiteratureBrowseService
 
     /**
      * @param  array<string, mixed>  $input
-     * @return array{q: string, decade: ?int, rating: ?string, genre: ?string, sort: string}
+     * @return array{q: string, type: string, decade: ?int, rating: ?string, genre: ?string, sort: string}
      */
     public function normalizeFilters(array $input): array
     {
@@ -54,6 +54,7 @@ final class LiteratureBrowseService
 
         return [
             'q' => $search,
+            'type' => in_array($input['type'] ?? '', Literature::supportedTypes(), true) ? $input['type'] : '',
             'decade' => $decade,
             'rating' => $rating,
             'genre' => $genre === '' ? null : $genre,
@@ -69,7 +70,7 @@ final class LiteratureBrowseService
             'lowest' => 'rating-asc',
             default => $filters['sort'],
         };
-        $base = $this->canonicalSearch->representativeQuery($filters['q']);
+        $base = $this->canonicalSearch->representativeQuery($filters['q'], $filters['type'] ?? '');
         $ratingsJoined = $filters['rating'] !== null;
 
         if ($ratingsJoined) {
@@ -199,6 +200,7 @@ final class LiteratureBrowseService
 
     /**
      * @return array{
+     *     types: list<array{value: string, label: string}>,
      *     decades: list<array{value: int, label: string}>,
      *     ratings: list<array{value: string, label: string}>,
      *     genres: list<array{name: string, slug: string}>,
@@ -244,6 +246,8 @@ final class LiteratureBrowseService
             ->all();
 
         return [
+            'types' => collect(['novel', 'manga', 'manhwa', 'western-comic'])
+                ->map(fn (string $type): array => ['value' => $type, 'label' => Literature::TYPE_LABELS[$type]])->all(),
             'decades' => $decades,
             'ratings' => [
                 ['value' => 'highest', 'label' => 'Highest First'],

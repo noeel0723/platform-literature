@@ -13,6 +13,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Inertia\Testing\AssertableInertia as Assert;
+use PHPUnit\Framework\Attributes\TestWith;
 use Tests\TestCase;
 
 class LiteratureBrowseTest extends TestCase
@@ -49,6 +50,42 @@ class LiteratureBrowseTest extends TestCase
             ['Dune', 'Legacy Local Work'],
             collect($response->inertiaProps('literatures.data'))->pluck('title')->all(),
         );
+    }
+
+    #[TestWith(['novel'])]
+    #[TestWith(['manga'])]
+    #[TestWith(['manhwa'])]
+    #[TestWith(['western-comic'])]
+    public function test_type_filter_returns_only_matching_canonical_works(string $type): void
+    {
+        $preferred = Literature::factory()->create(['type' => $type, 'title' => 'Selected Work']);
+        $alternate = Literature::factory()->create(['type' => $type, 'title' => 'Alternate Source']);
+        $this->canonicalize($preferred, $alternate);
+        foreach (array_diff(Literature::supportedTypes(), [$type]) as $otherType) {
+            Literature::factory()->create(['type' => $otherType]);
+        }
+
+        $this->get(route('literature.browse', ['type' => $type]))->assertInertia(fn (Assert $page) => $page
+            ->where('filters.type', $type)
+            ->where('literatures.total', 1)
+            ->where('literatures.data.0.id', $preferred->id));
+    }
+
+    public function test_cleared_or_unsupported_types_show_all_formats_and_options_remain_available(): void
+    {
+        Literature::factory()->create(['type' => 'novel']);
+        Literature::factory()->create(['type' => 'manga']);
+
+        foreach (['', 'unknown', ['manga']] as $type) {
+            $this->get(route('literature.browse', ['type' => $type]))->assertInertia(fn (Assert $page) => $page
+                ->where('filters.type', '')->where('literatures.total', 2)
+                ->where('options.types', [
+                    ['value' => 'novel', 'label' => 'Novel'],
+                    ['value' => 'manga', 'label' => 'Manga'],
+                    ['value' => 'manhwa', 'label' => 'Manhwa'],
+                    ['value' => 'western-comic', 'label' => 'Comic'],
+                ]));
+        }
     }
 
     public function test_canonical_metrics_count_each_readers_duplicate_source_records_once(): void
@@ -168,8 +205,8 @@ class LiteratureBrowseTest extends TestCase
     public function test_genre_decade_rating_and_sort_filters_work_together(): void
     {
         $fantasy = Category::factory()->create(['name' => 'Fantasy', 'slug' => 'fantasy']);
-        $higher = Literature::factory()->create(['title' => 'Higher Fantasy', 'publication_year' => 2019]);
-        $lower = Literature::factory()->create(['title' => 'Lower Fantasy', 'publication_year' => 2012]);
+        $higher = Literature::factory()->create(['type' => 'manga', 'title' => 'Higher Fantasy', 'publication_year' => 2019]);
+        $lower = Literature::factory()->create(['type' => 'manga', 'title' => 'Lower Fantasy', 'publication_year' => 2012]);
         $outside = Literature::factory()->create(['title' => 'Older Fantasy', 'publication_year' => 2009]);
         foreach ([$higher, $lower, $outside] as $literature) {
             $literature->categories()->attach($fantasy);
@@ -180,6 +217,7 @@ class LiteratureBrowseTest extends TestCase
 
         $response = $this->get(route('literature.browse', [
             'genre' => 'fantasy',
+            'type' => 'manga',
             'decade' => 2010,
             'rating' => 'highest',
             'sort' => 'year-asc',
@@ -191,7 +229,7 @@ class LiteratureBrowseTest extends TestCase
     public function test_pagination_preserves_all_browse_query_parameters(): void
     {
         $horror = Category::factory()->create(['name' => 'Horror', 'slug' => 'horror']);
-        Literature::factory()->count(49)->create(['publication_year' => 2015])->each(function (Literature $literature, int $index) use ($horror): void {
+        Literature::factory()->count(49)->create(['type' => 'manga', 'publication_year' => 2015])->each(function (Literature $literature, int $index) use ($horror): void {
             $literature->update(['title' => 'Literature '.$index]);
             $literature->categories()->attach($horror);
             Review::factory()->for($literature)->create(['rating' => 4]);
@@ -199,6 +237,7 @@ class LiteratureBrowseTest extends TestCase
 
         $response = $this->get(route('literature.browse', [
             'genre' => 'horror',
+            'type' => 'manga',
             'decade' => 2010,
             'rating' => 'highest',
             'sort' => 'year-desc',
@@ -207,10 +246,13 @@ class LiteratureBrowseTest extends TestCase
         $next = $response->inertiaProps('literatures.next_page_url');
 
         $this->assertStringContainsString('genre=horror', $next);
+        $this->assertStringContainsString('type=manga', $next);
         $this->assertStringContainsString('decade=2010', $next);
         $this->assertStringContainsString('rating=highest', $next);
         $this->assertStringContainsString('sort=year-desc', $next);
         $this->assertStringContainsString('q=Literature', $next);
+        $this->get($next)->assertInertia(fn (Assert $page) => $page
+            ->where('filters.type', 'manga')->where('literatures.current_page', 2)->has('literatures.data', 1));
     }
 
     public function test_top_100_rating_filter_caps_results_to_the_highest_rated_works(): void

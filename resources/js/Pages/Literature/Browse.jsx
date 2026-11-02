@@ -7,7 +7,7 @@ import EmptyState from '../../Components/EmptyState';
 import SiteContainer from '../../Components/SiteContainer';
 
 export default function LiteratureBrowse({ literatures, filters, options, routes }) {
-    const hasActiveFilters = Boolean(filters.q || filters.decade || filters.rating || filters.genre || (filters.sort && filters.sort !== 'popularity'));
+    const hasActiveFilters = Boolean(filters.q || filters.type || filters.decade || filters.rating || filters.genre || (filters.sort && filters.sort !== 'popularity'));
 
     return (
         <>
@@ -17,7 +17,7 @@ export default function LiteratureBrowse({ literatures, filters, options, routes
                 <SiteContainer className="flex flex-col gap-2 py-3.5 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
                         <Link href={routes.index} className="shrink-0 text-xs font-bold uppercase tracking-[0.2em] text-ink-950/50 transition hover:text-brand-coral">Browse by</Link>
-                        <LiteratureBrowseFilters browseUrl={routes.browse} filters={filters} options={options} includeSort compact />
+                        <LiteratureBrowseFilters browseUrl={routes.browse} filters={filters} options={options} includeType includeSort compact />
                     </div>
                     <div className="flex w-full min-w-0 items-center gap-2 lg:ml-auto lg:w-auto">
                         <LiteratureBrowseSearch browseUrl={routes.browse} filters={filters} compact />

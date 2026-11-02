@@ -79,7 +79,7 @@ export function LiteratureBrowseSearch({ browseUrl, filters = {}, fullWidth = fa
     );
 }
 
-export default function LiteratureBrowseFilters({ browseUrl, filters = {}, options, includeSort = false, includeSearch = false, compact = false }) {
+export default function LiteratureBrowseFilters({ browseUrl, filters = {}, options, includeType = false, includeSort = false, includeSearch = false, compact = false }) {
     const navigate = (key, value) => {
         router.get(destinationUrl(browseUrl, filters, key, value), {}, {
             preserveScroll: true,
@@ -95,6 +95,12 @@ export default function LiteratureBrowseFilters({ browseUrl, filters = {}, optio
 
     const controls = (
         <>
+            {includeType && (
+                <BrowseSelect label="Literature type" name="type" value={filters.type} onChange={(value) => navigate('type', value)} stretch={includeSearch} compactWidth={compact ? 'w-22' : ''}>
+                    <option value="">All types</option>
+                    {(options.types ?? []).map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}
+                </BrowseSelect>
+            )}
             <BrowseSelect label="Publication year" name="decade" value={filters.decade} onChange={(value) => navigate('decade', value)} stretch={includeSearch} compactWidth={compact ? 'w-24' : ''}>
                 <option value="">All years</option>
                 {options.decades.map((decade) => <option key={decade.value} value={decade.value}>{decade.label}</option>)}
@@ -111,7 +117,7 @@ export default function LiteratureBrowseFilters({ browseUrl, filters = {}, optio
             </BrowseSelect>
 
             {includeSort && (
-                <BrowseSelect label="Sort literature" name="sort" value={filters.sort ?? 'popularity'} onChange={(value) => navigate('sort', value)} stretch={includeSearch} compactWidth={compact ? 'w-36' : ''}>
+                <BrowseSelect label="Sort literature" name="sort" value={filters.sort ?? 'popularity'} onChange={(value) => navigate('sort', value)} stretch={includeSearch} compactWidth={compact ? 'w-32' : ''}>
                     {Object.entries(sortsByGroup).map(([group, sorts]) => (
                         <optgroup key={group} label={group}>
                             {sorts.map((sort) => <option key={sort.value} value={sort.value}>{sort.label}</option>)}
