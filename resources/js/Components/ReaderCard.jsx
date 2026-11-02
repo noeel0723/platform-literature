@@ -24,12 +24,13 @@ export default function ReaderCard({ reader, routes }) {
                 ))}
             </div>
             <Link href={reader.url} className="mt-3 max-w-full truncate text-sm font-bold text-ink-950 hover:text-brand-coral focus-visible:underline">{reader.name}</Link>
+            {reader.is_official && <span className="mt-1 rounded-sm bg-brand-coral/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-ink-950">Official</span>}
             <p className="mt-0.5 w-full truncate text-xs text-ink-950/60">@{reader.username}</p>
-            <p className="mt-2 text-[11px] leading-5 text-ink-950/65">{reader.followers_count} {reader.followers_count === 1 ? 'follower' : 'followers'} <span aria-hidden="true">·</span> {reader.reviews_count} {reader.reviews_count === 1 ? 'review' : 'reviews'}</p>
+            <p className="mt-2 text-[11px] leading-5 text-ink-950/65">{reader.followers_count} {reader.followers_count === 1 ? 'follower' : 'followers'} <span aria-hidden="true">·</span> {reader.is_official ? `${reader.lists_count} ${reader.lists_count === 1 ? 'list' : 'lists'}` : `${reader.reviews_count} ${reader.reviews_count === 1 ? 'review' : 'reviews'}`}</p>
             <div className="mt-2 grid min-h-5 place-items-center text-[10px] font-semibold text-ink-950/65">
                 {reader.is_self ? 'Your profile' : reader.viewer_follows ? <span>✓ Following</span> : reader.follows_viewer ? <span className="rounded-full bg-brand-sky/25 px-2 py-0.5">Follows you</span> : null}
             </div>
-            <div className="mt-2 grid w-full max-w-44 grid-cols-4 gap-1" aria-label={`Favorite literature of ${reader.name}`}>
+            {!reader.is_official && <div className="mt-2 grid w-full max-w-44 grid-cols-4 gap-1" aria-label={`Favorite literature of ${reader.name}`}>
                 {reader.favorites.map((literature) => (
                     <Link key={literature.id} href={literature.url} title={literature.title} aria-label={literature.title} className="min-w-0 rounded-sm transition hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-coral">
                         <LiteratureCover literature={literature} className="aspect-[2/3] rounded-sm" alt={false} />
@@ -37,7 +38,7 @@ export default function ReaderCard({ reader, routes }) {
                 ))}
                 {Array.from({ length: Math.max(0, 4 - reader.favorites.length) }, (_, index) => <span key={index} aria-hidden="true" className="aspect-[2/3] rounded-sm border border-dashed border-ink-950/10 bg-white/20" />)}
                 {reader.favorites.length === 0 && <span className="sr-only">No favorite literature yet.</span>}
-            </div>
+            </div>}
         </article>
     );
 }

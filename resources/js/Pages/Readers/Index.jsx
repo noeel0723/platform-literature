@@ -5,7 +5,21 @@ import { Pagination } from '../../Components/ProfilePageUi';
 import ReaderCard from '../../Components/ReaderCard';
 import SiteContainer from '../../Components/SiteContainer';
 
-export default function Readers({ readers, query, routes }) {
+export function AdminDirectory({ admins, routes }) {
+    if (!admins?.data.length) return null;
+
+    return (
+        <section className="mt-8" aria-labelledby="readers-admin-heading">
+            <h2 id="readers-admin-heading" className="border-b border-ink-950/15 pb-3 text-center text-[11px] font-bold uppercase tracking-[0.16em] text-brand-coral">Literahaven admins</h2>
+            <div className="flex flex-wrap justify-center gap-x-8 gap-y-6 pt-6">
+                {admins.data.map((admin) => <div key={admin.username} className="w-48 max-w-full"><ReaderCard reader={admin} routes={routes} /></div>)}
+            </div>
+            <Pagination paginator={admins} label="Admin directory pagination" />
+        </section>
+    );
+}
+
+export default function Readers({ readers, admins, query, routes }) {
     const search = useForm({ q: query });
     const submitSearch = (event) => {
         event.preventDefault();
@@ -18,6 +32,7 @@ export default function Readers({ readers, query, routes }) {
             <SiteContainer as="section" className="py-8 sm:py-10 lg:py-12" aria-labelledby="readers-heading">
                 <h1 id="readers-heading" className="text-center font-serif text-2xl font-semibold tracking-tight text-ink-950 sm:text-3xl">Discover readers.</h1>
                 <p className="mt-2 text-center text-sm text-ink-950/60">Find your next read through people who love stories.</p>
+                <AdminDirectory admins={admins} routes={routes} />
 
                 <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-b border-ink-950/15 pb-3">
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">

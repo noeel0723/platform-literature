@@ -30,7 +30,10 @@ function SectionHeader({ eyebrow, title, aside, id }) {
 }
 
 function ProfileStats({ profile, routes }) {
-    const items = [
+    const items = profile.is_official ? [
+        { key: 'lists', label: 'Lists', value: profile.stats.lists, url: routes.lists },
+        { key: 'followers', label: 'Followers', value: profile.stats.followers, url: routes.followers },
+    ] : [
         { key: 'completed', label: 'Completed', value: profile.stats.completed },
         { key: 'completed-this-year', label: 'This year', value: profile.stats.completed_this_year },
         { key: 'followers', label: 'Followers', value: profile.stats.followers, url: routes.followers },
@@ -38,7 +41,7 @@ function ProfileStats({ profile, routes }) {
     ];
 
     return (
-        <dl data-profile-stats className="grid min-w-0 grid-cols-4 divide-x divide-ink-950/10 border-y border-ink-950/10 text-center lg:min-w-[360px] lg:border-y-0">
+        <dl data-profile-stats className={`grid min-w-0 divide-x divide-ink-950/10 border-y border-ink-950/10 text-center lg:border-y-0 ${profile.is_official ? 'grid-cols-2 lg:min-w-[200px]' : 'grid-cols-4 lg:min-w-[360px]'}`}>
             {items.map((item) => {
                 const content = <><dd className="text-xl font-bold leading-none text-ink-950 sm:text-2xl">{item.value}</dd><dt className="mt-1.5 text-[0.55rem] font-bold uppercase tracking-[0.12em] text-ink-950/45 sm:text-[0.62rem]">{item.label}</dt></>;
 
@@ -52,7 +55,7 @@ function ProfileStats({ profile, routes }) {
     );
 }
 
-function ProfileOverview({ profile, routes, reportReasons }) {
+export function ProfileOverview({ profile, routes, reportReasons }) {
     const toggleFollow = () => profile.is_following
         ? router.delete(routes.unfollow, { preserveScroll: true })
         : router.post(routes.follow, {}, { preserveScroll: true });
@@ -66,13 +69,14 @@ function ProfileOverview({ profile, routes, reportReasons }) {
                             {profile.avatar_url ? <img src={profile.avatar_url} alt={`${profile.name}'s profile photo`} className="size-full object-cover" /> : profile.initials}
                         </div>
                         <div className="min-w-0 flex-1">
-                            <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-brand-coral">Profile</p>
+                            <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-brand-coral">{profile.is_official ? 'Literahaven official' : 'Profile'}</p>
                             <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5">
                                 <h1 className="max-w-full truncate text-2xl font-bold leading-none text-ink-950 sm:text-3xl">{profile.name}</h1>
-                                {profile.is_owner && <a href={routes.edit} className="rounded-sm border border-ink-950/15 bg-brand-cream/65 px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-wider text-ink-950 transition hover:border-brand-coral hover:bg-brand-coral hover:text-white">Edit profile</a>}
+                                {profile.is_official && <span className="rounded-sm bg-brand-coral/15 px-1.5 py-1 text-[10px] font-bold uppercase tracking-wide text-ink-950">Official</span>}
+                                {profile.is_owner && routes.edit && <a href={routes.edit} className="rounded-sm border border-ink-950/15 bg-brand-cream/65 px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-wider text-ink-950 transition hover:border-brand-coral hover:bg-brand-coral hover:text-white">Edit profile</a>}
                                 <p className="w-full truncate text-sm font-semibold text-ink-950/50">@{profile.username}</p>
                             </div>
-                            {profile.bio ? <p className="mt-2 line-clamp-2 max-w-xl text-xs leading-5 text-ink-950/65">{profile.bio}</p> : <p className="mt-2 text-xs italic leading-5 text-ink-950/45">This reader has not added a bio yet.</p>}
+                            {profile.bio ? <p className="mt-2 line-clamp-2 max-w-xl text-xs leading-5 text-ink-950/65">{profile.bio}</p> : <p className="mt-2 text-xs italic leading-5 text-ink-950/45">{profile.is_official ? 'Curated literature lists and the latest updates from Literahaven.' : 'This reader has not added a bio yet.'}</p>}
                             <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[0.68rem] text-ink-950/50">
                                 {profile.location && (
                                     <span className="inline-flex items-center gap-1">
@@ -86,9 +90,9 @@ function ProfileOverview({ profile, routes, reportReasons }) {
                                 <span>Member since {profile.member_since}</span>
                             </div>
                         </div>
-                        {!profile.is_owner && (
+                        {!profile.is_owner && !profile.follow_blocked && (
                             <div className="flex w-full shrink-0 flex-wrap items-center gap-3 pl-24 sm:w-auto sm:pl-0">
-                                {profile.viewer_authenticated ? <><button type="button" onClick={toggleFollow} className={`rounded-full px-4 py-2 text-xs font-bold transition ${profile.is_following ? 'border border-ink-950/15 bg-brand-cream/60 text-ink-950 hover:border-brand-coral' : 'bg-ink-950 text-brand-cream hover:bg-brand-coral'}`}>{profile.is_following ? 'Following' : 'Follow'}</button><ReportForm targetType="user" targetId={profile.id} reasons={reportReasons} action={routes.report} label="Report profile" /></> : <a href={routes.login} className="rounded-full bg-ink-950 px-4 py-2 text-xs font-bold text-brand-cream transition hover:bg-brand-coral">Log in to follow</a>}
+                                {profile.viewer_authenticated ? <><button type="button" onClick={toggleFollow} className={`rounded-full px-4 py-2 text-xs font-bold transition ${profile.is_following ? 'border border-ink-950/15 bg-brand-cream/60 text-ink-950 hover:border-brand-coral' : 'bg-ink-950 text-brand-cream hover:bg-brand-coral'}`}>{profile.is_following ? 'Following' : 'Follow'}</button><ReportForm targetType="user" targetId={profile.id} reasons={reportReasons} action={routes.report} label="Report profile" /></> : <a href={routes.verification || routes.login} className="rounded-full bg-ink-950 px-4 py-2 text-xs font-bold text-brand-cream transition hover:bg-brand-coral">{routes.verification ? 'Verify email to follow' : 'Log in to follow'}</a>}
                             </div>
                         )}
                     </div>

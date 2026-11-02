@@ -8,6 +8,7 @@ import { createServer } from 'vite';
 let server;
 let ReaderCard;
 let Readers;
+let AdminDirectory;
 let controls;
 
 before(async () => {
@@ -37,7 +38,7 @@ before(async () => {
     });
     controls = await server.ssrLoadModule('virtual:reader-controls');
     ({ default: ReaderCard } = await server.ssrLoadModule('/resources/js/Components/ReaderCard.jsx'));
-    ({ default: Readers } = await server.ssrLoadModule('/resources/js/Pages/Readers/Index.jsx'));
+    ({ default: Readers, AdminDirectory } = await server.ssrLoadModule('/resources/js/Pages/Readers/Index.jsx'));
 });
 after(async () => { await server?.close(); });
 
@@ -127,4 +128,14 @@ test('search submits to local Readers navigation and disables duplicate submissi
         elements(Readers(props), 'form')[0].props.onSubmit({ preventDefault() {} });
         assert.equal(controls.calls.length, 1);
     } finally { controls.form.processing = false; }
+});
+
+test('official directory cards show public lists and an official label without reading statistics or favorites', () => {
+    const admin = { ...reader, is_official: true, lists_count: 1, favorites: undefined };
+    const html = renderToStaticMarkup(React.createElement(AdminDirectory, { admins: { data: [admin], last_page: 1 }, routes }));
+    assert.match(html, /Literahaven admins/);
+    assert.match(html, /Official/);
+    assert.match(html, /1 list/);
+    assert.doesNotMatch(html, /reviews|Favorite literature|No favorite literature/);
+    assert.equal(AdminDirectory({ admins: { data: [] }, routes }), null);
 });

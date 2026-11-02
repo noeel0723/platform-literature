@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\CustomList;
 use App\Models\Literature;
 use App\Models\Review;
 use App\Models\User;
@@ -163,5 +164,34 @@ class ReadersPageTest extends TestCase
 
         $this->assertCount(20, $response->inertiaProps('readers.data'));
         $this->assertLessThanOrEqual($smallCount + 1, $largeCount, 'Discovery query count must not grow per reader.');
+    }
+
+    public function test_admins_have_their_own_section_with_public_list_counts_and_no_reader_duplicates(): void
+    {
+        $admin = User::factory()->create(['role' => User::ROLE_ADMIN, 'username' => 'official_account']);
+        $reader = User::factory()->create(['username' => 'regular_reader']);
+        User::factory()->create(['role' => User::ROLE_ADMIN, 'deactivated_at' => now()]);
+        CustomList::factory()->for($admin)->create(['is_private' => false]);
+        CustomList::factory()->for($admin)->create(['is_private' => true]);
+
+        $this->get(route('readers.index'))->assertInertia(fn (Assert $page) => $page
+            ->where('admins.total', 1)->where('admins.data.0.username', 'official_account')
+            ->where('admins.data.0.is_official', true)->where('admins.data.0.lists_count', 1)
+            ->where('admins.data.0.avatar_url', asset('literahaven-logo.png'))
+            ->where('readers.total', 1)->where('readers.data.0.username', $reader->username)
+            ->missing('admins.data.0.favorites')->missing('admins.data.0.reviews_count')->missing('admins.data.0.email'));
+        $this->get(route('readers.index', ['q' => '@official_account']))->assertInertia(fn (Assert $page) => $page
+            ->where('admins.total', 1)->where('readers.total', 0));
+    }
+
+    public function test_admin_section_preserves_follow_state_and_hides_blocked_admins(): void
+    {
+        $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+        $reader = User::factory()->create();
+        $reader->following()->attach($admin);
+        $this->actingAs($reader)->get(route('readers.index'))->assertInertia(fn (Assert $page) => $page
+            ->where('admins.data.0.viewer_follows', true)->where('admins.data.0.follow_url', route('profiles.follow.store', $admin)));
+        $reader->blockedUsers()->attach($admin);
+        $this->get(route('readers.index'))->assertInertia(fn (Assert $page) => $page->where('admins.total', 0));
     }
 }

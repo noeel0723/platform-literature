@@ -41,7 +41,7 @@ class CustomListController extends Controller
             ->latest('updated_at')
             ->paginate(12);
 
-        $lists->through(fn (CustomList $list): array => $this->presentList($list, $presenter, $isOwner));
+        $lists->through(fn (CustomList $list): array => $presenter->customList($list, $isOwner));
 
         return Inertia::render('Profile/Lists', [
             'profile' => $presenter->user($user),
@@ -214,26 +214,5 @@ class CustomListController extends Controller
         $customList->delete();
 
         return redirect()->route('profiles.lists', $owner)->with('success', 'List deleted.');
-    }
-
-    /** @return array<string, mixed> */
-    private function presentList(CustomList $list, ProfilePagePresenter $presenter, bool $isOwner): array
-    {
-        return [
-            'id' => $list->id,
-            'title' => $list->title,
-            'description' => $list->description,
-            'is_private' => $list->is_private,
-            'is_ranked' => $list->is_ranked,
-            'items_count' => $list->items_count,
-            'url' => route('custom-lists.show', $list),
-            'edit_url' => $isOwner ? route('custom-lists.edit', $list) : null,
-            'updated_at' => $list->updated_at->utc()->toIso8601String(),
-            'previews' => $list->items->map(function (CustomListItem $item) use ($presenter): ?array {
-                $literature = $item->displayLiterature();
-
-                return $literature === null ? null : $presenter->literature($literature);
-            })->filter()->values()->all(),
-        ];
     }
 }

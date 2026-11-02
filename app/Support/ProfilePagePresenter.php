@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\Models\CustomList;
+use App\Models\CustomListItem;
 use App\Models\Literature;
 use App\Models\User;
 
@@ -10,6 +12,19 @@ class ProfilePagePresenter
     /** @return array<string, mixed> */
     public function navigation(User $user, string $current, ?User $viewer): array
     {
+        if ($user->isAdmin()) {
+            return [
+                'current' => $current,
+                'user' => $this->user($user),
+                'links' => [
+                    ['key' => 'profile', 'label' => 'Profile', 'url' => route('profiles.show', $user)],
+                    ['key' => 'updates', 'label' => 'Updates', 'url' => route('profiles.show', $user).'#official-updates'],
+                    ['key' => 'lists', 'label' => 'Lists', 'url' => route('profiles.lists', $user)],
+                    ['key' => 'connections', 'label' => 'Connections', 'url' => route('profiles.connections', $user)],
+                ],
+            ];
+        }
+
         $isOwner = $viewer?->is($user) ?? false;
         $isFriend = $viewer !== null
             && ! $isOwner
@@ -77,6 +92,27 @@ class ProfilePagePresenter
             'type' => $literature->type,
             'type_label' => $literature->typeLabel(),
             'initials' => mb_strtoupper(mb_substr($title, 0, 2)),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public function customList(CustomList $list, bool $isOwner): array
+    {
+        return [
+            'id' => $list->id,
+            'title' => $list->title,
+            'description' => $list->description,
+            'is_private' => $list->is_private,
+            'is_ranked' => $list->is_ranked,
+            'items_count' => $list->items_count,
+            'url' => route('custom-lists.show', $list),
+            'edit_url' => $isOwner ? route('custom-lists.edit', $list) : null,
+            'updated_at' => $list->updated_at->utc()->toIso8601String(),
+            'previews' => $list->items->map(function (CustomListItem $item): ?array {
+                $literature = $item->displayLiterature();
+
+                return $literature === null ? null : $this->literature($literature);
+            })->filter()->values()->all(),
         ];
     }
 

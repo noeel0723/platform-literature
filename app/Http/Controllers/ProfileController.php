@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\UpdateProfileRequest;
 use App\Models\Activity;
 use App\Models\Author;
+use App\Models\CustomList;
 use App\Models\Literature;
 use App\Models\Report;
 use App\Models\User;
@@ -25,6 +26,10 @@ class ProfileController extends Controller
         ProfilePagePresenter $presenter,
         UserStatsService $statsService,
     ): Response {
+        if ($user->isAdmin()) {
+            return $this->showOfficialProfile($user, $presenter);
+        }
+
         $user->load([
             'favoriteLiteratures.authors',
             'favoriteLiteratures.metadataOverride',
@@ -193,6 +198,68 @@ class ProfileController extends Controller
                 'activity' => $isOwner
                     ? route('activity.index')
                     : ($isFriend ? route('profiles.activity', $user) : null),
+                'report' => route('reports.store'),
+            ],
+        ]);
+    }
+
+    private function showOfficialProfile(User $user, ProfilePagePresenter $presenter): Response
+    {
+        $viewer = request()->user();
+        $isOwner = $viewer?->is($user) ?? false;
+        $canManage = $isOwner && $viewer->canUseInteractiveFeatures();
+        $isBlocked = $viewer !== null && ! $isOwner && ($viewer->hasBlocked($user) || $user->hasBlocked($viewer));
+        $canFollow = ! $isOwner && ! $isBlocked && ($viewer?->canUseInteractiveFeatures() ?? false);
+        $user->loadCount([
+            'followers',
+            'customLists as public_lists_count' => fn ($lists) => $lists->where('is_private', false),
+        ]);
+        $lists = $user->customLists()
+            ->where('is_private', false)
+            ->with(['items' => fn ($items) => $items->with([
+                'literature.authors',
+                'literature.metadataOverride',
+                'literature.sourceMapping.canonicalWork.metadataOverride',
+                'canonicalWork.preferredLiterature.authors',
+                'canonicalWork.preferredLiterature.metadataOverride',
+                'canonicalWork.preferredLiterature.sourceMapping.canonicalWork.metadataOverride',
+            ])->limit(5)])
+            ->withCount('items')
+            ->latest('updated_at')
+            ->orderByDesc('id')
+            ->paginate(6);
+        $lists->through(fn (CustomList $list): array => $presenter->customList($list, $canManage));
+
+        return Inertia::render('Profile/Official', [
+            'profile' => [
+                ...$presenter->user($user),
+                'id' => $user->id,
+                'is_official' => true,
+                'avatar_url' => $user->avatarUrl() ?? asset('literahaven-logo.png'),
+                'banner_url' => $user->bannerUrl(),
+                'banner_position_x' => $user->banner_position_x,
+                'banner_position_y' => $user->banner_position_y,
+                'bio' => $user->bio,
+                'location' => $user->location,
+                'member_since' => $user->created_at->format('F Y'),
+                'is_owner' => $isOwner,
+                'follow_blocked' => $isBlocked,
+                'is_following' => $viewer?->isFollowing($user) ?? false,
+                'viewer_authenticated' => $canFollow,
+                'stats' => ['lists' => $user->public_lists_count, 'followers' => $user->followers_count],
+            ],
+            'navigation' => $presenter->navigation($user, 'profile', $viewer),
+            'lists' => $lists,
+            'reportReasons' => Report::REASON_LABELS,
+            'routes' => [
+                'edit' => $canManage ? route('profiles.edit') : null,
+                'login' => route('login'),
+                'verification' => $viewer?->requiresEmailVerification() ? route('verification.notice') : null,
+                'follow' => $canFollow ? route('profiles.follow.store', $user) : null,
+                'unfollow' => $canFollow ? route('profiles.follow.destroy', $user) : null,
+                'followers' => route('profiles.connections', [$user, 'relationship' => 'followers']),
+                'lists' => route('profiles.lists', $user),
+                'create_list' => $canManage ? route('custom-lists.create') : null,
                 'report' => route('reports.store'),
             ],
         ]);

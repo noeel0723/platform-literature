@@ -22,7 +22,7 @@ class ReaderController extends Controller
         $query = Str::squish(ltrim(trim($validated['q'] ?? ''), '@'));
         $viewer = $request->user();
         $canFollow = $viewer?->canUseInteractiveFeatures() ?? false;
-        $readers = User::query()
+        $users = User::query()
             ->select(['id', 'name', 'username', 'avatar_path'])
             ->whereNull('deactivated_at')
             ->when($query !== '', fn (Builder $users) => $users->where(fn (Builder $names) => $names
@@ -37,6 +37,15 @@ class ReaderController extends Controller
                 ]))
             ->withCount([
                 'followers' => fn (Builder $followers) => $followers->whereNull('deactivated_at'),
+            ]);
+        $admins = (clone $users)
+            ->where('role', User::ROLE_ADMIN)
+            ->withCount(['customLists as lists_count' => fn (Builder $lists) => $lists->where('is_private', false)])
+            ->orderBy('name')->orderBy('users.id')
+            ->paginate(10, ['*'], 'admins_page')->withQueryString();
+        $readers = $users
+            ->where('role', User::ROLE_USER)
+            ->withCount([
                 'reviews' => fn (Builder $reviews) => $reviews->whereNull('hidden_at')->written(),
             ])
             ->with(['favoriteLiteratures' => fn ($favorites) => $favorites
@@ -67,9 +76,22 @@ class ReaderController extends Controller
                 'url' => route('literatures.show', $literature),
             ])->all(),
         ]);
+        $admins->through(fn (User $admin): array => [
+            ...$presenter->user($admin),
+            'is_official' => true,
+            'avatar_url' => $admin->avatarUrl() ?? asset('literahaven-logo.png'),
+            'followers_count' => $admin->followers_count,
+            'lists_count' => $admin->lists_count,
+            'is_self' => $viewer?->is($admin) ?? false,
+            'viewer_follows' => (bool) $admin->viewer_follows,
+            'follows_viewer' => (bool) $admin->follows_viewer,
+            'follow_url' => $canFollow && ! $viewer->is($admin) ? route('profiles.follow.store', $admin) : null,
+            'unfollow_url' => $canFollow && ! $viewer->is($admin) ? route('profiles.follow.destroy', $admin) : null,
+        ]);
 
         return Inertia::render('Readers/Index', [
             'readers' => $readers,
+            'admins' => $admins,
             'query' => $query,
             'routes' => [
                 'index' => route('readers.index'),
