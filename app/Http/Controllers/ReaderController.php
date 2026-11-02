@@ -56,10 +56,10 @@ class ReaderController extends Controller
             ->orderByDesc('reviews_count')
             ->orderBy('name')
             ->orderBy('users.id')
-            ->paginate(20)
-            ->withQueryString();
+            ->limit(5)
+            ->get();
 
-        $readers->through(fn (User $reader): array => [
+        $readers = $readers->map(fn (User $reader): array => [
             ...$presenter->user($reader),
             'followers_count' => $reader->followers_count,
             'reviews_count' => $reader->reviews_count,
@@ -90,7 +90,7 @@ class ReaderController extends Controller
         ]);
 
         return Inertia::render('Readers/Index', [
-            'readers' => $readers,
+            'readers' => ['data' => $readers->all(), 'total' => $readers->count()],
             'admins' => $admins,
             'query' => $query,
             'routes' => [

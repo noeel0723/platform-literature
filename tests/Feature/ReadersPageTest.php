@@ -69,19 +69,26 @@ class ReadersPageTest extends TestCase
         $this->get(route('readers.index', ['q' => "' OR 1=1 --"]))->assertInertia(fn (Assert $page) => $page->has('readers.data', 0));
     }
 
-    public function test_search_pagination_is_stable_and_keeps_the_query(): void
+    public function test_directory_is_limited_to_the_five_readers_with_the_most_followers(): void
     {
-        User::factory()->count(23)->create(['name' => 'Matching Reader']);
-        User::factory()->create(['name' => 'Different Person']);
+        $readers = User::factory()->count(7)->create(['name' => 'Matching Reader']);
+        $followers = User::factory()->count(7)->create(['name' => 'Follower']);
+        foreach ($readers as $index => $reader) {
+            $reader->followers()->attach($followers->take($index + 1)->modelKeys());
+        }
+        Review::factory()->for($readers[0])->create();
 
-        $first = $this->get(route('readers.index', ['q' => 'Matching']))->assertInertia(fn (Assert $page) => $page
-            ->where('readers.total', 23)->where('readers.last_page', 2)->has('readers.data', 20));
-        $second = $this->get($first->inertiaProps('readers.next_page_url'))->assertInertia(fn (Assert $page) => $page
-            ->where('query', 'Matching')->where('readers.current_page', 2)->has('readers.data', 3));
-
-        $firstIds = collect($first->inertiaProps('readers.data'))->pluck('username');
-        $secondIds = collect($second->inertiaProps('readers.data'))->pluck('username');
-        $this->assertCount(23, $firstIds->merge($secondIds)->unique());
+        $response = $this->get(route('readers.index'))->assertInertia(fn (Assert $page) => $page
+            ->where('readers.total', 5)->has('readers.data', 5)
+            ->where('readers.data.0.username', $readers[6]->username)
+            ->where('readers.data.4.username', $readers[2]->username)
+            ->missing('readers.next_page_url'));
+        $this->assertSame([7, 6, 5, 4, 3], collect($response->inertiaProps('readers.data'))->pluck('followers_count')->all());
+        $this->get(route('readers.index', ['q' => 'Matching', 'page' => 2]))->assertInertia(fn (Assert $page) => $page
+            ->where('query', 'Matching')->where('readers.total', 5)
+            ->where('readers.data.0.username', $readers[6]->username));
+        $this->get(route('readers.index', ['q' => '@'.$readers[0]->username]))->assertInertia(fn (Assert $page) => $page
+            ->where('readers.total', 1)->where('readers.data.0.username', $readers[0]->username));
     }
 
     public function test_empty_directory_and_unmatched_search_return_empty_paginators(): void
@@ -162,7 +169,7 @@ class ReadersPageTest extends TestCase
         $largeCount = count(DB::getQueryLog());
         DB::disableQueryLog();
 
-        $this->assertCount(20, $response->inertiaProps('readers.data'));
+        $this->assertCount(5, $response->inertiaProps('readers.data'));
         $this->assertLessThanOrEqual($smallCount + 1, $largeCount, 'Discovery query count must not grow per reader.');
     }
 
