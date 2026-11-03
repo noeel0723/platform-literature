@@ -139,7 +139,7 @@ test('search submits to local Readers navigation and disables duplicate submissi
 test('official directory cards show public lists and an official label without reading statistics or favorites', () => {
     const admin = { ...reader, is_official: true, lists_count: 1, favorites: undefined };
     const html = renderToStaticMarkup(React.createElement(AdminDirectory, { admins: { data: [admin], last_page: 1 }, routes }));
-    assert.match(html, /Literahaven admins/);
+    assert.match(html, /Official Account/);
     assert.match(html, /Official/);
     assert.match(html, /1 list/);
     assert.doesNotMatch(html, /reviews|Favorite literature|No favorite literature/);

@@ -12,7 +12,7 @@ export function AdminDirectory({ admins, routes }) {
 
     return (
         <section className="mt-8" aria-labelledby="readers-admin-heading">
-            <h2 id="readers-admin-heading" className="border-b border-ink-950/15 pb-3 text-left text-[11px] font-bold uppercase tracking-[0.16em] text-brand-coral">Literahaven admins</h2>
+            <h2 id="readers-admin-heading" className="border-b border-ink-950/15 pb-3 text-left text-[11px] font-bold uppercase tracking-[0.16em] text-brand-coral">Official Account</h2>
             <div className="flex flex-wrap justify-center gap-x-8 gap-y-6 pt-6">
                 {admins.data.map((admin) => <div key={admin.username} className="w-48 max-w-full"><ReaderCard reader={admin} routes={routes} /></div>)}
             </div>
@@ -43,12 +43,12 @@ export default function Readers({ readers, admins, directory, query, routes }) {
                         {readers.data.map((reader) => <ReaderCard key={reader.username} reader={reader} routes={routes} />)}
                     </div>
                 ) : <EmptyState className="mt-6" title={query ? 'No readers found.' : 'No readers to discover yet.'} description={query ? 'Try another name or username.' : 'Reader profiles will appear here as the community grows.'} action={query ? { href: routes.index, label: 'Browse readers' } : null} />}
+                <AdminDirectory admins={admins} routes={routes} />
                 {directory && <section className="mt-10" aria-labelledby="reader-directory-heading">
                     <div className="flex flex-wrap items-end justify-between gap-2 border-b border-ink-950/15 pb-3"><h2 id="reader-directory-heading" className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand-coral">Readers</h2><span className="text-xs text-ink-950/55">{directory.total} {directory.total === 1 ? 'reader' : 'readers'} · Most followed first</span></div>
                     <ReaderRows readers={directory.data} routes={routes} />
                     {directory.more_url && <div className="mt-5 text-center"><Link href={directory.more_url} className="inline-flex h-9 items-center rounded-md border border-ink-950/15 bg-white/50 px-6 text-xs font-semibold text-ink-950 hover:border-brand-coral hover:text-brand-coral focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-coral">View more</Link></div>}
                 </section>}
-                <AdminDirectory admins={admins} routes={routes} />
             </SiteContainer>
         </>
     );
