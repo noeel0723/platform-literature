@@ -100,23 +100,22 @@ test('Inertia navigation refreshes verification requirements in the separately m
     });
 });
 
-test('desktop and mobile navigation show Home Literature Readers Catalog in that order', () => {
+test('desktop and mobile navigation show Literature Readers Catalog without Home', () => {
     withHeader(false, ({ tree }) => {
         const desktop = elements(tree, 'nav').find((nav) => nav.props['aria-label'] === 'Main navigation');
         const mobile = elements(tree, 'nav').find((nav) => nav.props['aria-label'] === 'Mobile navigation');
         for (const nav of [desktop, mobile]) {
-            const links = elements(nav, 'a').slice(0, 4);
-            assert.deepEqual(links.map((link) => link.props.children), ['Home', 'Literature', 'Readers', 'Catalog']);
-            assert.deepEqual(links.map((link) => link.props.href), ['/', '/literature', '/readers', '/catalog']);
+            const links = elements(nav, 'a');
+            assert.deepEqual(links.map((link) => link.props.children), ['Literature', 'Readers', 'Catalog', ...(nav === mobile ? ['Edit profile'] : [])]);
+            assert.deepEqual(links.slice(0, 3).map((link) => link.props.href), ['/literature', '/readers', '/catalog']);
         }
     }, { mobileOpen: true });
 });
 
-test('Home is marked active when the admin Home destination is moderation', () => {
+test('the logo still points to admin moderation without a Home navigation item', () => {
     withHeader(false, ({ tree }) => {
         const desktop = elements(tree, 'nav').find((nav) => nav.props['aria-label'] === 'Main navigation');
-        const home = elements(desktop, 'a')[0];
-        assert.equal(home.props.href, '/admin/moderation');
-        assert.equal(home.props['aria-current'], 'page');
+        assert.equal(elements(desktop, 'a').some((link) => link.props.children === 'Home'), false);
+        assert.match(renderToStaticMarkup(tree), /href="\/admin\/moderation"[^>]*aria-label="Literahaven - Home"/);
     }, { home: '/admin/moderation', pathname: '/admin/moderation' });
 });

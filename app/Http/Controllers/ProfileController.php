@@ -306,6 +306,8 @@ class ProfileController extends Controller
             'routes' => [
                 'profile' => route('profiles.show', $user),
                 'update' => route('profiles.update'),
+                'destroy' => route('profiles.destroy'),
+                'home' => route('home'),
                 'favoriteLiteraturesSearch' => route('profiles.favorites.literatures'),
                 'favoriteAuthorsSearch' => route('profiles.favorites.authors'),
             ],

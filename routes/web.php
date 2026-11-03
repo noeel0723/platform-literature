@@ -10,6 +10,7 @@ use App\Http\Controllers\CancelRegistrationController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\CustomListController;
 use App\Http\Controllers\CustomListItemController;
+use App\Http\Controllers\DeleteAccountController;
 use App\Http\Controllers\DiscussionController;
 use App\Http\Controllers\EmailVerificationController;
 use App\Http\Controllers\FollowController;
@@ -76,6 +77,8 @@ Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 've
     ->whereNumber('id')->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
 
 Route::middleware('auth')->group(function (): void {
+    Route::delete('/profile', DeleteAccountController::class)
+        ->middleware('throttle:6,1')->name('profiles.destroy');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/email/verify', [EmailVerificationController::class, 'notice'])->name('verification.notice');
     Route::delete('/register', CancelRegistrationController::class)

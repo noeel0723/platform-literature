@@ -2,6 +2,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import AvatarCropDialog from '../../Components/AvatarCropDialog';
+import DeleteAccountSection from '../../Components/DeleteAccountSection';
 import ProfileBannerEditor from '../../Components/ProfileBannerEditor';
 import ProfileSubNavigation from '../../Components/ProfileSubNavigation';
 import EmptyState from '../../Components/EmptyState';
@@ -335,6 +336,7 @@ export default function ProfileEdit({ profile, navigation, favoriteLiteratures, 
                         <div className="flex flex-wrap items-center justify-end gap-3 border-t border-ink-950/10 pt-5">{form.recentlySuccessful && <span role="status" className="mr-auto text-sm font-semibold text-green-800">Profile saved.</span>}<Link href={routes.profile} className="inline-flex min-h-10 items-center border border-ink-950/15 px-5 text-sm font-bold text-ink-950 hover:border-brand-coral">Cancel</Link><button type="submit" disabled={form.processing} className="min-h-10 bg-ink-950 px-6 text-sm font-bold text-brand-cream transition hover:bg-brand-coral disabled:cursor-wait disabled:opacity-60">{form.processing ? 'Saving…' : 'Save profile'}</button></div>
                     </div>
                 </form>
+                {routes.destroy && <DeleteAccountSection deleteUrl={routes.destroy} homeUrl={routes.home} />}
             </main>
             <FavoritePickerDialog
                 picker={picker}

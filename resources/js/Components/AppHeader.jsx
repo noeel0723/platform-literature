@@ -123,7 +123,7 @@ function AccountMenu({ user, csrfToken }) {
             {open && (
                 <div id="account-menu-panel" className="absolute left-0 top-full z-50 mt-1 w-52 overflow-hidden rounded-sm border border-brand-blueberry/15 bg-brand-plate py-1 text-[0.8rem] text-ink-950 shadow-lg shadow-brand-blueberry/15" data-account-menu-panel>
                     <nav aria-label="Account navigation">
-                        {user.navigation.map((item) => <a key={item.label} href={item.url} className="account-menu-link rounded-none px-3 py-1.5">{item.label}</a>)}
+                        {user.navigation.filter((item) => item.label !== 'Home').map((item) => <a key={item.label} href={item.url} className="account-menu-link rounded-none px-3 py-1.5">{item.label}</a>)}
                     </nav>
                     <div className="mt-1 border-t border-brand-blueberry/12 pt-1">
                         <a href={user.edit_url} className="account-menu-link rounded-none px-3 py-1.5">Edit Profile</a>
@@ -155,7 +155,6 @@ export default function AppHeader({ routes, user, logo_url: logoUrl, csrf_token:
         return currentPath === path || (path !== '/' && currentPath.startsWith(`${path}/`));
     };
     const navigation = [
-        { key: 'home', label: 'Home', url: routes.home },
         { key: 'literature', label: 'Literature', url: routes.literature },
         { key: 'readers', label: 'Readers', url: routes.readers },
         { key: 'catalog', label: 'Catalog', url: routes.catalog },

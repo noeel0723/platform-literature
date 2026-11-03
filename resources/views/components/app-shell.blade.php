@@ -49,7 +49,6 @@
                 'avatar_url' => $headerUser->avatarUrl(),
                 'initials' => Str::of($headerUser->name)->squish()->explode(' ')->filter()->take(2)->map(fn (string $part): string => Str::upper(Str::substr($part, 0, 1)))->implode('') ?: '?',
                 'navigation' => [
-                    ['label' => 'Home', 'url' => $homeUrl],
                     ['label' => 'Profile', 'url' => route('profiles.show', $headerUser)],
                     ['label' => 'Stats', 'url' => route('profiles.stats', $headerUser)],
                     ['label' => 'Activity', 'url' => route('activity.index')],

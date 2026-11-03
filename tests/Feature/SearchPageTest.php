@@ -81,10 +81,10 @@ class SearchPageTest extends TestCase
         $navigation = collect($props['user']['navigation']);
 
         $this->assertSame(
-            ['Home', 'Profile', 'Stats', 'Activity', 'Literature', 'Diary', 'Reviews', 'Readlist', 'Lists', 'Connections'],
+            ['Profile', 'Stats', 'Activity', 'Literature', 'Diary', 'Reviews', 'Readlist', 'Lists', 'Connections'],
             $navigation->pluck('label')->all(),
         );
-        $this->assertSame(route('home'), $navigation->firstWhere('label', 'Home')['url']);
+        $this->assertNull($navigation->firstWhere('label', 'Home'));
         $this->assertSame(route('profiles.stats', $user), $navigation->firstWhere('label', 'Stats')['url']);
         $this->assertSame(route('profiles.lists', $user), $navigation->firstWhere('label', 'Lists')['url']);
         $this->assertNull($props['user']['moderation_url']);
