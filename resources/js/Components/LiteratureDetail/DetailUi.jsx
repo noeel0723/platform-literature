@@ -91,8 +91,13 @@ export function RatingInput({ value, onChange, compact = false, onCommit, keyboa
     );
 }
 
-export function TimeLabel({ value, className = '' }) {
+export function TimeLabel({ value, className = '', dateOnly = false }) {
     const label = useMemo(() => {
+        if (dateOnly) {
+            const [year, month, day] = value.slice(0, 10).split('-').map(Number);
+            return new Intl.DateTimeFormat('en', { dateStyle: 'medium' }).format(new Date(year, month - 1, day));
+        }
+
         const date = new Date(value);
         const elapsed = Date.now() - date.getTime();
         const hours = Math.floor(elapsed / 3_600_000);
@@ -107,9 +112,9 @@ export function TimeLabel({ value, className = '' }) {
         }
 
         return new Intl.DateTimeFormat('en', { dateStyle: 'medium' }).format(date);
-    }, [value]);
+    }, [value, dateOnly]);
 
-    return <time dateTime={value} className={className}>{label}</time>;
+    return <time dateTime={dateOnly ? value.slice(0, 10) : value} className={className}>{label}</time>;
 }
 
 export function UserAvatar({ user, className = 'size-8', tone = 'bg-ink-950 text-brand-cream' }) {
