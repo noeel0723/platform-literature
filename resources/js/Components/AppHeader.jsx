@@ -123,7 +123,7 @@ function AccountMenu({ user, csrfToken }) {
             {open && (
                 <div id="account-menu-panel" className="absolute left-0 top-full z-50 mt-1 w-52 overflow-hidden rounded-sm border border-brand-blueberry/15 bg-brand-plate py-1 text-[0.8rem] text-ink-950 shadow-lg shadow-brand-blueberry/15" data-account-menu-panel>
                     <nav aria-label="Account navigation">
-                        {user.navigation.filter((item) => item.label !== 'Home').map((item) => <a key={item.label} href={item.url} className="account-menu-link rounded-none px-3 py-1.5">{item.label}</a>)}
+                        {user.navigation.map((item) => <a key={item.label} href={item.url} className="account-menu-link rounded-none px-3 py-1.5">{item.label}</a>)}
                     </nav>
                     <div className="mt-1 border-t border-brand-blueberry/12 pt-1">
                         <a href={user.edit_url} className="account-menu-link rounded-none px-3 py-1.5">Edit Profile</a>
@@ -234,7 +234,7 @@ export default function AppHeader({ routes, user, logo_url: logoUrl, csrf_token:
                         {navigation.map((item) => <a key={item.key} href={item.url} className={mobileLinkClass(item.key)} aria-current={activeNavigation === item.key ? 'page' : undefined}>{item.label}</a>)}
                         {user ? (
                             <>
-                                {user.navigation.filter((item) => item.label !== 'Home').map((item) => <a key={item.label} href={item.url} className="px-3 py-3 transition hover:bg-brand-plate/10">{item.label}</a>)}
+                                {user.navigation.map((item) => <a key={item.label} href={item.url} className="px-3 py-3 transition hover:bg-brand-plate/10">{item.label}</a>)}
                                 <a href={user.edit_url} className="px-3 py-3 transition hover:bg-brand-plate/10">Edit profile</a>
                                 {user.moderation_url && <a href={user.moderation_url} className="px-3 py-3 transition hover:bg-brand-plate/10">Moderation</a>}
                                 <form action={user.logout_url} method="POST"><input type="hidden" name="_token" value={csrfToken} /><button className="w-full px-3 py-3 text-left transition hover:bg-brand-plate/10">Log out</button></form>

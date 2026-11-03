@@ -57,7 +57,7 @@ function withHeader(required, callback, { mobileOpen = false, pathname = '/', ho
     bindings.reset(mobileOpen);
     try {
         const tree = AppHeader({
-            user: { name: 'Unverified reader', username: 'reader', email_verified: false, requires_email_verification: required, initials: 'UR', navigation: [], edit_url: '/profile/edit', logout_url: '/logout' },
+            user: { name: 'Unverified reader', username: 'reader', email_verified: false, requires_email_verification: required, initials: 'UR', navigation: [{ label: 'Home', url: home }, { label: 'Profile', url: '/members/reader' }], edit_url: '/profile/edit', logout_url: '/logout' },
             routes: { home, literature: '/literature', readers: '/readers', catalog: '/catalog', search: '/search', verification: '/email/verify', quick_log_search: '/quick-log/literatures' },
             logo_url: '/literahaven-logo.png',
         });
@@ -100,19 +100,19 @@ test('Inertia navigation refreshes verification requirements in the separately m
     });
 });
 
-test('desktop and mobile navigation show Literature Readers Catalog without Home', () => {
+test('main navigation stays Literature Readers Catalog while mobile account links include Home', () => {
     withHeader(false, ({ tree }) => {
         const desktop = elements(tree, 'nav').find((nav) => nav.props['aria-label'] === 'Main navigation');
         const mobile = elements(tree, 'nav').find((nav) => nav.props['aria-label'] === 'Mobile navigation');
         for (const nav of [desktop, mobile]) {
             const links = elements(nav, 'a');
-            assert.deepEqual(links.map((link) => link.props.children), ['Literature', 'Readers', 'Catalog', ...(nav === mobile ? ['Edit profile'] : [])]);
+            assert.deepEqual(links.map((link) => link.props.children), ['Literature', 'Readers', 'Catalog', ...(nav === mobile ? ['Home', 'Profile', 'Edit profile'] : [])]);
             assert.deepEqual(links.slice(0, 3).map((link) => link.props.href), ['/literature', '/readers', '/catalog']);
         }
     }, { mobileOpen: true });
 });
 
-test('the logo still points to admin moderation without a Home navigation item', () => {
+test('the logo still points to admin moderation without Home in the main navigation', () => {
     withHeader(false, ({ tree }) => {
         const desktop = elements(tree, 'nav').find((nav) => nav.props['aria-label'] === 'Main navigation');
         assert.equal(elements(desktop, 'a').some((link) => link.props.children === 'Home'), false);

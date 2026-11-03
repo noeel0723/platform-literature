@@ -1,8 +1,10 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 
 import EmptyState from '../../Components/EmptyState';
 import { Pagination } from '../../Components/ProfilePageUi';
 import ReaderCard from '../../Components/ReaderCard';
+import ReaderRows from '../../Components/ReaderRows';
+import ReaderSearch from '../../Components/ReaderSearch';
 import SiteContainer from '../../Components/SiteContainer';
 
 export function AdminDirectory({ admins, routes }) {
@@ -19,13 +21,7 @@ export function AdminDirectory({ admins, routes }) {
     );
 }
 
-export default function Readers({ readers, admins, query, routes }) {
-    const search = useForm({ q: query });
-    const submitSearch = (event) => {
-        event.preventDefault();
-        if (!search.processing) search.get(routes.index, { preserveScroll: true, preserveState: true });
-    };
-
+export default function Readers({ readers, admins, directory, query, routes }) {
     return (
         <>
             <Head title="Readers" />
@@ -38,14 +34,7 @@ export default function Readers({ readers, admins, query, routes }) {
                         <h2 className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand-coral">{query ? 'Reader search' : 'Readers to discover'}</h2>
                         <span className="text-xs text-ink-950/60">{readers.total} {readers.total === 1 ? 'reader' : 'readers'}</span>
                     </div>
-                    <form onSubmit={submitSearch} role="search" aria-label="Find readers" className="w-full sm:w-64" aria-busy={search.processing}>
-                        <label htmlFor="reader-search" className="sr-only">Find a reader by name or username</label>
-                        <div className="flex min-w-0 overflow-hidden rounded-md border border-ink-950/20 bg-white/55 focus-within:border-brand-coral focus-within:ring-2 focus-within:ring-brand-coral/15">
-                            <input id="reader-search" name="q" type="search" value={search.data.q} onChange={(event) => search.setData('q', event.target.value)} placeholder="Find a reader…" maxLength={100} className="h-9 min-w-0 flex-1 bg-transparent px-3 text-sm outline-none placeholder:text-ink-950/45" />
-                            <button type="submit" disabled={search.processing} aria-label="Search readers" className="grid w-10 shrink-0 place-items-center bg-ink-950 text-brand-cream transition hover:bg-brand-coral focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-white disabled:opacity-50"><svg aria-hidden="true" className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4.5 4.5" /></svg></button>
-                        </div>
-                        {search.errors.q && <p role="alert" className="mt-1 text-xs text-red-700">{search.errors.q}</p>}
-                    </form>
+                    <ReaderSearch query={query} action={routes.index} />
                 </div>
                 {query && <p className="mt-3 text-xs text-ink-950/65">Results for <span className="font-semibold [overflow-wrap:anywhere]">“{query}”</span><Link href={routes.index} preserveScroll className="ml-3 font-semibold text-ink-950 underline decoration-brand-coral underline-offset-4">Clear search</Link></p>}
 
@@ -54,6 +43,11 @@ export default function Readers({ readers, admins, query, routes }) {
                         {readers.data.map((reader) => <ReaderCard key={reader.username} reader={reader} routes={routes} />)}
                     </div>
                 ) : <EmptyState className="mt-6" title={query ? 'No readers found.' : 'No readers to discover yet.'} description={query ? 'Try another name or username.' : 'Reader profiles will appear here as the community grows.'} action={query ? { href: routes.index, label: 'Browse readers' } : null} />}
+                {directory && <section className="mt-10" aria-labelledby="reader-directory-heading">
+                    <div className="flex flex-wrap items-end justify-between gap-2 border-b border-ink-950/15 pb-3"><h2 id="reader-directory-heading" className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand-coral">Readers</h2><span className="text-xs text-ink-950/55">{directory.total} {directory.total === 1 ? 'reader' : 'readers'} · Most followed first</span></div>
+                    <ReaderRows readers={directory.data} routes={routes} />
+                    {directory.more_url && <div className="mt-5 text-center"><Link href={directory.more_url} className="inline-flex h-9 items-center rounded-md border border-ink-950/15 bg-white/50 px-6 text-xs font-semibold text-ink-950 hover:border-brand-coral hover:text-brand-coral focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-coral">View more</Link></div>}
+                </section>}
                 <AdminDirectory admins={admins} routes={routes} />
             </SiteContainer>
         </>

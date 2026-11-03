@@ -40,6 +40,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', HomeController::class)->name('home');
 Route::get('/search', SearchController::class)->name('search.index');
 Route::get('/readers', ReaderController::class)->name('readers.index');
+Route::get('/readers/all', [ReaderController::class, 'all'])->name('readers.all');
 Route::get('/catalog', [LiteratureController::class, 'index'])->name('literatures.index');
 Route::get('/catalog/latest', [LiteratureController::class, 'latest'])->name('literatures.latest');
 Route::get('/literature', [LiteratureBrowseController::class, 'index'])->name('literature.index');

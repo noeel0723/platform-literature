@@ -14,7 +14,7 @@ class ModerationManagementTest extends TestCase
 {
     use LazilyRefreshDatabase;
 
-    public function test_admin_home_and_header_logo_open_moderation_without_home_menu(): void
+    public function test_admin_home_logo_and_account_menu_home_open_moderation(): void
     {
         $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
         $this->actingAs($admin)->get(route('home'))->assertRedirect(route('admin.moderation.index'));
@@ -22,7 +22,7 @@ class ModerationManagementTest extends TestCase
         preg_match('/data-react-header-props>(.*?)<\/script>/s', $response->getContent(), $matches);
         $header = json_decode($matches[1], true, flags: JSON_THROW_ON_ERROR);
         $this->assertSame(route('admin.moderation.index'), $header['routes']['home']);
-        $this->assertNotContains('Home', array_column($header['user']['navigation'], 'label'));
+        $this->assertSame(route('admin.moderation.index'), collect($header['user']['navigation'])->firstWhere('label', 'Home')['url']);
     }
 
     public function test_admin_login_defaults_to_moderation_without_reader_onboarding(): void
