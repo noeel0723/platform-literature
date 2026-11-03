@@ -62,7 +62,7 @@ export function ProfileOverview({ profile, routes, reportReasons }) {
         : router.post(routes.follow, {}, { preserveScroll: true });
 
     return (
-        <section id="profile-overview" data-profile-header data-profile-compact-header className={`border-b border-ink-950/10 ${profile.banner_url ? 'relative -mt-16' : 'catalog-grid'}`}>
+        <section id="profile-overview" data-profile-header data-profile-compact-header className={`border-b border-ink-950/10 ${profile.banner_url ? 'relative -mt-24 sm:-mt-28 lg:-mt-32' : 'catalog-grid'}`}>
             <SiteContainer className="py-6 lg:py-7">
                 <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-7">
                     <div className="flex min-w-0 flex-wrap items-start gap-3.5 sm:items-center sm:gap-4">
