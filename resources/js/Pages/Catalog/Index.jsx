@@ -1,9 +1,12 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import LiteratureCard from '../../Components/LiteratureCard';
 import EmptyState from '../../Components/EmptyState';
 import SiteContainer from '../../Components/SiteContainer';
+import LiteratureDiscoveryContext from '../../Components/LiteratureDiscoveryContext';
+import CatalogSearchFeedback from '../../Components/CatalogSearchFeedback';
+import useCatalogSearch from '../../Support/useCatalogSearch';
 
 function SearchIcon() {
     return (
@@ -38,6 +41,8 @@ export default function CatalogIndex({
     routes,
 }) {
     const [search, setSearch] = useState(query);
+    const searchInput = useRef(null);
+    const catalogSearch = useCatalogSearch();
     const resultsTitle = query?.trim()
         ? 'Search results'
         : selectedType && types[selectedType]
@@ -50,6 +55,7 @@ export default function CatalogIndex({
 
     const submitSearch = (event) => {
         event.preventDefault();
+        if (catalogSearch.pending) return;
 
         router.get(routes.catalog, {
             q: search.trim() || undefined,
@@ -58,12 +64,14 @@ export default function CatalogIndex({
             preserveScroll: true,
             preserveState: true,
             replace: true,
+            ...catalogSearch.visitOptions(search),
         });
     };
 
     return (
         <>
             <Head title="Catalog" />
+            <LiteratureDiscoveryContext catalog />
 
             <section className="catalog-grid border-b border-ink-950/10">
                 <SiteContainer className="flex flex-col gap-4 py-5 lg:flex-row lg:items-center lg:justify-between">
@@ -75,6 +83,8 @@ export default function CatalogIndex({
                             <Link
                                 href={catalogUrl(routes.catalog, query, '')}
                                 preserveScroll
+                                {...catalogSearch.visitOptions(query)}
+                                aria-disabled={catalogSearch.pending || undefined}
                                 className={`whitespace-nowrap border px-3 py-2 text-xs font-semibold uppercase tracking-wider transition ${selectedType === '' ? 'border-ink-950 bg-ink-950 text-brand-cream' : 'border-ink-950/20 text-ink-950/70 hover:border-ink-950 hover:bg-brand-sky/25'}`}
                             >
                                 All
@@ -84,6 +94,8 @@ export default function CatalogIndex({
                                     key={value}
                                     href={catalogUrl(routes.catalog, query, value)}
                                     preserveScroll
+                                    {...catalogSearch.visitOptions(query)}
+                                    aria-disabled={catalogSearch.pending || undefined}
                                     className={`whitespace-nowrap border px-3 py-2 text-xs font-semibold uppercase tracking-wider transition ${selectedType === value ? 'border-ink-950 bg-ink-950 text-brand-cream' : 'border-ink-950/20 text-ink-950/70 hover:border-ink-950 hover:bg-brand-sky/25'}`}
                                 >
                                     {label}
@@ -96,13 +108,14 @@ export default function CatalogIndex({
                         <label htmlFor="catalog-page-search" className="sr-only">Find literature</label>
                         <input
                             id="catalog-page-search"
+                            ref={searchInput}
                             name="q"
                             value={search}
                             onChange={(event) => setSearch(event.target.value)}
                             placeholder="Find literature..."
                             className="min-w-0 flex-1 bg-transparent px-3 text-xs text-ink-950 outline-none placeholder:text-ink-950/40 focus:bg-white/50"
                         />
-                        <button type="submit" className="grid size-8 shrink-0 place-items-center bg-ink-950 text-brand-cream transition hover:bg-brand-coral hover:text-brand-cream" aria-label="Search catalog">
+                        <button type="submit" disabled={catalogSearch.pending} className="grid size-8 shrink-0 place-items-center bg-ink-950 text-brand-cream transition hover:bg-brand-coral hover:text-brand-cream disabled:cursor-wait disabled:opacity-60" aria-label={catalogSearch.pending ? 'Searching catalog' : 'Search catalog'}>
                             <SearchIcon />
                         </button>
                     </form>
@@ -110,39 +123,42 @@ export default function CatalogIndex({
             </section>
 
             <SiteContainer as="section" className="py-8 lg:py-10" aria-labelledby="catalog-results-title">
-                <div className="mb-5 flex items-center justify-between gap-3 border-b border-ink-950/15 pb-3">
-                    <p id="catalog-results-title" className="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">{resultsTitle}</p>
-                    {literatures.length > 0 && (
-                        <div className="flex items-center gap-5">
-                            {canExpand && (
-                                <Link href={routes.latest} className="text-xs font-bold uppercase tracking-[0.16em] text-ink-950 transition hover:text-brand-coral">
-                                    More
-                                </Link>
-                            )}
+                <CatalogSearchFeedback {...catalogSearch} onCancel={() => { catalogSearch.cancel(); searchInput.current?.focus(); }} />
+                <div aria-busy={catalogSearch.pending}>
+                    <div className={catalogSearch.pending ? 'sr-only' : 'mb-5 flex items-center justify-between gap-3 border-b border-ink-950/15 pb-3'}>
+                        <p id="catalog-results-title" className="text-xs font-bold uppercase tracking-[0.2em] text-brand-coral">{resultsTitle}</p>
+                        {!catalogSearch.pending && literatures.length > 0 && (
+                            <div className="flex items-center gap-5">
+                                {canExpand && (
+                                    <Link href={routes.latest} className="text-xs font-bold uppercase tracking-[0.16em] text-ink-950 transition hover:text-brand-coral">
+                                        More
+                                    </Link>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {!catalogSearch.pending && sourceWarning && (
+                        <div role="status" className="mb-8 border border-brand-coral/35 bg-white/35 px-4 py-3 text-sm leading-6 text-ink-950/70">
+                            <span className="font-bold text-ink-950">The local catalog remains available.</span>{' '}
+                            {sourceWarning}
                         </div>
                     )}
+
+                    {!catalogSearch.pending && (literatures.length === 0 ? (
+                        <EmptyState
+                            title={query || selectedType ? 'No matching titles found.' : 'No literature available yet.'}
+                            description={query || selectedType ? 'Try another keyword or choose a different format.' : 'New titles will appear here as the catalog grows.'}
+                            action={query || selectedType ? { href: routes.catalog, label: 'Clear search' } : null}
+                        />
+                    ) : (
+                        <div className="mx-auto grid w-full max-w-3xl grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-4 sm:gap-x-4" data-catalog-results>
+                            {literatures.map((literature) => (
+                                <LiteratureCard key={literature.slug} literature={literature} compact />
+                            ))}
+                        </div>
+                    ))}
                 </div>
-
-                {sourceWarning && (
-                    <div role="status" className="mb-8 border border-brand-coral/35 bg-white/35 px-4 py-3 text-sm leading-6 text-ink-950/70">
-                        <span className="font-bold text-ink-950">The local catalog remains available.</span>{' '}
-                        {sourceWarning}
-                    </div>
-                )}
-
-                {literatures.length === 0 ? (
-                    <EmptyState
-                        title={query || selectedType ? 'No matching titles found.' : 'No literature available yet.'}
-                        description={query || selectedType ? 'Try another keyword or choose a different format.' : 'New titles will appear here as the catalog grows.'}
-                        action={query || selectedType ? { href: routes.catalog, label: 'Clear search' } : null}
-                    />
-                ) : (
-                    <div className="mx-auto grid w-full max-w-3xl grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-4 sm:gap-x-4" data-catalog-results>
-                        {literatures.map((literature) => (
-                            <LiteratureCard key={literature.slug} literature={literature} compact />
-                        ))}
-                    </div>
-                )}
             </SiteContainer>
         </>
     );

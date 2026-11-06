@@ -4,6 +4,7 @@ import CatalogPagination from '../../Components/CatalogPagination';
 import EmptyState from '../../Components/EmptyState';
 import LiteratureCard from '../../Components/LiteratureCard';
 import SiteContainer from '../../Components/SiteContainer';
+import LiteratureDiscoveryContext from '../../Components/LiteratureDiscoveryContext';
 
 export default function CatalogLatest({ literatures, query, routes }) {
     const pageTitle = query ? `All matches for ${query}` : 'Latest literature';
@@ -11,6 +12,7 @@ export default function CatalogLatest({ literatures, query, routes }) {
     return (
         <>
             <Head title={pageTitle} />
+            <LiteratureDiscoveryContext catalog results />
 
             <SiteContainer as="section" className="py-8 lg:py-10" aria-labelledby="latest-literature-title">
                 <div className="mb-5 flex flex-col gap-2 border-b border-ink-950/15 pb-3 sm:flex-row sm:items-center sm:justify-between">

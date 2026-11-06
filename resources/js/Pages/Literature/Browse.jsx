@@ -5,6 +5,7 @@ import LiteratureBrowseFilters, { LiteratureBrowseSearch } from '../../Component
 import LiteratureCard from '../../Components/LiteratureCard';
 import EmptyState from '../../Components/EmptyState';
 import SiteContainer from '../../Components/SiteContainer';
+import LiteratureDiscoveryContext from '../../Components/LiteratureDiscoveryContext';
 
 export default function LiteratureBrowse({ literatures, filters, options, routes }) {
     const hasActiveFilters = Boolean(filters.q || filters.type || filters.decade || filters.rating || filters.genre || (filters.sort && filters.sort !== 'popularity'));
@@ -12,6 +13,7 @@ export default function LiteratureBrowse({ literatures, filters, options, routes
     return (
         <>
             <Head title="Browse Literature" />
+            <LiteratureDiscoveryContext />
 
             <section className="border-b border-ink-950/10 bg-brand-yogurt/20" aria-label="Literature search and filters">
                 <SiteContainer className="flex flex-col gap-2 py-3.5 lg:flex-row lg:items-center lg:justify-between">

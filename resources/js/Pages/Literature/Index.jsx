@@ -4,11 +4,13 @@ import LiteratureBrowseFilters, { LiteratureBrowseSearch } from '../../Component
 import LiteratureCard from '../../Components/LiteratureCard';
 import EmptyState from '../../Components/EmptyState';
 import SiteContainer from '../../Components/SiteContainer';
+import LiteratureDiscoveryContext from '../../Components/LiteratureDiscoveryContext';
 
 export default function LiteratureIndex({ popularLiteratures, options, routes }) {
     return (
         <>
             <Head title="Literature" />
+            <LiteratureDiscoveryContext />
 
             <section className="border-b border-ink-950/10 bg-brand-yogurt/20">
                 <SiteContainer className="flex flex-col gap-2 py-3.5 lg:flex-row lg:items-center lg:justify-between">
