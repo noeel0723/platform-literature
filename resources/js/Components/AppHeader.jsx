@@ -156,6 +156,7 @@ export default function AppHeader({ routes, user, logo_url: logoUrl, csrf_token:
     };
     const navigation = [
         { key: 'literature', label: 'Literature', url: routes.literature },
+        { key: 'lists', label: 'Lists', url: routes.lists },
         { key: 'readers', label: 'Readers', url: routes.readers },
         { key: 'catalog', label: 'Catalog', url: routes.catalog },
     ].filter((item) => item.url);

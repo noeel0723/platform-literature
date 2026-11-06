@@ -31,6 +31,7 @@
             'routes' => [
                 'home' => $homeUrl,
                 'literature' => route('literature.index'),
+                'lists' => route('custom-lists.index'),
                 'readers' => route('readers.index'),
                 'catalog' => route('literatures.index'),
                 'search' => route('search.index'),

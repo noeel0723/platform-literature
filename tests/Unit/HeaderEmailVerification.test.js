@@ -58,7 +58,7 @@ function withHeader(required, callback, { mobileOpen = false, pathname = '/', ho
     try {
         const tree = AppHeader({
             user: { name: 'Unverified reader', username: 'reader', email_verified: false, requires_email_verification: required, initials: 'UR', navigation: [{ label: 'Home', url: home }, { label: 'Profile', url: '/members/reader' }], edit_url: '/profile/edit', logout_url: '/logout' },
-            routes: { home, literature: '/literature', readers: '/readers', catalog: '/catalog', search: '/search', verification: '/email/verify', quick_log_search: '/quick-log/literatures' },
+            routes: { home, literature: '/literature', lists: '/lists', readers: '/readers', catalog: '/catalog', search: '/search', verification: '/email/verify', quick_log_search: '/quick-log/literatures' },
             logo_url: '/literahaven-logo.png',
         });
         callback({ tree, redirects, listeners });
@@ -100,16 +100,27 @@ test('Inertia navigation refreshes verification requirements in the separately m
     });
 });
 
-test('main navigation stays Literature Readers Catalog while mobile account links include Home', () => {
+test('main navigation includes global Lists while mobile account links still include Home', () => {
     withHeader(false, ({ tree }) => {
         const desktop = elements(tree, 'nav').find((nav) => nav.props['aria-label'] === 'Main navigation');
         const mobile = elements(tree, 'nav').find((nav) => nav.props['aria-label'] === 'Mobile navigation');
         for (const nav of [desktop, mobile]) {
             const links = elements(nav, 'a');
-            assert.deepEqual(links.map((link) => link.props.children), ['Literature', 'Readers', 'Catalog', ...(nav === mobile ? ['Home', 'Profile', 'Edit profile'] : [])]);
-            assert.deepEqual(links.slice(0, 3).map((link) => link.props.href), ['/literature', '/readers', '/catalog']);
+            assert.deepEqual(links.map((link) => link.props.children), ['Literature', 'Lists', 'Readers', 'Catalog', ...(nav === mobile ? ['Home', 'Profile', 'Edit profile'] : [])]);
+            assert.deepEqual(links.slice(0, 4).map((link) => link.props.href), ['/literature', '/lists', '/readers', '/catalog']);
         }
     }, { mobileOpen: true });
+});
+
+test('global Lists is active on both the directory and a list detail page', () => {
+    for (const pathname of ['/lists', '/lists/a-reading-list']) {
+        withHeader(false, ({ tree }) => {
+            const desktop = elements(tree, 'nav').find((nav) => nav.props['aria-label'] === 'Main navigation');
+            const lists = elements(desktop, 'a').find((link) => link.props.children === 'Lists');
+            assert.equal(lists.props.href, '/lists');
+            assert.equal(lists.props['aria-current'], 'page');
+        }, { pathname });
+    }
 });
 
 test('the logo still points to admin moderation without Home in the main navigation', () => {

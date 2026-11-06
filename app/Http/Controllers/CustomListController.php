@@ -11,6 +11,7 @@ use App\Models\Review;
 use App\Models\User;
 use App\Services\Lists\CustomListManager;
 use App\Support\ProfilePagePresenter;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -19,6 +20,56 @@ use Inertia\Response;
 
 class CustomListController extends Controller
 {
+    public function discover(Request $request, ProfilePagePresenter $presenter): Response
+    {
+        $viewer = $request->user();
+        $lists = CustomList::query()
+            ->where('is_private', false)
+            ->whereHas('user', fn (Builder $users) => $users
+                ->whereNull('deactivated_at')
+                ->when($viewer !== null, fn (Builder $users) => $users
+                    ->whereDoesntHave('blockedUsers', fn (Builder $blocked) => $blocked->whereKey($viewer->id))
+                    ->whereDoesntHave('blockers', fn (Builder $blockers) => $blockers->whereKey($viewer->id))))
+            ->with([
+                'user:id,name,username,avatar_path,role',
+                'items' => fn ($items) => $items->with([
+                    'literature.authors',
+                    'literature.metadataOverride',
+                    'literature.sourceMapping.canonicalWork.metadataOverride',
+                    'canonicalWork.preferredLiterature.authors',
+                    'canonicalWork.preferredLiterature.metadataOverride',
+                    'canonicalWork.preferredLiterature.sourceMapping.canonicalWork.metadataOverride',
+                ])->limit(5),
+            ])
+            ->withCount('items')
+            ->latest('updated_at')
+            ->latest('id');
+        $present = fn (CustomList $list): array => [
+            ...$presenter->customList($list, false),
+            'owner' => [
+                ...$presenter->user($list->user),
+                'avatar_url' => $list->user->avatarUrl() ?? ($list->user->isAdmin() ? asset('literahaven-logo.png') : null),
+            ],
+        ];
+        $officialLists = (clone $lists)
+            ->whereHas('user', fn (Builder $users) => $users->where('role', User::ROLE_ADMIN))
+            ->paginate(6, ['*'], 'official_page')->withQueryString()->fragment('official-lists')
+            ->through($present);
+        $readerLists = (clone $lists)
+            ->whereHas('user', fn (Builder $users) => $users->where('role', User::ROLE_USER))
+            ->paginate(6, ['*'], 'readers_page')->withQueryString()->fragment('readers-lists')
+            ->through($present);
+
+        return Inertia::render('Lists/Index', [
+            'officialLists' => $officialLists,
+            'readerLists' => $readerLists,
+            'routes' => [
+                'create' => $viewer?->can('create', CustomList::class) ? route('custom-lists.create') : null,
+                'verification' => $viewer?->requiresEmailVerification() ? route('verification.notice') : null,
+            ],
+        ]);
+    }
+
     /**
      * Display a listing of the resource.
      */
