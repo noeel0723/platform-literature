@@ -36,9 +36,9 @@ export default function LoginPanel({ routes, csrfToken, onClose, embedded = fals
 
     const submit = (event) => {
         event.preventDefault();
+        if (form.processing) return;
         form.post(routes.login, {
             preserveScroll: true,
-            onSuccess: (page) => window.location.assign(page.url),
             onFinish: () => form.reset('password'),
         });
     };

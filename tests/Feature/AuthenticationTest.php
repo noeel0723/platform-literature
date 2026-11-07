@@ -8,6 +8,7 @@ use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
+use PHPUnit\Framework\Attributes\TestWith;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
@@ -118,6 +119,54 @@ class AuthenticationTest extends TestCase
             'email' => $user->email,
             'password' => 'incorrect-password',
         ])->assertRedirect('/login')->assertSessionHasErrors('email');
+
+        $this->assertGuest();
+    }
+
+    #[TestWith([User::ROLE_USER, true, false, true, 'home'])]
+    #[TestWith([User::ROLE_ADMIN, true, false, true, 'admin.moderation.index'])]
+    #[TestWith([User::ROLE_USER, false, false, true, 'verification.notice'])]
+    #[TestWith([User::ROLE_USER, true, true, true, 'onboarding.show'])]
+    #[TestWith([User::ROLE_USER, false, false, false, 'home'])]
+    #[TestWith([User::ROLE_USER, false, true, false, 'onboarding.show'])]
+    public function test_inertia_login_loads_the_destination_and_authenticated_header_together(string $role, bool $verified, bool $onboarding, bool $verificationEnabled, string $destination): void
+    {
+        config(['auth.verification.enabled' => $verificationEnabled]);
+        $user = User::factory()->create([
+            'role' => $role,
+            'email_verified_at' => $verified ? now() : null,
+            'onboarding_required' => $onboarding,
+        ]);
+
+        $this->withHeader('X-Inertia', 'true')->post(route('login'), [
+            'email' => $user->username,
+            'password' => 'password',
+        ])->assertConflict()->assertHeader('X-Inertia-Location', route($destination));
+
+        $this->assertAuthenticatedAs($user);
+        $this->assertSame($verified, $user->fresh()->hasVerifiedEmail());
+    }
+
+    public function test_inertia_login_keeps_the_intended_destination_during_full_navigation(): void
+    {
+        $user = User::factory()->create();
+
+        $this->withSession(['url.intended' => route('profiles.edit')])->withHeader('X-Inertia', 'true')
+            ->post(route('login'), ['email' => $user->email, 'password' => 'password'])
+            ->assertConflict()->assertHeader('X-Inertia-Location', route('profiles.edit'))
+            ->assertSessionMissing('url.intended');
+
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_failed_inertia_login_keeps_validation_errors_without_forcing_a_page_reload(): void
+    {
+        $user = User::factory()->create();
+
+        $this->from(route('home'))->withHeader('X-Inertia', 'true')
+            ->post(route('login'), ['email' => $user->username, 'password' => 'incorrect-password'])
+            ->assertRedirect(route('home'))->assertHeaderMissing('X-Inertia-Location')
+            ->assertSessionHasErrors('email');
 
         $this->assertGuest();
     }

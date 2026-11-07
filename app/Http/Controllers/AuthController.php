@@ -13,6 +13,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
 class AuthController extends Controller
@@ -57,7 +58,7 @@ class AuthController extends Controller
         ]);
     }
 
-    public function login(LoginRequest $request): RedirectResponse
+    public function login(LoginRequest $request): HttpResponse
     {
         $identifier = Str::lower(trim($request->validated('email')));
         $identifierColumn = filter_var($identifier, FILTER_VALIDATE_EMAIL) === false ? 'username' : 'email';
@@ -76,15 +77,17 @@ class AuthController extends Controller
         $request->session()->regenerate();
 
         if ($request->user()->requiresEmailVerification()) {
-            return redirect()->route('verification.notice');
+            return Inertia::location(route('verification.notice'));
         }
 
         if (! $request->user()->isAdmin() && $request->user()->needsOnboarding()) {
-            return redirect()->route('onboarding.show');
+            return Inertia::location(route('onboarding.show'));
         }
 
-        return redirect()->intended(route($request->user()->isAdmin() ? 'admin.moderation.index' : 'home'))
+        $redirect = redirect()->intended(route($request->user()->isAdmin() ? 'admin.moderation.index' : 'home'))
             ->with('success', 'Welcome back.');
+
+        return Inertia::location($redirect);
     }
 
     public function logout(Request $request): RedirectResponse
