@@ -8,6 +8,7 @@ import { createServer } from 'vite';
 let server;
 let bindings;
 let AppHeader;
+let Search;
 
 before(async () => {
     const moduleId = 'virtual:header-verification-hooks';
@@ -37,10 +38,46 @@ before(async () => {
         optimizeDeps: { noDiscovery: true, include: [] }, server: { middlewareMode: true, hmr: false, watch: null }, appType: 'custom',
     });
     bindings = await server.ssrLoadModule(moduleId);
-    ({ default: AppHeader } = await server.ssrLoadModule('/resources/js/Components/AppHeader.jsx'));
+    ({ default: AppHeader, Search } = await server.ssrLoadModule('/resources/js/Components/AppHeader.jsx'));
 });
 
 after(async () => { await server?.close(); });
+
+test('global search expands before submitting and keeps the existing GET query contract', () => {
+    bindings.reset(false);
+    const tree = Search({ action: '/search', initialQuery: 'haikyu' });
+    let prevented = false;
+    tree.props.onSubmit({ preventDefault: () => { prevented = true; } });
+    assert.equal(prevented, true);
+    assert.deepEqual(bindings.updates, [true]);
+    assert.equal(tree.props.action, '/search');
+    assert.equal(tree.props.method, 'GET');
+    const input = elements(tree, 'input')[0];
+    assert.equal(input.props.name, 'q');
+    assert.equal(input.props.defaultValue, 'haikyu');
+    assert.equal(input.props.tabIndex, -1);
+});
+
+test('expanded search focuses the field, prevents empty submissions, and restores button focus on Escape', () => {
+    bindings.reset(true);
+    const tree = Search({ action: '/search', initialQuery: 'haikyu' });
+    const input = elements(tree, 'input')[0];
+    let focused = 0, prevented = 0;
+    input.props.ref.current = { value: ' ', focus: () => { focused++; } };
+    bindings.effects[0]();
+    assert.equal(focused, 1);
+    assert.equal(input.props.tabIndex, 0);
+    assert.equal(input.props['aria-hidden'], false);
+    tree.props.onSubmit({ preventDefault: () => { prevented++; } });
+    assert.equal(prevented, 1);
+    assert.equal(focused, 2);
+    input.props.ref.current.value = 'haikyu';
+    tree.props.onSubmit({ preventDefault: () => { prevented++; } });
+    assert.equal(prevented, 1);
+    tree.props.onKeyDown({ key: 'Escape', currentTarget: { querySelector: () => ({ focus: () => { focused++; } }) } });
+    assert.equal(bindings.updates.at(-1), false);
+    assert.equal(focused, 3);
+});
 
 function elements(element, type) {
     if (!React.isValidElement(element)) return [];

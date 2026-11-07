@@ -7,14 +7,14 @@ import SiteContainer from './SiteContainer';
 
 function BrandMark({ href, logoUrl }) {
     return (
-        <a href={href} className="group flex items-center gap-2.5" aria-label="Literahaven - Home">
-            <img src={logoUrl} alt="" width="1254" height="1254" className="size-10 shrink-0 object-contain sm:size-12" />
-            <span className="block text-2xl font-black leading-none tracking-[-0.04em] text-brand-plate sm:text-3xl">Literahaven</span>
+        <a href={href} className="group flex items-center gap-2" aria-label="Literahaven - Home">
+            <img src={logoUrl} alt="" width="1254" height="1254" className="size-8 shrink-0 object-contain sm:size-10" />
+            <span className="block text-lg font-black leading-none tracking-[-0.04em] text-brand-plate sm:text-2xl lg:text-[26px]">Literahaven</span>
         </a>
     );
 }
 
-function Search({ action, initialQuery }) {
+export function Search({ action, initialQuery }) {
     const [expanded, setExpanded] = useState(false);
     const inputRef = useRef(null);
     const formRef = useRef(null);
@@ -47,7 +47,7 @@ function Search({ action, initialQuery }) {
             }
         }}>
             <label htmlFor="global-search" className="sr-only">Search literature, authors, or readers</label>
-            <input ref={inputRef} id="global-search" name="q" defaultValue={initialQuery} placeholder="Search literature, authors, or readers..." className="header-search-input" tabIndex={expanded ? 0 : -1} aria-hidden={!expanded} />
+            <input ref={inputRef} id="global-search" name="q" defaultValue={initialQuery} placeholder="Search literature, authors, readers…" className="header-search-input" tabIndex={expanded ? 0 : -1} aria-hidden={!expanded} />
             <button type="submit" className="header-search-button" data-header-search-button aria-label={expanded ? 'Search' : 'Open search'} aria-expanded={expanded}>
                 <svg aria-hidden="true" className="size-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg>
             </button>
@@ -117,7 +117,7 @@ function AccountMenu({ user, csrfToken }) {
                 <span className="grid size-7 shrink-0 place-items-center overflow-hidden rounded-full border border-brand-plate/45 bg-brand-blueberry text-[0.65rem] font-bold text-brand-plate">
                     {user.avatar_url ? <img src={user.avatar_url} alt="" className="size-full object-cover" /> : user.initials}
                 </span>
-                <span className="max-w-32 truncate text-xs font-bold uppercase tracking-[0.12em]">{user.username}</span>
+                <span className="max-w-24 truncate text-[11px] font-bold uppercase tracking-[0.08em]">{user.username}</span>
                 <svg aria-hidden="true" className={`size-3.5 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg>
             </button>
             {open && (
@@ -203,17 +203,17 @@ export default function AppHeader({ routes, user, logo_url: logoUrl, csrf_token:
     return (
         <header data-app-header className={headerClassName}>
             {verificationRequired && <div className="bg-ink-950 px-4 py-2 text-center text-xs text-brand-cream/80">Verify your email to use interactive features. <a href={routes.verification} className="font-semibold text-brand-cream underline decoration-brand-coral underline-offset-4">Verify email</a></div>}
-            <SiteContainer>
-                <div className={`relative flex min-w-0 items-center gap-3 lg:gap-5 ${!user && loginOpen ? 'flex-wrap lg:min-h-20 lg:flex-nowrap' : 'h-18'}`}>
+            <SiteContainer className="max-w-7xl">
+                <div className={`relative flex min-w-0 items-center gap-2 sm:gap-3 xl:gap-4 ${!user && loginOpen ? 'flex-wrap lg:min-h-20 lg:flex-nowrap' : 'h-18'}`}>
                     <div className={`shrink-0 ${!user && loginOpen ? 'flex h-18 items-center lg:h-auto' : ''}`}><BrandMark href={routes.home} logoUrl={logoUrl} /></div>
                     {!user && loginOpen ? (
                         <div className="order-last w-full pb-2 lg:order-none lg:ml-auto lg:min-w-0 lg:flex-1 lg:pb-0">
                             <LoginPanel routes={routes} csrfToken={csrfToken} onClose={() => setLoginOpen(false)} inline />
                         </div>
                     ) : (
-                        <div className="ml-auto flex min-w-0 items-center gap-2 md:gap-3 lg:gap-4">
+                        <div className="ml-auto flex min-w-0 items-center gap-2 xl:gap-3">
                             {user && <div className="hidden md:block"><AccountMenu user={user} csrfToken={csrfToken} /></div>}
-                            <nav className="hidden items-center gap-5 text-xs font-semibold uppercase tracking-[0.14em] text-brand-plate/85 lg:flex" aria-label="Main navigation">
+                            <nav className="hidden shrink-0 items-center gap-4 text-[11px] font-semibold uppercase tracking-[0.1em] text-brand-plate/85 xl:flex" aria-label="Main navigation">
                                 {!user && (
                                     <a href={routes.login} onClick={(event) => { event.preventDefault(); toggleLogin(); }} aria-expanded={loginOpen} className="whitespace-nowrap transition hover:text-white">
                                         Log in
@@ -222,16 +222,16 @@ export default function AppHeader({ routes, user, logo_url: logoUrl, csrf_token:
                                 {navigation.map((item) => <a key={item.key} href={item.url} className={mainLinkClass(item.key)} aria-current={activeNavigation === item.key ? 'page' : undefined}>{item.label}</a>)}
                             </nav>
                             <Search action={routes.search} initialQuery={searchQuery} />
-                            {user && <button type="button" className="inline-flex h-8 shrink-0 items-center gap-1 rounded-sm bg-[#00c030] px-3 text-[0.7rem] font-extrabold uppercase tracking-[0.08em] text-white shadow-sm transition-colors hover:bg-[#00a628] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00c030]" aria-label="Log a rating or review" onClick={openQuickLog}><span className="text-base leading-none" aria-hidden="true">+</span><span>Log</span></button>}
-                            {!user && <a href={routes.login} onClick={(event) => { event.preventDefault(); toggleLogin(); }} aria-expanded={loginOpen} className="shrink-0 whitespace-nowrap text-xs font-bold uppercase tracking-wider text-brand-plate/85 hover:text-white lg:hidden">Log in</a>}
-                            <button type="button" className="grid size-10 shrink-0 place-items-center rounded-full border border-brand-plate/35 bg-transparent text-brand-plate transition hover:bg-brand-plate hover:text-brand-stem lg:hidden" aria-expanded={mobileOpen} aria-controls="mobile-menu" onClick={() => setMobileOpen((value) => !value)}><span className="sr-only">Open navigation</span><svg aria-hidden="true" className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 7h16M4 12h16M4 17h16" /></svg></button>
+                            {user && <button type="button" className="inline-flex h-9 shrink-0 items-center gap-1 rounded-sm bg-[#00c030] px-2.5 text-[0.7rem] font-extrabold uppercase tracking-[0.08em] text-white shadow-sm transition-colors hover:bg-[#00a628] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00c030] sm:h-8 sm:px-3" aria-label="Log a rating or review" onClick={openQuickLog}><span className="text-base leading-none" aria-hidden="true">+</span><span className="hidden sm:inline">Log</span></button>}
+                            {!user && <a href={routes.login} onClick={(event) => { event.preventDefault(); toggleLogin(); }} aria-expanded={loginOpen} className="shrink-0 whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-brand-plate/85 hover:text-white xl:hidden">Log in</a>}
+                            <button type="button" className="grid size-10 shrink-0 place-items-center rounded-full border border-brand-plate/35 bg-transparent text-brand-plate transition hover:bg-brand-plate hover:text-brand-stem xl:hidden" aria-expanded={mobileOpen} aria-controls="mobile-menu" onClick={() => setMobileOpen((value) => !value)}><span className="sr-only">Open navigation</span><svg aria-hidden="true" className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 7h16M4 12h16M4 17h16" /></svg></button>
                         </div>
                     )}
                 </div>
             </SiteContainer>
             {mobileOpen && (
-                <nav id="mobile-menu" className="border-t border-brand-plate/15 bg-brand-stem py-4 lg:hidden" aria-label="Mobile navigation">
-                    <SiteContainer className="grid gap-1 text-sm font-semibold uppercase tracking-[0.14em] text-brand-plate">
+                <nav id="mobile-menu" className="border-t border-brand-plate/15 bg-brand-stem py-4 xl:hidden" aria-label="Mobile navigation">
+                    <SiteContainer className="grid max-w-7xl gap-1 text-sm font-semibold uppercase tracking-[0.14em] text-brand-plate">
                         {navigation.map((item) => <a key={item.key} href={item.url} className={mobileLinkClass(item.key)} aria-current={activeNavigation === item.key ? 'page' : undefined}>{item.label}</a>)}
                         {user ? (
                             <>
