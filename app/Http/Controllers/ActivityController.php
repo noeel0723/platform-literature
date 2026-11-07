@@ -125,6 +125,7 @@ class ActivityController extends Controller
 
         return [
             'id' => $activity->id,
+            'url' => route('activity.show', $activity),
             'type' => $activity->type,
             'action' => match ($activity->type) {
                 Activity::TYPE_ADDED_TO_READLIST => 'added to Readlist',

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ActivityController;
+use App\Http\Controllers\ActivityDetailController;
 use App\Http\Controllers\Admin\AuthorMetadataController;
 use App\Http\Controllers\Admin\LiteratureMetadataOverrideController;
 use App\Http\Controllers\Admin\ModerationController;
@@ -100,6 +101,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->middleware('throttle:60,1')
         ->name('quick-log.literatures');
     Route::get('/activity', ActivityController::class)->name('activity.index');
+    Route::get('/activity/{activity}', ActivityDetailController::class)->whereNumber('activity')->name('activity.show');
     Route::get('/members/{user}/activity', [ActivityController::class, 'show'])->name('profiles.activity');
     Route::get('/members/{user}/diary', [ReadingDiaryController::class, 'show'])->name('profiles.diary');
     Route::put('/literatures/{literature}/reading-list', [ReadingListController::class, 'update'])

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\UpsertReviewRequest;
+use App\Models\Activity;
 use App\Models\Literature;
 use App\Services\ActivityRecorder;
 use App\Services\Literature\CanonicalWorkIdentity;
@@ -10,6 +11,7 @@ use App\Services\Reading\ReadingManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 class ReviewController extends Controller
@@ -65,6 +67,12 @@ class ReviewController extends Controller
         $message = filled($data['body'] ?? null)
             ? 'Your review has been saved and this literature is marked as completed.'
             : 'Your rating has been saved and this literature is marked as completed.';
+
+        $returnActivity = $request->integer('activity') > 0
+            ? Activity::query()->visibleToReaders()->find($request->integer('activity')) : null;
+        if ($returnActivity !== null && $equivalentIds->contains($returnActivity->literature_id) && Gate::allows('view', $returnActivity)) {
+            return redirect()->route('activity.show', $returnActivity)->with('success', $message);
+        }
 
         return redirect()->to(route('literatures.show', $literature).'#reviews')
             ->with('success', $message);

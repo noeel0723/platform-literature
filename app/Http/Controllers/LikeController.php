@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\CustomList;
 use App\Models\Discussion;
 use App\Models\Review;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 
 class LikeController extends Controller
 {
@@ -39,20 +41,39 @@ class LikeController extends Controller
         return redirect()->route('custom-lists.show', [$customList, ...$parameters]);
     }
 
-    public function storeReview(Request $request, Review $review): RedirectResponse
+    public function storeReview(Request $request, Review $review): RedirectResponse|JsonResponse
     {
         $review->likes()->firstOrCreate(['user_id' => $request->user()->id]);
+
+        if ($request->expectsJson()) {
+            return $this->reviewLikeResponse($request, $review);
+        }
 
         return redirect()->to(route('literatures.show', $review->literature).'#review-'.$review->id)
             ->with('success', 'Review liked.');
     }
 
-    public function destroyReview(Request $request, Review $review): RedirectResponse
+    public function destroyReview(Request $request, Review $review): RedirectResponse|JsonResponse
     {
         $review->likes()->where('user_id', $request->user()->id)->delete();
 
+        if ($request->expectsJson()) {
+            return $this->reviewLikeResponse($request, $review);
+        }
+
         return redirect()->to(route('literatures.show', $review->literature).'#review-'.$review->id)
             ->with('success', 'Review like removed.');
+    }
+
+    private function reviewLikeResponse(Request $request, Review $review): JsonResponse
+    {
+        $liked = $review->likes()->where('user_id', $request->user()->id)->exists();
+
+        return response()->json([
+            'likes_count' => $review->likes()->count(),
+            'is_liked' => $liked,
+            'feedback' => ['id' => (string) Str::uuid(), 'message' => $liked ? 'Review liked.' : 'Review like removed.'],
+        ]);
     }
 
     public function storeDiscussion(Request $request, Discussion $discussion): RedirectResponse

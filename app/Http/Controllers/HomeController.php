@@ -135,6 +135,7 @@ class HomeController extends Controller
 
         return [
             'id' => $activity->id,
+            'url' => route('activity.show', $activity),
             'action' => match ($activity->type) {
                 Activity::TYPE_COMPLETED => 'Completed',
                 Activity::TYPE_RATED => 'Rated',

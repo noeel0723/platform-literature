@@ -92,7 +92,7 @@ export default function HomeIndex({ activities, popularLiteratures, recommendati
                             <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
                                 {activities.map((activity) => (
                                     <article key={activity.id} className="min-w-0" data-friend-activity>
-                                        <Link href={activity.literature.url} className="group relative block overflow-hidden rounded-sm border border-ink-950/15 bg-brand-sky/25 shadow-[0_3px_10px_rgba(47,58,85,0.06)]">
+                                        <Link href={activity.url} className="group relative block overflow-hidden rounded-sm border border-ink-950/15 bg-brand-sky/25 shadow-[0_3px_10px_rgba(47,58,85,0.06)]">
                                             <Cover literature={activity.literature} />
                                             <span className="absolute left-1.5 right-1.5 top-1.5 w-fit max-w-[calc(100%_-_0.75rem)] truncate bg-ink-950/90 px-1.5 py-1 text-[11px] font-bold uppercase leading-4 tracking-[0.04em] text-brand-cream">{activity.action}</span>
                                             <span className="absolute inset-x-0 bottom-0 flex items-center gap-1.5 bg-linear-to-t from-ink-950 via-ink-950/90 to-transparent px-2 pb-2 pt-8 text-brand-cream">
@@ -100,11 +100,11 @@ export default function HomeIndex({ activities, popularLiteratures, recommendati
                                                 <span className="truncate text-xs font-bold leading-5">{activity.reader.name}</span>
                                             </span>
                                         </Link>
-                                        <Link href={activity.literature.url} title={activity.literature.title} className="mt-1.5 line-clamp-2 text-sm font-bold leading-5 text-ink-950 [overflow-wrap:anywhere] transition hover:text-brand-coral">{activity.literature.title}</Link>
-                                        <div className="mt-0.5 flex min-w-0 items-center justify-between gap-2 text-xs leading-5 text-ink-950/70">
+                                        <Link href={activity.url} title={activity.literature.title} className="mt-1.5 line-clamp-2 text-sm font-bold leading-5 text-ink-950 [overflow-wrap:anywhere] transition hover:text-brand-coral">{activity.literature.title}</Link>
+                                        <Link href={activity.url} className="mt-0.5 flex min-w-0 items-center justify-between gap-2 text-xs leading-5 text-ink-950/70 hover:text-brand-coral">
                                             {activity.rating !== null ? <span className="shrink-0 font-bold text-brand-coral">★ {Number(activity.rating).toFixed(1)}</span> : <span className="truncate">{activity.action}</span>}
                                             <TimeLabel value={activity.occurred_at} className="truncate text-right" />
-                                        </div>
+                                        </Link>
                                     </article>
                                 ))}
                             </div>

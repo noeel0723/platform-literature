@@ -15,16 +15,16 @@ function ActivityItem({ activity }) {
                 </Link>
                 <div className="min-w-0 flex-1">
                     <div className="flex min-w-0 items-start justify-between gap-3">
-                        <p className="min-w-0 text-xs leading-5 text-ink-950/60 sm:text-[13px]"><Link href={activity.user.url} className="font-bold text-ink-950 hover:text-brand-coral">{activity.user.name}</Link> {activity.action} {!activity.is_expanded && <Link href={activity.literature.url} className="font-bold text-ink-950 hover:text-brand-coral">{activity.literature.title}</Link>}</p>
-                        <TimeLabel value={activity.occurred_at} className="shrink-0 pt-0.5 text-[11px] leading-4 text-ink-950/35" />
+                        <p className="min-w-0 text-xs leading-5 text-ink-950/60 sm:text-[13px]"><Link href={activity.user.url} className="font-bold text-ink-950 hover:text-brand-coral">{activity.user.name}</Link> {activity.action} {!activity.is_expanded && <Link href={activity.url} className="font-bold text-ink-950 hover:text-brand-coral">{activity.literature.title}</Link>}</p>
+                        <Link href={activity.url} className="shrink-0 pt-0.5 text-[11px] leading-4 text-ink-950/35 hover:text-brand-coral" aria-label="View activity"><TimeLabel value={activity.occurred_at} /></Link>
                     </div>
                     {activity.is_expanded && (
                         <div className="mt-2 grid grid-cols-[44px_minmax(0,1fr)] gap-2.5 sm:grid-cols-[50px_minmax(0,1fr)]">
-                            <Link href={activity.literature.url} className="aspect-[2/3] overflow-hidden rounded-sm border border-ink-950/15 bg-brand-sky/25">
+                            <Link href={activity.url} className="aspect-[2/3] overflow-hidden rounded-sm border border-ink-950/15 bg-brand-sky/25">
                                 {activity.literature.cover_url ? <img src={activity.literature.cover_url} alt={`Cover of ${activity.literature.title}`} className="size-full object-cover" loading="lazy" /> : <span className="grid size-full place-items-center font-serif text-xl font-bold text-ink-950">{activity.literature.initials}</span>}
                             </Link>
                             <div className="min-w-0 self-center">
-                                <h2 className="truncate text-base font-bold leading-tight text-ink-950 sm:text-lg"><Link href={activity.literature.url} className="hover:text-brand-coral">{activity.literature.title}</Link></h2>
+                                <h2 className="truncate text-base font-bold leading-tight text-ink-950 sm:text-lg"><Link href={activity.url} className="hover:text-brand-coral">{activity.literature.title}</Link></h2>
                                 {activity.rating !== null && <div className="mt-1 flex items-center gap-1.5"><StarRating rating={activity.rating} size="text-xs" /><span className="text-[0.68rem] font-bold text-ink-950/45">{activity.rating.toFixed(1)}</span></div>}
                                 {activity.excerpt && <p className="mt-1 line-clamp-2 text-xs leading-5 text-ink-950/60">{activity.contains_spoiler ? 'This activity contains spoilers.' : activity.excerpt}</p>}
                             </div>
