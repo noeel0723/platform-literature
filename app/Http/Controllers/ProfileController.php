@@ -144,7 +144,7 @@ class ProfileController extends Controller
                 'id' => $author->id,
                 'name' => $author->name,
                 'url' => route('authors.show', $author),
-                'image_url' => $author->image_url,
+                'image_url' => $author->displayImageUrl(),
                 'initials' => $this->initials($author->name),
             ])->values()->all(),
             'recentCompletions' => $recentCompletions->map(fn ($readingList): array => [
@@ -296,7 +296,7 @@ class ProfileController extends Controller
                 ->map(fn (Author $author): array => [
                     'id' => $author->id,
                     'name' => $author->name,
-                    'image_url' => $author->image_url,
+                    'image_url' => $author->displayImageUrl(),
                     'initials' => $this->initials($author->name),
                 ])
                 ->values()

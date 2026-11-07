@@ -131,7 +131,7 @@ class SearchController extends Controller
             'id' => $author->id,
             'name' => $author->name,
             'url' => route('authors.show', $author),
-            'image_url' => $author->image_url,
+            'image_url' => $author->displayImageUrl(),
             'initials' => $this->initials($author->name),
             'literatures_count' => $author->literatures_count,
             'literature_titles' => $author->literatures

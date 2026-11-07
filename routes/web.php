@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ActivityController;
+use App\Http\Controllers\Admin\AuthorMetadataController;
 use App\Http\Controllers\Admin\LiteratureMetadataOverrideController;
 use App\Http\Controllers\Admin\ModerationController;
 use App\Http\Controllers\AuthController;
@@ -153,6 +154,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->name('custom-lists.items.reorder');
 
     Route::prefix('admin')->name('admin.')->middleware('admin')->group(function (): void {
+        Route::get('/authors/{author}/metadata', [AuthorMetadataController::class, 'edit'])->name('authors.metadata.edit');
+        Route::put('/authors/{author}/metadata', [AuthorMetadataController::class, 'update'])->name('authors.metadata.update');
         Route::get('/literatures/{literature}/metadata', [LiteratureMetadataOverrideController::class, 'edit'])
             ->name('literatures.metadata.edit');
         Route::put('/literatures/{literature}/metadata', [LiteratureMetadataOverrideController::class, 'update'])

@@ -238,6 +238,9 @@ final class AuthorEntityConsolidator
             'external_entity_id' => $canonical->external_entity_id ?? $duplicate->external_entity_id,
             'biography' => $canonical->biography ?? $duplicate->biography,
             'image_url' => $canonical->image_url ?? $duplicate->image_url,
+            'biography_override' => $canonical->biography_override ?? $duplicate->biography_override,
+            'image_url_override' => $canonical->image_url_override ?? $duplicate->image_url_override,
+            'image_path' => $canonical->image_path ?? (filled($canonical->image_url_override) ? null : $duplicate->image_path),
         ]);
         $canonical->save();
     }

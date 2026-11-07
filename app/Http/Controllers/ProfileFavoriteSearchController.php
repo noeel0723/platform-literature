@@ -58,11 +58,11 @@ class ProfileFavoriteSearchController extends Controller
             ->orderByRaw('CASE WHEN LOWER(name) = ? THEN 0 ELSE 1 END', [$normalizedQuery])
             ->orderBy('name')
             ->limit(self::RESULT_LIMIT)
-            ->get(['id', 'name', 'image_url'])
+            ->get(['id', 'name', 'image_url', 'image_url_override', 'image_path'])
             ->map(fn (Author $author): array => [
                 'id' => $author->id,
                 'name' => $author->name,
-                'image_url' => $author->image_url,
+                'image_url' => $author->displayImageUrl(),
                 'initials' => $this->initials($author->name),
             ])
             ->values();

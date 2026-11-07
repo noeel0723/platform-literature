@@ -7,6 +7,7 @@ use App\Models\Literature;
 use App\Services\Literature\AniListAuthorEnricher;
 use App\Services\Literature\KnowledgeGraphEnricher;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -15,6 +16,7 @@ class AuthorController extends Controller
 {
     public function __invoke(
         Author $author,
+        Request $request,
         KnowledgeGraphEnricher $knowledgeGraph,
         AniListAuthorEnricher $aniListAuthors,
     ): Response {
@@ -22,7 +24,7 @@ class AuthorController extends Controller
         $isMangaCreator = $author->literatures()
             ->whereIn('type', ['manga', 'manhwa'])
             ->exists();
-        $aniListAuthor = $author->image_url === null
+        $aniListAuthor = $author->displayImageUrl() === null
             && $isMangaCreator
             && $entity?->imageUrl === null
             ? $aniListAuthors->find($author->name)
@@ -60,16 +62,18 @@ class AuthorController extends Controller
         return Inertia::render('Author/Show', [
             'author' => [
                 'name' => $author->name,
-                'image_url' => $author->image_url,
+                'image_url' => $author->displayImageUrl(),
                 'initials' => $this->initials($author->name),
-                'biography' => $author->biography,
+                'biography' => $author->displayBiography(),
                 'literatures_count' => $author->literatures_count,
             ],
             'literatures' => $literatures,
             'profileSourceUrl' => $entity?->sourceUrl
                 ?? $entity?->officialUrl
                 ?? $aniListAuthor?->sourceUrl,
-            'imageLicenseUrl' => $entity?->imageLicenseUrl,
+            'imageLicenseUrl' => filled($author->image_path) || filled($author->image_url_override) ? null : $entity?->imageLicenseUrl,
+            'editUrl' => $request->user()?->isAdmin() && $request->user()->canUseInteractiveFeatures()
+                ? route('admin.authors.metadata.edit', $author) : null,
         ]);
     }
 

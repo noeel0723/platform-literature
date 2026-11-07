@@ -8,12 +8,28 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
-#[Fillable(['name', 'normalized_name', 'external_entity_id', 'slug', 'biography', 'image_url'])]
+#[Fillable(['name', 'normalized_name', 'external_entity_id', 'slug', 'biography', 'image_url', 'biography_override', 'image_url_override', 'image_path'])]
 class Author extends Model
 {
     /** @use HasFactory<AuthorFactory> */
     use HasFactory;
+
+    public function displayBiography(): ?string
+    {
+        return $this->biography_override ?? $this->biography;
+    }
+
+    public function uploadedImageUrl(): ?string
+    {
+        return filled($this->image_path) ? Storage::disk('public')->url($this->image_path) : null;
+    }
+
+    public function displayImageUrl(): ?string
+    {
+        return $this->uploadedImageUrl() ?? $this->image_url_override ?? $this->image_url;
+    }
 
     public function getRouteKeyName(): string
     {
