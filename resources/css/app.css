@@ -83,7 +83,8 @@
         backdrop-filter: none !important;
     }
 
-    body:has([data-profile-banner]) [data-app-header] {
+    body:has([data-profile-banner]) [data-app-header],
+    body:has([data-list-banner]) [data-app-header] {
         position: absolute !important;
         inset-inline: 0;
         top: 0;

@@ -2,13 +2,43 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CustomList;
 use App\Models\Discussion;
 use App\Models\Review;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class LikeController extends Controller
 {
+    public function storeList(Request $request, CustomList $customList): RedirectResponse
+    {
+        Gate::authorize('like', $customList);
+        $customList->likes()->firstOrCreate(['user_id' => $request->user()->id]);
+
+        return $this->redirectToList($request, $customList);
+    }
+
+    public function destroyList(Request $request, CustomList $customList): RedirectResponse
+    {
+        Gate::authorize('like', $customList);
+        $customList->likes()->where('user_id', $request->user()->id)->delete();
+
+        return $this->redirectToList($request, $customList);
+    }
+
+    private function redirectToList(Request $request, CustomList $customList): RedirectResponse
+    {
+        $parameters = [];
+        foreach (['page', 'comments_page'] as $page) {
+            if ($request->integer($page) > 1) {
+                $parameters[$page] = $request->integer($page);
+            }
+        }
+
+        return redirect()->route('custom-lists.show', [$customList, ...$parameters]);
+    }
+
     public function storeReview(Request $request, Review $review): RedirectResponse
     {
         $review->likes()->firstOrCreate(['user_id' => $request->user()->id]);

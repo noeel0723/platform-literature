@@ -8,6 +8,11 @@ use App\Models\User;
 
 class CustomListPolicy
 {
+    public function like(User $user, CustomList $customList): bool
+    {
+        return $this->comment($user, $customList);
+    }
+
     public function comment(User $user, CustomList $customList): bool
     {
         if (! $user->canUseInteractiveFeatures() || ! $customList->user->isActive() || ! $this->view($user, $customList)) {

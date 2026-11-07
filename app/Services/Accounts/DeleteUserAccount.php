@@ -3,6 +3,7 @@
 namespace App\Services\Accounts;
 
 use App\Models\Comment;
+use App\Models\CustomList;
 use App\Models\Discussion;
 use App\Models\Like;
 use App\Models\Report;
@@ -20,7 +21,7 @@ class DeleteUserAccount
             $user = User::query()->whereKey($account->id)->lockForUpdate()->firstOrFail();
             $paths = array_filter([$user->avatar_path, $user->banner_path]);
 
-            foreach ([Review::class => 'reviews', Discussion::class => 'discussions'] as $class => $relation) {
+            foreach ([Review::class => 'reviews', Discussion::class => 'discussions', CustomList::class => 'customLists'] as $class => $relation) {
                 $types = [(new $class)->getMorphClass(), $class];
                 Like::query()->whereIn('likeable_type', $types)
                     ->whereIn('likeable_id', $user->{$relation}()->select('id'))->delete();

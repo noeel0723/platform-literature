@@ -11,6 +11,7 @@ use App\Models\Literature;
 use App\Models\Review;
 use App\Models\User;
 use App\Services\Lists\CustomListManager;
+use App\Services\Lists\CustomListReadingProgress;
 use App\Support\ProfilePagePresenter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -144,7 +145,7 @@ class CustomListController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Request $request, CustomList $customList, ProfilePagePresenter $presenter): Response
+    public function show(Request $request, CustomList $customList, ProfilePagePresenter $presenter, CustomListReadingProgress $readingProgress): Response
     {
         Gate::authorize('view', $customList);
         $customList->load('user');
@@ -155,20 +156,37 @@ class CustomListController extends Controller
                 'literature.sourceMapping.canonicalWork.metadataOverride',
                 'canonicalWork.preferredLiterature.authors',
                 'canonicalWork.preferredLiterature.metadataOverride',
+                'canonicalWork.preferredLiterature.sourceMapping.canonicalWork.metadataOverride',
             ])
-            ->paginate(24);
-        $items->through(function (CustomListItem $item) use ($presenter, $customList): array {
+            ->paginate(24)->withQueryString();
+        $viewer = $request->user();
+        $progress = $readingProgress->forViewer($customList, $viewer, $items->total(), $items->getCollection()->modelKeys());
+        $completedIds = array_flip($progress['item_ids'] ?? []);
+        $firstLiterature = $customList->items()->with([
+            'literature.metadataOverride',
+            'literature.sourceMapping.canonicalWork.metadataOverride',
+            'canonicalWork.preferredLiterature.metadataOverride',
+            'canonicalWork.preferredLiterature.sourceMapping.canonicalWork.metadataOverride',
+        ])->first()?->displayLiterature();
+        $hero = $firstLiterature === null ? null : [
+            'title' => $firstLiterature->displayTitle(),
+            'year' => $firstLiterature->displayPublicationYear(),
+            'url' => route('literatures.show', $firstLiterature),
+            'backdrop_url' => $firstLiterature->displayBackdropUrl(),
+            'cover_url' => $firstLiterature->displayCoverUrl(),
+        ];
+        $items->through(function (CustomListItem $item) use ($presenter, $customList, $completedIds): array {
             $literature = $item->displayLiterature();
 
             return [
                 'id' => $item->id,
                 'position' => $item->position,
+                'completed' => isset($completedIds[$item->id]),
                 'literature' => $literature === null ? null : $presenter->literature($literature),
                 'remove_url' => route('custom-lists.items.destroy', [$customList, $item]),
             ];
         });
 
-        $viewer = $request->user();
         $commentParameters = $items->currentPage() > 1 ? ['page' => $items->currentPage()] : [];
         $comments = $customList->comments()
             ->whereHas('user', fn (Builder $users) => $users->whereNull('deactivated_at')
@@ -187,6 +205,11 @@ class CustomListController extends Controller
                     ? route('custom-lists.comments.destroy', [$customList, $comment, ...$commentParameters]) : null,
             ]);
         $canComment = $viewer?->can('comment', $customList) ?? false;
+        $likeParameters = $commentParameters;
+        if ($comments->currentPage() > 1) {
+            $likeParameters['comments_page'] = $comments->currentPage();
+        }
+        $canLike = $viewer?->can('like', $customList) ?? false;
 
         return Inertia::render('Lists/Show', [
             'list' => [
@@ -196,6 +219,14 @@ class CustomListController extends Controller
                 'is_private' => $customList->is_private,
                 'is_ranked' => $customList->is_ranked,
                 'owner' => $presenter->user($customList->user),
+                'is_official' => $customList->user->isAdmin(),
+                'updated_at' => $customList->updated_at->utc()->toIso8601String(),
+                'hero' => $hero,
+                'progress' => $progress === null ? null : array_diff_key($progress, ['item_ids' => true]),
+                'likes_count' => $customList->likes()->whereHas('user', fn (Builder $users) => $users->whereNull('deactivated_at'))->count(),
+                'is_liked' => $viewer !== null && $customList->likes()->where('user_id', $viewer->id)->exists(),
+                'like_url' => $canLike ? route('custom-lists.likes.store', [$customList, ...$likeParameters]) : null,
+                'unlike_url' => $canLike ? route('custom-lists.likes.destroy', [$customList, ...$likeParameters]) : null,
                 'items' => $items,
                 'edit_url' => route('custom-lists.edit', $customList),
                 'delete_url' => route('custom-lists.destroy', $customList),

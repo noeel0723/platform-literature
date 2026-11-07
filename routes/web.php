@@ -113,6 +113,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->name('discussions.store');
     Route::post('/discussions/{discussion}/comments', [CommentController::class, 'store'])
         ->name('discussions.comments.store');
+    Route::post('/lists/{customList}/like', [LikeController::class, 'storeList'])->middleware('throttle:60,1')->name('custom-lists.likes.store');
+    Route::delete('/lists/{customList}/like', [LikeController::class, 'destroyList'])->middleware('throttle:60,1')->name('custom-lists.likes.destroy');
     Route::post('/reviews/{review}/like', [LikeController::class, 'storeReview'])
         ->name('reviews.likes.store');
     Route::delete('/reviews/{review}/like', [LikeController::class, 'destroyReview'])

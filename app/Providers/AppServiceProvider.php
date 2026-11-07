@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\CustomList;
 use App\Models\Discussion;
 use App\Models\Review;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -35,6 +36,7 @@ class AppServiceProvider extends ServiceProvider
         ]);
 
         Relation::enforceMorphMap([
+            'custom_list' => CustomList::class,
             'discussion' => Discussion::class,
             'review' => Review::class,
         ]);
