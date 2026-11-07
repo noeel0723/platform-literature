@@ -8,6 +8,7 @@ use App\Http\Controllers\AuthorController;
 use App\Http\Controllers\BlockController;
 use App\Http\Controllers\CancelRegistrationController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\CustomListCommentController;
 use App\Http\Controllers\CustomListController;
 use App\Http\Controllers\CustomListItemController;
 use App\Http\Controllers\DeleteAccountController;
@@ -139,6 +140,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/lists/{customList}/edit', [CustomListController::class, 'edit'])->name('custom-lists.edit');
     Route::put('/lists/{customList}', [CustomListController::class, 'update'])->name('custom-lists.update');
     Route::delete('/lists/{customList}', [CustomListController::class, 'destroy'])->name('custom-lists.destroy');
+    Route::post('/lists/{customList}/comments', [CustomListCommentController::class, 'store'])
+        ->middleware('throttle:30,1')->name('custom-lists.comments.store');
+    Route::delete('/lists/{customList}/comments/{comment}', [CustomListCommentController::class, 'destroy'])
+        ->scopeBindings()->name('custom-lists.comments.destroy');
     Route::post('/lists/{customList}/items', [CustomListItemController::class, 'store'])->name('custom-lists.items.store');
     Route::delete('/lists/{customList}/items/{customListItem}', [CustomListItemController::class, 'destroy'])
         ->name('custom-lists.items.destroy');

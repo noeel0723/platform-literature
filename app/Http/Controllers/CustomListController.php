@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreCustomListRequest;
 use App\Http\Requests\UpdateCustomListRequest;
 use App\Models\CustomList;
+use App\Models\CustomListComment;
 use App\Models\CustomListItem;
 use App\Models\Literature;
 use App\Models\Review;
@@ -167,6 +168,26 @@ class CustomListController extends Controller
             ];
         });
 
+        $viewer = $request->user();
+        $commentParameters = $items->currentPage() > 1 ? ['page' => $items->currentPage()] : [];
+        $comments = $customList->comments()
+            ->whereHas('user', fn (Builder $users) => $users->whereNull('deactivated_at')
+                ->when($viewer !== null, fn (Builder $users) => $users
+                    ->whereDoesntHave('blockedUsers', fn (Builder $blocked) => $blocked->whereKey($viewer->id))
+                    ->whereDoesntHave('blockers', fn (Builder $blockers) => $blockers->whereKey($viewer->id))))
+            ->with('user:id,name,username,avatar_path')
+            ->latest('created_at')->latest('id')
+            ->paginate(20, ['*'], 'comments_page')->withQueryString()->fragment('comments')
+            ->through(fn (CustomListComment $comment): array => [
+                'id' => $comment->id,
+                'body' => $comment->body,
+                'created_at' => $comment->created_at->utc()->toIso8601String(),
+                'user' => $presenter->user($comment->user),
+                'delete_url' => $viewer?->can('deleteComment', [$customList, $comment])
+                    ? route('custom-lists.comments.destroy', [$customList, $comment, ...$commentParameters]) : null,
+            ]);
+        $canComment = $viewer?->can('comment', $customList) ?? false;
+
         return Inertia::render('Lists/Show', [
             'list' => [
                 'id' => $customList->id,
@@ -181,6 +202,12 @@ class CustomListController extends Controller
                 'reorder_url' => route('custom-lists.items.reorder', $customList),
             ],
             'canEdit' => $request->user()?->can('update', $customList) ?? false,
+            'comments' => $comments,
+            'commenting' => [
+                'authenticated' => $viewer !== null,
+                'store_url' => $canComment ? route('custom-lists.comments.store', [$customList, ...$commentParameters]) : null,
+                'verification_url' => $viewer?->requiresEmailVerification() ? route('verification.notice') : null,
+            ],
             'successMessage' => session('success'),
         ]);
     }

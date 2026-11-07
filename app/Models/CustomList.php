@@ -27,6 +27,12 @@ class CustomList extends Model
         return $this->hasMany(CustomListItem::class)->orderBy('position');
     }
 
+    /** @return HasMany<CustomListComment, $this> */
+    public function comments(): HasMany
+    {
+        return $this->hasMany(CustomListComment::class);
+    }
+
     public function getRouteKeyName(): string
     {
         return 'slug';

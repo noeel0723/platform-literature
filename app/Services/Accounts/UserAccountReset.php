@@ -11,7 +11,7 @@ class UserAccountReset
 {
     public const PERSONAL_TABLES = [
         'reports', 'likes', 'activities', 'comments', 'discussions', 'reviews',
-        'reading_logs', 'reading_progress', 'reading_lists', 'custom_list_items', 'custom_lists',
+        'reading_logs', 'reading_progress', 'reading_lists', 'custom_list_comments', 'custom_list_items', 'custom_lists',
         'user_favorite_literatures', 'user_favorite_authors', 'follows', 'user_blocks',
         'notifications', 'personal_access_tokens', 'password_reset_tokens', 'sessions', 'users',
     ];

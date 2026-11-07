@@ -3,9 +3,10 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import { LiteratureCover, Pagination } from '../../Components/ProfilePageUi';
 import SiteContainer from '../../Components/SiteContainer';
 import EmptyState from '../../Components/EmptyState';
+import ListComments from '../../Components/ListComments';
 import useFeedbackAction from '../../Support/useFeedbackAction';
 
-export default function ShowList({ list, canEdit, successMessage }) {
+export default function ShowList({ list, canEdit, successMessage, comments, commenting }) {
     const { actionFeedback } = usePage().props;
     const { processing, visit } = useFeedbackAction();
     const move = (index, direction) => {
@@ -50,6 +51,7 @@ export default function ShowList({ list, canEdit, successMessage }) {
                     </div>
                 )}
                 <Pagination paginator={list.items} label="List items pagination" />
+                {comments && <ListComments comments={comments} commenting={commenting} />}
             </SiteContainer>
         </>
     );

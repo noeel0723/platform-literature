@@ -73,6 +73,12 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(CustomList::class);
     }
 
+    /** @return HasMany<CustomListComment, $this> */
+    public function customListComments(): HasMany
+    {
+        return $this->hasMany(CustomListComment::class);
+    }
+
     /** @return HasManyThrough<ReadingLog, ReadingList, $this> */
     public function readingLogs(): HasManyThrough
     {

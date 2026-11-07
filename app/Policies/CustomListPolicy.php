@@ -3,10 +3,29 @@
 namespace App\Policies;
 
 use App\Models\CustomList;
+use App\Models\CustomListComment;
 use App\Models\User;
 
 class CustomListPolicy
 {
+    public function comment(User $user, CustomList $customList): bool
+    {
+        if (! $user->canUseInteractiveFeatures() || ! $customList->user->isActive() || ! $this->view($user, $customList)) {
+            return false;
+        }
+
+        return $user->is($customList->user)
+            || (! $user->hasBlocked($customList->user) && ! $customList->user->hasBlocked($user));
+    }
+
+    public function deleteComment(User $user, CustomList $customList, CustomListComment $comment): bool
+    {
+        return $user->canUseInteractiveFeatures()
+            && $this->view($user, $customList)
+            && $comment->custom_list_id === $customList->id
+            && ($user->id === $comment->user_id || $user->id === $customList->user_id);
+    }
+
     /**
      * Determine whether the user can view any models.
      */
