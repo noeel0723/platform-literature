@@ -83,7 +83,7 @@ class AuthController extends Controller
             return redirect()->route('onboarding.show');
         }
 
-        return redirect()->intended(route($request->user()->isAdmin() ? 'admin.moderation.index' : 'literatures.index'))
+        return redirect()->intended(route($request->user()->isAdmin() ? 'admin.moderation.index' : 'home'))
             ->with('success', 'Welcome back.');
     }
 

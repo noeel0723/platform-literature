@@ -63,7 +63,7 @@ class OnboardingTest extends TestCase
         $user = User::factory()->create(['username' => 'existing_reader']);
 
         $this->post(route('login'), ['email' => $user->username, 'password' => 'password'])
-            ->assertRedirect(route('literatures.index'));
+            ->assertRedirect(route('home'));
         $this->get(route('onboarding.show'))->assertRedirect(route('home'));
         $this->patch(route('onboarding.update'), ['action' => 'next', 'formats' => ['manga']])
             ->assertRedirect(route('home'));
@@ -121,7 +121,7 @@ class OnboardingTest extends TestCase
         $this->assertSame(['manga'], $user->fresh()->preferred_formats);
         $this->assertSame(3, $user->fresh()->onboarding_step);
         $this->post(route('logout'))->assertRedirect(route('home'));
-        $this->post(route('login'), ['email' => $user->username, 'password' => 'password'])->assertRedirect(route('literatures.index'));
+        $this->post(route('login'), ['email' => $user->username, 'password' => 'password'])->assertRedirect(route('home'));
         $this->get(route('onboarding.show'))->assertRedirect(route('home'));
     }
 

@@ -78,7 +78,7 @@ class AuthenticationTest extends TestCase
         $this->post('/login', [
             'email' => $user->email,
             'password' => 'password123',
-        ])->assertRedirect(route('literatures.index'));
+        ])->assertRedirect(route('home'));
 
         $this->assertAuthenticatedAs($user);
 
@@ -105,7 +105,7 @@ class AuthenticationTest extends TestCase
         $this->post('/login', [
             'email' => 'compact_reader',
             'password' => 'password123',
-        ])->assertRedirect(route('literatures.index'));
+        ])->assertRedirect(route('home'));
 
         $this->assertAuthenticatedAs($user);
     }

@@ -66,7 +66,7 @@ class OptionalEmailVerificationTest extends TestCase
         $user = User::factory()->unverified()->create(['username' => 'optional_reader', 'email' => 'optional@example.com']);
 
         $this->post(route('login'), ['email' => $identifier, 'password' => 'password'])
-            ->assertRedirect(route($enabled ? 'verification.notice' : 'literatures.index'));
+            ->assertRedirect(route($enabled ? 'verification.notice' : 'home'));
 
         $this->assertAuthenticatedAs($user);
         $this->assertNull($user->fresh()->email_verified_at);
