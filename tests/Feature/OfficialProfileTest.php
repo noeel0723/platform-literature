@@ -17,6 +17,29 @@ class OfficialProfileTest extends TestCase
 {
     use LazilyRefreshDatabase;
 
+    #[TestWith([true])]
+    #[TestWith([false])]
+    public function test_header_profile_menu_matches_the_account_role_without_removing_account_controls(bool $isAdmin): void
+    {
+        $user = User::factory()->create(['role' => $isAdmin ? User::ROLE_ADMIN : User::ROLE_USER]);
+        $response = $this->actingAs($user)->get(route('profiles.show', $user))->assertOk();
+        preg_match('/data-react-header-props>(.*?)<\/script>/s', $response->getContent(), $matches);
+        $props = json_decode($matches[1], true, 512, JSON_THROW_ON_ERROR);
+
+        $expected = $isAdmin
+            ? ['Profile', 'Lists', 'Connections']
+            : ['Home', 'Profile', 'Stats', 'Activity', 'Literature', 'Diary', 'Reviews', 'Readlist', 'Lists', 'Connections'];
+        $this->assertSame($expected, array_column($props['user']['navigation'], 'label'));
+        if ($isAdmin) {
+            $this->assertSame([
+                route('profiles.show', $user), route('profiles.lists', $user), route('profiles.connections', $user),
+            ], array_column($props['user']['navigation'], 'url'));
+        }
+        $this->assertSame(route('profiles.edit'), $props['user']['edit_url']);
+        $this->assertSame($isAdmin ? route('admin.moderation.index') : null, $props['user']['moderation_url']);
+        $this->assertSame(route('logout'), $props['user']['logout_url']);
+    }
+
     public function test_admin_profile_shows_only_public_list_updates_and_official_statistics(): void
     {
         $admin = User::factory()->create(['role' => User::ROLE_ADMIN, 'banner_path' => 'banners/official.webp', 'banner_position_y' => 30]);

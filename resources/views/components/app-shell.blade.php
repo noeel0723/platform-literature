@@ -49,7 +49,11 @@
                 'username' => $headerUser->username,
                 'avatar_url' => $headerUser->avatarUrl(),
                 'initials' => Str::of($headerUser->name)->squish()->explode(' ')->filter()->take(2)->map(fn (string $part): string => Str::upper(Str::substr($part, 0, 1)))->implode('') ?: '?',
-                'navigation' => [
+                'navigation' => $headerUser->isAdmin() ? [
+                    ['label' => 'Profile', 'url' => route('profiles.show', $headerUser)],
+                    ['label' => 'Lists', 'url' => route('profiles.lists', $headerUser)],
+                    ['label' => 'Connections', 'url' => route('profiles.connections', $headerUser)],
+                ] : [
                     ['label' => 'Home', 'url' => $homeUrl],
                     ['label' => 'Profile', 'url' => route('profiles.show', $headerUser)],
                     ['label' => 'Stats', 'url' => route('profiles.stats', $headerUser)],
