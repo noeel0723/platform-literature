@@ -20,7 +20,7 @@ final class CatalogResultRanker
      * @param  Builder<Literature>  $matches
      * @return Builder<Literature>
      */
-    public function rankQuery(Builder $matches, string $query): Builder
+    public function rankQuery(Builder $matches, string $query, bool $preferPopularity = false): Builder
     {
         $term = Str::lower(Str::squish($query));
         $pattern = '%'.$this->escapeLike($term).'%';
@@ -108,6 +108,9 @@ final class CatalogResultRanker
             ->select('literatures.*')
             ->selectRaw('(search_scores.relevance + '.$this->metadataScore().'
                 + 20.0 * COALESCE(search_popularity.readers, 0) / (COALESCE(search_popularity.readers, 0) + 10.0)) AS search_score')
+            ->when($preferPopularity, fn (Builder $ranked) => $ranked
+                ->orderByDesc('search_scores.relevance')
+                ->orderByRaw('COALESCE(search_popularity.readers, 0) DESC'))
             ->orderByDesc('search_score')
             ->orderByDesc('literatures.id');
     }

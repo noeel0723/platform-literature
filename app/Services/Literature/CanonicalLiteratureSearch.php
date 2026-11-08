@@ -17,7 +17,7 @@ final class CanonicalLiteratureSearch
      *
      * @return Builder<Literature>
      */
-    public function rankedQuery(string $query = '', string $selectedType = ''): Builder
+    public function rankedQuery(string $query = '', string $selectedType = '', bool $preferPopularity = false): Builder
     {
         $query = Str::squish($query);
 
@@ -28,7 +28,7 @@ final class CanonicalLiteratureSearch
         $matches = Literature::query();
         $this->applySupportedType($matches, $selectedType);
 
-        return $this->ranker->rankQuery($matches, $query)
+        return $this->ranker->rankQuery($matches, $query, $preferPopularity)
             ->when($selectedType !== '', fn (Builder $literatures) => $literatures->where('literatures.type', $selectedType))
             ->with(['apiSource', 'authors', 'categories', 'sourceMapping.canonicalWork.metadataOverride', 'metadataOverride']);
     }

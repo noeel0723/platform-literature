@@ -22,19 +22,8 @@ class QuickLogController extends Controller
         ReviewDraftContext $draftContext,
     ): JsonResponse {
         $query = Str::squish((string) $request->validated('q', ''));
-        $normalizedQuery = Str::lower($query);
 
-        $literatures = $canonicalSearch->query($query)
-            ->select(['id', 'api_source_id', 'slug', 'title', 'original_title', 'type', 'publication_year', 'cover_url', 'updated_at'])
-            ->with(['authors:id,name', 'sourceMapping:id,canonical_work_id,literature_id', 'metadataOverride'])
-            ->when($query !== '', function (Builder $literatures) use ($normalizedQuery): void {
-                $literatures->orderByRaw(
-                    'CASE WHEN LOWER(title) = ? OR LOWER(original_title) = ? THEN 0 ELSE 1 END',
-                    [$normalizedQuery, $normalizedQuery],
-                );
-            })
-            ->latest('updated_at')
-            ->latest('id')
+        $literatures = $canonicalSearch->rankedQuery($query, preferPopularity: true)
             ->limit(8)
             ->get();
         $canonicalIds = $literatures->pluck('sourceMapping.canonical_work_id')->filter()->values();
